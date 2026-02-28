@@ -1,4 +1,6 @@
-{
+import type { Policy } from '../../../schema/policy.schema';
+
+export const featureSlicedTemplate: Policy = {
   "meta": {
     "version": "1.0.0",
     "enforcement": "strict",
@@ -121,4 +123,4 @@
     "compression_applied": false,
     "omitted_sections": []
   }
-}
+};

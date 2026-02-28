@@ -1,0 +1,46 @@
+# ARCH POLICY — MODERATE ENFORCEMENT
+# VIOLATIONS TRIGGER WARNINGS
+STACK: frontend | feature-sliced | state=hybrid | style=utility-first | routing=declarative
+
+LAYERS (unidirectional, import only as declared):
+  UI: [hooks, state, types]
+  HOOKS: [state, services, types]
+  STATE: [services, types]
+  SERVICES: [types]
+  TYPES: []
+  circular=FORBIDDEN | cross_feature=via-public-api-only
+
+FILE CONVENTIONS:
+  component=*.component.tsx companions=[style(required), test(required)]
+  hook=*.hook.ts companions=[test(required)]
+  store=*.store.ts companions=[test(required)]
+  service=*.service.ts companions=[test(optional)]
+  types=*.types.ts companions=[none]
+  constants=*.constants.ts companions=[none]
+  colocation=strict | test=colocated | public_api=REQUIRED(index.ts)
+FILE FORBIDDEN: default-export-on-utility, barrel-in-non-feature-root, named-export-mix-in-component-file
+
+NAMING:
+  global_strategy: kebab-case
+  component: PascalCase
+  hook: camelCase (use* prefix)
+  store: camelCase (*Store suffix)
+  service: camelCase (*Service suffix)
+  type: PascalCase (*Type | *Props suffix)
+  constant: SCREAMING_SNAKE_CASE
+
+CONSTRAINTS:
+  component_max_lines=150
+  logic_in_components=FORBIDDEN
+  max_dir_depth=5
+  barrel_exports=REQUIRED
+  style_colocation=REQUIRED
+
+STATE:
+  scope=feature-based | local=ALLOWED | derived=selectors
+  forbidden: direct-mutation, prop-drilling
+
+SIDE EFFECTS:
+  allowed_in=[hooks, services]
+  forbidden_in=[ui, state, types]
+  pattern=async-await | fetch_scope=services

@@ -414,8 +414,11 @@ export const App = () => {
         {/* Generating */}
         {step === 'generating' && (
           <Box flexDirection="column">
-            <Text color="yellow" bold>⟳ Generating policy artifact...</Text>
-            <Text dimColor>  Rendering policy.md</Text>
+            <Text color="yellow" bold>⟳ Generating policy artifacts...</Text>
+            <Box flexDirection="column" marginLeft={2}>
+              <Text dimColor>• Rendering policy.md</Text>
+              <Text dimColor>• Rendering system.prompt.txt</Text>
+            </Box>
           </Box>
         )}
 
@@ -433,7 +436,13 @@ export const App = () => {
               <Text bold color="cyan">Preview: .ai/policy.md</Text>
               <Box borderStyle="single" borderColor="gray" paddingX={1} marginTop={1}>
                 {/* Use the markdown preview instead */}
-                <Text>{generatedPrompt.split('\n').slice(0, 15).join('\n')}</Text>
+                <Text>
+                  {generatedPrompt
+                    .split('\n')
+                    .slice(0, 12)
+                    .map(line => line.replace(/^#+\s/, '').replace(/\*\*/g, ''))
+                    .join('\n')}
+                </Text>
                 <Text dimColor>... (truncated)</Text>
               </Box>
             </Box>

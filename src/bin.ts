@@ -24,12 +24,4 @@ program
     render(React.createElement(App));
   });
 
-program
-  .command('render')
-  .description('Re-run init to regenerate policy.md')
-  .action(() => {
-    console.log('ℹ️  Run `agent-arch init` to regenerate policy.md');
-    console.log('   policy.md is the only output artifact.');
-  });
-
 program.parse(process.argv);

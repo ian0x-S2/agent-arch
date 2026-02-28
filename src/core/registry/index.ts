@@ -1,12 +1,12 @@
 import type { Policy } from '../../schema/policy.schema';
-import featureSlicedTemplate from './templates/feature-sliced.json';
-import flatTemplate from './templates/flat.json';
-import modularTemplate from './templates/modular.json';
+import { featureSlicedTemplate } from './templates/feature-sliced';
+import { flatTemplate } from './templates/flat';
+import { modularTemplate } from './templates/modular';
 
 export const TEMPLATES: Record<string, Policy> = {
-  'feature-sliced': featureSlicedTemplate as unknown as Policy,
-  'flat': flatTemplate as unknown as Policy,
-  'modular': modularTemplate as unknown as Policy,
+  'feature-sliced': featureSlicedTemplate,
+  'flat': flatTemplate,
+  'modular': modularTemplate,
 };
 
 export const TemplateRegistry = {

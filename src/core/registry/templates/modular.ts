@@ -1,4 +1,6 @@
-{
+import type { Policy } from '../../../schema/policy.schema';
+
+export const modularTemplate: Policy = {
   "meta": {
     "version": "1.0.0",
     "enforcement": "moderate",
@@ -83,4 +85,4 @@
     "compression_applied": false,
     "omitted_sections": []
   }
-}
+};
