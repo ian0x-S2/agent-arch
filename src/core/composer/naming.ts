@@ -31,11 +31,13 @@ export const resolveNamingPatterns = (
   types: Policy['file_conventions']['types'],
   strategy: string
 ): Policy['file_conventions']['types'] => {
-  const suffixes = FILE_SUFFIXES[strategy] || FILE_SUFFIXES['kebab-case'];
+  const suffixes = FILE_SUFFIXES[strategy];
+  if (!suffixes) {
+    throw new Error(`Unknown naming strategy: "${strategy}". Valid: ${Object.keys(FILE_SUFFIXES).join(', ')}`);
+  }
+
   const result = JSON.parse(JSON.stringify(types));
   
-  if (!suffixes) return result;
-
   for (const key of Object.keys(result)) {
     if (suffixes[key]) {
       result[key].pattern = suffixes[key];

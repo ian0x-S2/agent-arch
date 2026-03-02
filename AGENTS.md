@@ -1,7 +1,6 @@
 # agent-arch
 
 CLI that generates structured instruction bundles for AI coding agents.
-Output: `.ai/policy.json` (source of truth) → `system.prompt.txt` + optional `policy.md`
 Scope: frontend only. No scaffolding. No framework assumptions.
 
 ## Stack

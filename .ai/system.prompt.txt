@@ -1,46 +1,35 @@
-# ARCH POLICY — MODERATE ENFORCEMENT
-# VIOLATIONS TRIGGER WARNINGS
-STACK: frontend | feature-sliced | state=hybrid | style=utility-first | routing=declarative
+# ARCHITECTURAL POLICY
+# Version: 1.0.0 | Generated: 2026-03-02T20:01:44.617Z
 
-LAYERS (unidirectional, import only as declared):
-  UI: [hooks, state, types]
-  HOOKS: [state, services, types]
-  STATE: [services, types]
-  SERVICES: [types]
-  TYPES: []
-  circular=FORBIDDEN | cross_feature=via-public-api-only
+## STACK
+Domain: frontend | Pattern: modular | State: centralized
 
-FILE CONVENTIONS:
-  component=*.component.tsx companions=[style(required), test(required)]
-  hook=*.hook.ts companions=[test(required)]
-  store=*.store.ts companions=[test(required)]
-  service=*.service.ts companions=[test(optional)]
-  types=*.types.ts companions=[none]
-  constants=*.constants.ts companions=[none]
-  colocation=strict | test=colocated | public_api=REQUIRED(index.ts)
-FILE FORBIDDEN: default-export-on-utility, barrel-in-non-feature-root, named-export-mix-in-component-file
+## LAYER ARCHITECTURE
+### MODULES
+  MAY IMPORT: shared, modules
+  RESPONSIBILITIES: business logic, components, hooks, services
+  MUST NOT DO: import directly from other modules
+  DEPENDS ON ABSTRACTIONS: YES (DIP enforced)
+### SHARED
+  MAY IMPORT: shared
+  RESPONSIBILITIES: design system, utils, global types, api client
+  MUST NOT DO: contain business logic, import from modules
 
-NAMING:
-  global_strategy: kebab-case
-  component: PascalCase
-  hook: camelCase (use* prefix)
-  store: camelCase (*Store suffix)
-  service: camelCase (*Service suffix)
-  type: PascalCase (*Type | *Props suffix)
-  constant: SCREAMING_SNAKE_CASE
+## FILE CONVENTIONS
+  component=*Component.tsx companions=[style(optional), test(required)]
+  hook=*Hook.ts companions=[test(required)]
+  store=*Store.ts companions=[test(required)]
+  service=*Service.ts companions=[test(optional)]
+  types=*Types.ts companions=[none]
+  constants=*Constants.ts companions=[none]
+Colocation policy: strict
+Test placement: colocated
 
-CONSTRAINTS:
-  component_max_lines=150
-  logic_in_components=FORBIDDEN
-  max_dir_depth=5
-  barrel_exports=REQUIRED
-  style_colocation=REQUIRED
-
-STATE:
-  scope=feature-based | local=ALLOWED | derived=selectors
-  forbidden: direct-mutation, prop-drilling
-
-SIDE EFFECTS:
-  allowed_in=[hooks, services]
-  forbidden_in=[ui, state, types]
-  pattern=async-await | fetch_scope=services
+## NAMING CONVENTIONS
+global_strategy: PascalCase
+component: PascalCase
+hook: camelCase
+store: camelCase
+service: camelCase
+type: PascalCase
+constant: SCREAMING_SNAKE_CASE

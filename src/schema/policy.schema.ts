@@ -1,21 +1,22 @@
 import * as v from 'valibot';
 
-export const EnforcementSchema = v.union([
-  v.literal('strict'),
-  v.literal('moderate'),
-  v.literal('relaxed'),
-]);
-
 export const OutputModeSchema = v.union([
   v.literal('compact'),
   v.literal('balanced'),
   v.literal('verbose'),
 ]);
 
+export const LayerResponsibilitiesSchema = v.object({
+  owns: v.array(v.string()),
+  must_not: v.array(v.string()),
+  depends_on_abstractions: v.boolean(),
+});
+
 export const LayerSchema = v.object({
   id: v.string(),
   allowed_imports: v.array(v.string()),
   forbidden_imports: v.optional(v.array(v.string())),
+  responsibilities: v.optional(LayerResponsibilitiesSchema),
 });
 
 // ─── File Conventions agora com companion opcional e pattern livre ────────────
@@ -78,11 +79,51 @@ export const UIConstraintsSchema = v.object({
   prefer_composition: v.boolean(),
 });
 
+export const AbstractionBoundarySchema = v.object({
+  boundary_name: v.string(),
+  inner_layer: v.string(),
+  outer_layer: v.string(),
+  interface_required: v.boolean(),
+  interface_location: v.string(),
+  forbidden_leakage: v.array(v.string()),
+});
+
+export const ErrorHandlingSchema = v.object({
+  layer: v.string(),
+  strategy: v.union([
+    v.literal('throw-domain-error'),
+    v.literal('return-result-type'),
+    v.literal('propagate'),
+    v.literal('silent-log'),
+  ]),
+  allowed_error_types: v.array(v.string()),
+  forbidden_error_types: v.array(v.string()),
+  boundary_mapping_required: v.boolean(),
+});
+
+export const DomainRulesSchema = v.object({
+  entities_location: v.string(),
+  value_objects_allowed: v.boolean(),
+  entity_rules: v.object({
+    must_be_immutable: v.boolean(),
+    no_framework_imports: v.boolean(),
+    validation_location: v.union([
+      v.literal('constructor'),
+      v.literal('factory-function'),
+      v.literal('external-validator'),
+    ]),
+  }),
+  anemic_model_allowed: v.boolean(),
+  ubiquitous_language: v.object({
+    enforced: v.boolean(),
+    glossary_path: v.optional(v.string()),
+  }),
+});
+
 export const PolicySchema = v.object({
   meta: v.object({
     version: v.string(),
     generated_at: v.string(),
-    enforcement: EnforcementSchema,
     output_mode: OutputModeSchema,
     token_budget: v.optional(v.number()),
   }),
@@ -93,8 +134,14 @@ export const PolicySchema = v.object({
     styling_strategy: v.string(),
     routing_strategy: v.string(),
   }),
+  fsd_config: v.optional(v.object({
+    segments: v.array(v.string()),
+  })),
   layers: v.array(LayerSchema),
   import_matrix: v.record(v.string(), v.array(v.string())),
+  abstraction_boundaries: v.optional(v.array(AbstractionBoundarySchema)),
+  error_handling_strategy: v.optional(v.array(ErrorHandlingSchema)),
+  domain_rules: v.optional(DomainRulesSchema),
   structural_constraints: v.object({
     max_component_depth: v.number(),
     barrel_exports_required: v.boolean(),
@@ -121,11 +168,9 @@ export const PolicySchema = v.object({
     omitted_sections: v.array(v.string()),
   }),
 });
-
 export type Policy = v.InferOutput<typeof PolicySchema>;
 export type Layer = v.InferOutput<typeof LayerSchema>;
 export type FileConventions = v.InferOutput<typeof FileConventionsSchema>;
 export type FileTypeConvention = v.InferOutput<typeof FileTypeConventionSchema>;
 export type CompanionRule = v.InferOutput<typeof CompanionRuleSchema>;
-export type Enforcement = v.InferOutput<typeof EnforcementSchema>;
 export type OutputMode = v.InferOutput<typeof OutputModeSchema>;

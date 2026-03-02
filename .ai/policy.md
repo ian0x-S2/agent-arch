@@ -1,19 +1,18 @@
 # Architecture Policy
-> Pattern: **feature-sliced** | Enforcement: **moderate** | State: **hybrid** | Styling: **utility-first**
+> Pattern: **modular** | State: **centralized** | Styling: **scoped**
 
 ---
 
 ## Layer Rules
 Imports are unidirectional. Each layer may only import from layers listed below it.
-Violations of import rules are **not permitted** under moderate enforcement.
+Violations of import rules are **not permitted**.
 
-| Layer | May Import | Side Effects |
-|-------|------------|--------------|
-| ui | hooks, state, types | ✗ forbidden |
-| hooks | state, services, types | ✓ allowed |
-| state | services, types | ✗ forbidden |
-| services | types | ✓ allowed |
-| types | — | ✗ forbidden |
+| Layer | May Import | Responsibilities | Side Effects |
+|-------|------------|------------------|--------------|
+| modules | shared, modules | **Owns:** business logic, components, hooks, services<br>**Not:** import directly from other modules | ✓ allowed |
+| shared | shared | **Owns:** design system, utils, global types, api client<br>**Not:** contain business logic, import from modules | ✓ allowed |
+
+
 
 
 **Cross-feature imports:** via public api only
@@ -21,26 +20,48 @@ Violations of import rules are **not permitted** under moderate enforcement.
 
 ---
 
+## Expected Directory Structure
+
+```
+src/
+├── modules/
+│   ├── <module-name>/        # one per business capability
+│   │   ├── components/       # max 200 lines each
+│   │   │   └── ComponentName.tsx
+│   │   │       # no logic — use hooks/
+│   │   ├── hooks/            # all logic lives here
+│   │   ├── services/         # external I/O only — API, storage
+│   │   ├── types/            # module-scoped types
+│   │   └── index.ts          # public api — never import internals directly
+│   │   # cross-module imports: FORBIDDEN — use shared/
+├── shared/
+│   ├── ui/                   # design system, generic components
+│   ├── utils/                # pure functions — min 2 consumers to justify
+│   └── types/                # global contracts only
+```
+
+---
+
 ## File Conventions
 
 ### Naming
-> Files: `kebab-case` globally · Symbols: per-type rules below
+> Files: `PascalCase` globally · Symbols: per-type rules below
 
 | Type | File Pattern | Export Name Convention |
 |------|--------------|------------------------|
-| component | `*.component.tsx` | `PascalCase` |
-| hook | `*.hook.ts` | `camelCase (use* prefix)` |
-| store | `*.store.ts` | `camelCase (*Store suffix)` |
-| service | `*.service.ts` | `camelCase (*Service suffix)` |
-| types | `*.types.ts` | `—` |
-| constants | `*.constants.ts` | `—` |
+| component | `*Component.tsx` | `PascalCase` |
+| hook | `*Hook.ts` | `camelCase` |
+| store | `*Store.ts` | `camelCase` |
+| service | `*Service.ts` | `camelCase` |
+| types | `*Types.ts` | `PascalCase` |
+| constants | `*Constants.ts` | `SCREAMING_SNAKE_CASE` |
 
 
 ### Required Companions
 
 | File Type | Required | Optional |
 |-----------|----------|----------|
-| component | `*.test.tsx` | — |
+| component | `*.test.tsx` | `*.css` |
 | hook | `*.test.ts` | — |
 | store | `*.test.ts` | — |
 | service | — | `*.test.ts` |
@@ -52,18 +73,17 @@ Violations of import rules are **not permitted** under moderate enforcement.
 - **Co-location:** strict — companions must live beside source file
 - **Test placement:** colocated
 - **Public API:** every feature root requires `index.ts` — internal files must not be imported directly
-- **Max directory depth:** 5
+- **Max directory depth:** N/A
 - **Barrel exports:** required at feature roots only
 
 ### Forbidden Patterns
 - `default-export-on-utility`
 - `barrel-in-non-feature-root`
-- `named-export-mix-in-component-file`
 
 ---
 
 ## Component Composition Rules
-- **Max lines:** 150
+- **Max lines:** 200
 - **Max props:** 5 — split into compound component if exceeded
 - **No prop drilling beyond depth 2** — lift to store or context
 - **Logic in components:** FORBIDDEN — extract to hooks
@@ -81,9 +101,9 @@ Violations of import rules are **not permitted** under moderate enforcement.
 ---
 
 ## State & Async Rules
-- **Scope:** feature-based
+- **Scope:** module-based
 - **Derived state:** selectors
-- **Data fetching:** services, consumed via hooks
+- **Data fetching:** modules, consumed via hooks
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state

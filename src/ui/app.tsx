@@ -4,7 +4,6 @@ import SelectInput from 'ink-select-input';
 import { composePolicy } from '../core/composer';
 import type { UserSelections } from '../core/composer';
 import { writePolicyFiles } from '../core/writer';
-import { TemplateRegistry } from '../core/registry';
 import { renderMarkdown } from '../core/renderer/markdown-renderer';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -15,7 +14,6 @@ type Step =
   | 'state'
   | 'styling'
   | 'naming'
-  | 'enforcement'
   | 'mode'
   | 'confirm'
   | 'generating'
@@ -68,6 +66,13 @@ const OPTIONS: Record<string, OptionWithMeta[]> = {
       hint: 'Scaling: Low | Complexity: Very Low | Best for MVPs.',
       impact: '⚡ Prompt: Minimizes structural noise, focused on simple exports.',
     },
+    {
+      label: 'Atomic Design',
+      value: 'atomic',
+      description: 'Organizes UI by complexity (Atoms, Molecules, Organisms).',
+      hint: 'Scaling: Medium | Complexity: Medium | Best for design systems.',
+      impact: '⚡ Prompt: Enforces strict composition hierarchy (Atoms → Molecules → ...).',
+    },
   ],
   state: [
     {
@@ -86,8 +91,8 @@ const OPTIONS: Record<string, OptionWithMeta[]> = {
     },
     {
       label: 'Distributed',
-      value: 'distributed',
       description: 'Strictly component-local state and props. No global store.',
+      value: 'distributed',
       hint: 'Simplicity: High | Sync: Low.',
       impact: '⚡ Prompt: Agent avoids stores, focuses on prop-drilling/context.',
     },
@@ -135,27 +140,6 @@ const OPTIONS: Record<string, OptionWithMeta[]> = {
       hint: 'Common in some backend-heavy frontend projects.',
     },
   ],
-  enforcement: [
-    {
-      label: 'Strict',
-      value: 'strict',
-      description: 'Every rule must be followed. Violations block the agent.',
-      hint: 'No compromise on architectural integrity.',
-      impact: '⚡ Prompt: Adds "CRITICAL: VIOLATIONS FORBIDDEN" header.',
-    },
-    {
-      label: 'Moderate  ✦ recommended',
-      value: 'moderate',
-      description: 'Violations trigger warnings but the agent can proceed.',
-      hint: 'Governance with a safety valve.',
-    },
-    {
-      label: 'Relaxed',
-      value: 'relaxed',
-      description: 'Advisory only. The agent may deviate with justification.',
-      hint: 'Best for exploration.',
-    },
-  ],
   mode: [
     {
       label: 'Balanced  ✦ recommended',
@@ -185,14 +169,13 @@ const STEP_LABELS: Record<Step, string> = {
   state: 'State',
   styling: 'Styling',
   naming: 'Naming',
-  enforcement: 'Enforcement',
   mode: 'Mode',
   confirm: 'Confirm',
   generating: 'Generating...',
   done: 'Done',
 };
 
-const GUIDED_STEPS: Step[] = ['pattern', 'state', 'styling', 'naming', 'enforcement', 'mode', 'confirm'];
+const GUIDED_STEPS: Step[] = ['pattern', 'state', 'styling', 'naming', 'mode', 'confirm'];
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -288,13 +271,12 @@ const ConfirmScreen = ({
       <Box flexDirection="column" marginTop={1} borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1}>
         <Text bold color="cyan">Selected Configuration</Text>
         <Box marginTop={1} flexDirection="column">
-          {(['pattern', 'state_philosophy', 'styling_strategy', 'naming_strategy', 'enforcement', 'output_mode'] as const).map((key) => {
+          {(['pattern', 'state_philosophy', 'styling_strategy', 'naming_strategy', 'output_mode'] as const).map((key) => {
              const labelMap: Record<string, string> = {
                pattern: 'Pattern',
                state_philosophy: 'State',
                styling_strategy: 'Styling',
                naming_strategy: 'Naming',
-               enforcement: 'Enforcement',
                output_mode: 'Mode'
              };
              return (
@@ -326,7 +308,6 @@ const RECOMMENDED_DEFAULTS: UserSelections = {
   state_philosophy: 'hybrid',
   styling_strategy: 'utility-first',
   naming_strategy: 'kebab-case',
-  enforcement: 'moderate',
   output_mode: 'balanced',
 };
 
@@ -334,6 +315,7 @@ export const App = () => {
   const { exit } = useApp();
   const [step, setStep] = useState<Step>('welcome');
   const [selections, setSelections] = useState<Partial<UserSelections>>({});
+  const [isExpressMode, setIsExpressMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedPrompt, setGeneratedPrompt] = useState<string>('');
 
@@ -341,9 +323,11 @@ export const App = () => {
 
   const handleWelcomeSelect = (value: string) => {
     if (value === 'express') {
+      setIsExpressMode(true);
       setSelections(RECOMMENDED_DEFAULTS);
       setStep('confirm');
     } else {
+      setIsExpressMode(false);
       setStep('pattern');
     }
   };
@@ -395,7 +379,7 @@ export const App = () => {
         {step === 'welcome' && <QuestionStep stepKey="welcome" onSelect={handleWelcomeSelect} />}
 
         {/* Wizard steps */}
-        {(['pattern', 'state', 'styling', 'naming', 'enforcement', 'mode'] as const).map(
+        {(['pattern', 'state', 'styling', 'naming', 'mode'] as const).map(
           (s) =>
             step === s && (
               <QuestionStep key={s} stepKey={s} onSelect={(val) => handleSelect(s, val)} />
@@ -407,7 +391,7 @@ export const App = () => {
           <ConfirmScreen
             selections={selections}
             onConfirm={handleConfirm}
-            onBack={() => setStep(selections === RECOMMENDED_DEFAULTS ? 'welcome' : 'mode')}
+            onBack={() => setStep(isExpressMode ? 'welcome' : 'mode')}
           />
         )}
 

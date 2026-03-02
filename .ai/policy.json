@@ -1,41 +1,64 @@
-import type { Policy } from '../../../schema/policy.schema';
-
-export const modularTemplate: Policy = {
+{
   "meta": {
     "version": "1.0.0",
-    "output_mode": "balanced",
-    "generated_at": ""
+    "generated_at": "2026-03-02T20:01:44.617Z",
+    "output_mode": "verbose"
   },
   "stack": {
     "domain": "frontend",
     "pattern": "modular",
-    "state_philosophy": "modular",
-    "styling_strategy": "any",
+    "state_philosophy": "centralized",
+    "styling_strategy": "scoped",
     "routing_strategy": "any"
   },
   "layers": [
-    { 
-      "id": "modules", 
-      "allowed_imports": ["shared", "modules"],
+    {
+      "id": "modules",
+      "allowed_imports": [
+        "shared",
+        "modules"
+      ],
       "responsibilities": {
-        "owns": ["business logic", "components", "hooks", "services"],
-        "must_not": ["import directly from other modules"],
+        "owns": [
+          "business logic",
+          "components",
+          "hooks",
+          "services"
+        ],
+        "must_not": [
+          "import directly from other modules"
+        ],
         "depends_on_abstractions": true
       }
     },
-    { 
-      "id": "shared",  
-      "allowed_imports": ["shared"],
+    {
+      "id": "shared",
+      "allowed_imports": [
+        "shared"
+      ],
       "responsibilities": {
-        "owns": ["design system", "utils", "global types", "api client"],
-        "must_not": ["contain business logic", "import from modules"],
+        "owns": [
+          "design system",
+          "utils",
+          "global types",
+          "api client"
+        ],
+        "must_not": [
+          "contain business logic",
+          "import from modules"
+        ],
         "depends_on_abstractions": false
       }
     }
   ],
   "import_matrix": {
-    "modules": ["shared", "modules"],
-    "shared":  ["shared"]
+    "modules": [
+      "shared",
+      "modules"
+    ],
+    "shared": [
+      "shared"
+    ]
   },
   "structural_constraints": {
     "max_component_depth": 4,
@@ -49,17 +72,25 @@ export const modularTemplate: Policy = {
     "prop_drilling_max_depth": 2,
     "logic_in_components": false,
     "style_co_location": true,
-    "allowed_style_extensions": [".css", ".module.css"],
+    "allowed_style_extensions": [
+      ".css",
+      ".module.css"
+    ],
     "prefer_composition": true
   },
   "state_constraints": {
     "global_state_scope": "module-based",
     "local_state_allowed": true,
     "derived_state_strategy": "selectors",
-    "forbidden_patterns": ["direct-mutation"]
+    "forbidden_patterns": [
+      "direct-mutation"
+    ]
   },
   "side_effect_boundaries": {
-    "allowed_in_layers": ["modules", "shared"],
+    "allowed_in_layers": [
+      "modules",
+      "shared"
+    ],
     "forbidden_in_layers": [],
     "async_pattern": "async-await",
     "data_fetching_scope": "modules"
@@ -76,36 +107,64 @@ export const modularTemplate: Policy = {
   "file_conventions": {
     "types": {
       "component": {
-        "pattern": "*.tsx",
+        "pattern": "*Component.tsx",
         "companions": {
-          "style": { "required": false, "extensions": [".css", ".module.css"] },
-          "test":  { "required": true,  "extensions": [".test.tsx"] }
+          "style": {
+            "required": false,
+            "extensions": [
+              ".css",
+              ".module.css"
+            ]
+          },
+          "test": {
+            "required": true,
+            "extensions": [
+              ".test.tsx"
+            ]
+          }
         }
       },
       "hook": {
-        "pattern": "use*.ts",
+        "pattern": "*Hook.ts",
         "companions": {
-          "test": { "required": true, "extensions": [".test.ts", ".spec.ts"] }
+          "test": {
+            "required": true,
+            "extensions": [
+              ".test.ts",
+              ".spec.ts"
+            ]
+          }
         }
       },
       "store": {
-        "pattern": "*.store.ts",
+        "pattern": "*Store.ts",
         "companions": {
-          "test": { "required": true, "extensions": [".test.ts", ".spec.ts"] }
+          "test": {
+            "required": true,
+            "extensions": [
+              ".test.ts",
+              ".spec.ts"
+            ]
+          }
         }
       },
       "service": {
-        "pattern": "*.service.ts",
+        "pattern": "*Service.ts",
         "companions": {
-          "test": { "required": false, "extensions": [".test.ts"] }
+          "test": {
+            "required": false,
+            "extensions": [
+              ".test.ts"
+            ]
+          }
         }
       },
       "types": {
-        "pattern": "*.types.ts",
+        "pattern": "*Types.ts",
         "companions": null
       },
       "constants": {
-        "pattern": "*.constants.ts",
+        "pattern": "*Constants.ts",
         "companions": null
       }
     },
@@ -125,4 +184,4 @@ export const modularTemplate: Policy = {
     "compression_applied": false,
     "omitted_sections": []
   }
-};
+}

@@ -1,0 +1,575 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`Markdown Renderer FSD balanced output matches snapshot 1`] = `
+"# Architecture Policy
+> Pattern: **feature-sliced** | State: **hybrid** | Styling: **utility-first**
+
+---
+
+## Layer Rules
+Imports are unidirectional. Each layer may only import from layers listed below it.
+Violations of import rules are **not permitted**.
+
+| Layer | May Import | Responsibilities | Side Effects |
+|-------|------------|------------------|--------------|
+| app | pages, widgets, features, entities, shared | **Owns:** providers, routing, global styles, app initialization<br>**Not:** contain business logic | ✗ forbidden |
+| pages | widgets, features, entities, shared | **Owns:** composition of widgets for a route<br>**Not:** contain business logic | ✗ forbidden |
+| widgets | features, entities, shared | **Owns:** composition of features, reusable page sections<br>**Not:** contain business logic directly | ✗ forbidden |
+| features | entities, shared | **Owns:** user interactions with business value (AddToCart, LoginForm)<br>**Not:** import from other features, know about pages | ✓ allowed |
+| entities | shared | **Owns:** business objects and their operations (User, Product, Order)<br>**Not:** import from features or above, contain UI components ideally | ✓ allowed |
+| shared | — | **Owns:** reusable infra with no business logic (ui-kit, api client, utils)<br>**Not:** import from any other layer, contain business logic | ✗ forbidden |
+
+
+
+### Abstraction Boundaries
+
+| Boundary | Inner | Outer | Interface Required | Forbidden Leakage |
+|----------|-------|-------|--------------------|-------------------|
+| features→entities | entities | features | ✓ (model) | API raw responses, implementation details of storage |
+
+
+**Cross-feature imports:** via public api only
+**Circular imports:** FORBIDDEN
+
+---
+
+## Expected Directory Structure
+
+\`\`\`
+src/
+├── app/
+│   # imports: [pages, widgets, features, entities, shared]
+│   # must not: contain business logic
+├── pages/
+│   # imports: [widgets, features, entities, shared]
+│   # must not: contain business logic
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # components — max 150 lines, no logic — extract to model
+│   │   ├── model/
+│   │   │   # store, selectors, types — no side effects
+│   │   ├── api/
+│   │   │   # data fetching — async-await, map errors to domain types
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── widgets/
+│   # imports: [features, entities, shared]
+│   # must not: contain business logic directly
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # components — max 150 lines, no logic — extract to model
+│   │   ├── model/
+│   │   │   # store, selectors, types — no side effects
+│   │   ├── api/
+│   │   │   # data fetching — async-await, map errors to domain types
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── features/
+│   # imports: [entities, shared]
+│   # must not: import from other features
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # components — max 150 lines, no logic — extract to model
+│   │   ├── model/
+│   │   │   # store, selectors, types — no side effects
+│   │   ├── api/
+│   │   │   # data fetching — async-await, map errors to domain types
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── entities/
+│   # imports: [shared]
+│   # must not: import from features or above
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # components — max 150 lines, no logic — extract to model
+│   │   ├── model/
+│   │   │   # store, selectors, types — no side effects
+│   │   ├── api/
+│   │   │   # data fetching — async-await, map errors to domain types
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── shared/
+│   # imports: [none]
+│   # must not: import from any other layer
+│   ├── ui-kit/           # design system primitives
+│   ├── api/              # base http client, interceptors
+│   ├── lib/              # pure utils — no business logic
+│   └── types/            # global types only
+\`\`\`
+
+---
+
+## Domain Rules
+- **Entities location:** \`entities\`
+- **Value objects:** allowed
+- **Immutable entities:** YES
+- **Framework-agnostic domain:** YES (no React/Axios/etc in entities)
+- **Validation:** factory-function
+- **Anemic model:** FORBIDDEN — business logic belongs in entities
+- **Ubiquitous Language:** enforced
+
+---
+
+## File Conventions
+
+### Naming
+> Files: \`kebab-case\` globally · Symbols: per-type rules below
+
+| Type | File Pattern | Export Name Convention |
+|------|--------------|------------------------|
+| component | \`*.component.tsx\` | \`PascalCase\` |
+| hook | \`*.hook.ts\` | \`camelCase (use* prefix)\` |
+| store | \`*.store.ts\` | \`camelCase (*Store suffix)\` |
+| service | \`*.service.ts\` | \`camelCase (*Service suffix)\` |
+| types | \`*.types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
+| constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
+
+
+### Required Companions
+
+| File Type | Required | Optional |
+|-----------|----------|----------|
+| component | \`*.test.tsx\` | — |
+| hook | \`*.test.ts\` | — |
+| store | \`*.test.ts\` | — |
+| service | — | \`*.test.ts\` |
+| types | — | — |
+| constants | — | — |
+
+
+### Structure Rules
+- **Co-location:** strict — companions must live beside source file
+- **Test placement:** colocated
+- **Public API:** every feature root requires \`index.ts\` — internal files must not be imported directly
+- **Max directory depth:** 5
+- **Barrel exports:** required at feature roots only
+
+### Forbidden Patterns
+- \`default-export-on-utility\`
+- \`barrel-in-non-feature-root\`
+- \`named-export-mix-in-component-file\`
+
+---
+
+## Component Composition Rules
+- **Max lines:** 150
+- **Max props:** 5 — split into compound component if exceeded
+- **No prop drilling beyond depth 2** — lift to store or context
+- **Logic in components:** FORBIDDEN — extract to hooks
+- **Presentational components** must not import from \`state\` or \`services\` layers
+- **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
+
+---
+
+## Abstraction Rules
+- Extract to **hook** when: logic repeats across 2+ components OR exceeds 20 lines inside component
+- Extract to **service** when: logic touches external I/O (API, storage, cookies)
+- Extract to **utility** when: logic is pure, stateless, domain-agnostic
+- **Do not abstract preemptively** — wrong abstraction costs more than duplication
+
+---
+
+## State & Async Rules
+- **Scope:** feature-based
+- **Derived state:** selectors
+- **Data fetching:** entities, consumed via hooks
+- **All promises must be handled** — no floating async calls
+- **API errors must not reach UI raw** — map to domain error types in service layer
+- **Every async UI operation requires** loading state + error state
+
+---
+
+## Type Rules
+- **No \`any\`** — use \`unknown\` + type narrowing
+- **Props interface required** per component — no inline type literals
+- **No type assertions (\`as\`)** except at data boundaries (API responses, DOM events)
+
+---
+
+*Generated by agent-arch · [edit templates to change rules]*"
+`;
+
+exports[`Markdown Renderer Modular balanced output matches snapshot 1`] = `
+"# Architecture Policy
+> Pattern: **modular** | State: **modular** | Styling: **any**
+
+---
+
+## Layer Rules
+Imports are unidirectional. Each layer may only import from layers listed below it.
+Violations of import rules are **not permitted**.
+
+| Layer | May Import | Responsibilities | Side Effects |
+|-------|------------|------------------|--------------|
+| modules | shared, modules | **Owns:** business logic, components, hooks, services<br>**Not:** import directly from other modules | ✓ allowed |
+| shared | shared | **Owns:** design system, utils, global types, api client<br>**Not:** contain business logic, import from modules | ✓ allowed |
+
+
+
+
+**Cross-feature imports:** via public api only
+**Circular imports:** FORBIDDEN
+
+---
+
+## Expected Directory Structure
+
+\`\`\`
+src/
+├── modules/
+│   ├── <module-name>/        # one per business capability
+│   │   ├── components/       # max 200 lines each
+│   │   │   └── ComponentName.tsx
+│   │   │       # no logic — use hooks/
+│   │   ├── hooks/            # all logic lives here
+│   │   ├── services/         # external I/O only — API, storage
+│   │   ├── types/            # module-scoped types
+│   │   └── index.ts          # public api — never import internals directly
+│   │   # cross-module imports: FORBIDDEN — use shared/
+├── shared/
+│   ├── ui/                   # design system, generic components
+│   ├── utils/                # pure functions — min 2 consumers to justify
+│   └── types/                # global contracts only
+\`\`\`
+
+---
+
+## File Conventions
+
+### Naming
+> Files: \`PascalCase\` globally · Symbols: per-type rules below
+
+| Type | File Pattern | Export Name Convention |
+|------|--------------|------------------------|
+| component | \`*.tsx\` | \`PascalCase\` |
+| hook | \`use*.ts\` | \`camelCase\` |
+| store | \`*.store.ts\` | \`camelCase\` |
+| service | \`*.service.ts\` | \`camelCase\` |
+| types | \`*.types.ts\` | \`PascalCase\` |
+| constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
+
+
+### Required Companions
+
+| File Type | Required | Optional |
+|-----------|----------|----------|
+| component | \`*.test.tsx\` | \`*.css\` |
+| hook | \`*.test.ts\` | — |
+| store | \`*.test.ts\` | — |
+| service | — | \`*.test.ts\` |
+| types | — | — |
+| constants | — | — |
+
+
+### Structure Rules
+- **Co-location:** strict — companions must live beside source file
+- **Test placement:** colocated
+- **Public API:** every feature root requires \`index.ts\` — internal files must not be imported directly
+- **Max directory depth:** N/A
+- **Barrel exports:** required at feature roots only
+
+### Forbidden Patterns
+- \`default-export-on-utility\`
+- \`barrel-in-non-feature-root\`
+
+---
+
+## Component Composition Rules
+- **Max lines:** 200
+- **Max props:** 5 — split into compound component if exceeded
+- **No prop drilling beyond depth 2** — lift to store or context
+- **Logic in components:** FORBIDDEN — extract to hooks
+- **Presentational components** must not import from \`state\` or \`services\` layers
+- **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
+
+---
+
+## Abstraction Rules
+- Extract to **hook** when: logic repeats across 2+ components OR exceeds 20 lines inside component
+- Extract to **service** when: logic touches external I/O (API, storage, cookies)
+- Extract to **utility** when: logic is pure, stateless, domain-agnostic
+- **Do not abstract preemptively** — wrong abstraction costs more than duplication
+
+---
+
+## State & Async Rules
+- **Scope:** module-based
+- **Derived state:** selectors
+- **Data fetching:** modules, consumed via hooks
+- **All promises must be handled** — no floating async calls
+- **API errors must not reach UI raw** — map to domain error types in service layer
+- **Every async UI operation requires** loading state + error state
+
+---
+
+## Type Rules
+- **No \`any\`** — use \`unknown\` + type narrowing
+- **Props interface required** per component — no inline type literals
+- **No type assertions (\`as\`)** except at data boundaries (API responses, DOM events)
+
+---
+
+*Generated by agent-arch · [edit templates to change rules]*"
+`;
+
+exports[`Markdown Renderer Flat balanced output matches snapshot 1`] = `
+"# Architecture Policy
+> Pattern: **flat** | State: **flexible** | Styling: **any**
+
+---
+
+## Layer Rules
+Imports are unidirectional. Each layer may only import from layers listed below it.
+Violations of import rules are **not permitted**.
+
+| Layer | May Import | Responsibilities | Side Effects |
+|-------|------------|------------------|--------------|
+| src | src | **Owns:** everything at this scale<br>**Not:** nothing forbidden at this scale - this is intentional simplicity | ✓ allowed |
+
+
+
+
+**Cross-feature imports:** allowed
+**Circular imports:** FORBIDDEN
+
+---
+
+## Expected Directory Structure
+
+\`\`\`
+src/
+├── components/               # all components live here
+│   └── ComponentName.tsx     # logic colocated — ok at this scale
+├── hooks/                    # extract when logic repeats 2+ times
+├── services/                 # extract when touching external I/O
+├── types/                    # shared types
+└── utils/                    # pure functions
+
+# graduation signals — consider migrating pattern when:
+#   > 20 components in /components
+#   same data fetched in 3+ places
+#   2+ devs regularly conflicting on same files
+\`\`\`
+
+---
+
+## File Conventions
+
+### Naming
+> Files: \`camelCase\` globally · Symbols: per-type rules below
+
+| Type | File Pattern | Export Name Convention |
+|------|--------------|------------------------|
+| component | \`*.tsx\` | \`PascalCase\` |
+| hook | \`*.ts\` | \`camelCase\` |
+| store | \`*.ts\` | \`camelCase\` |
+| service | \`*.ts\` | \`camelCase\` |
+| types | \`*.ts\` | \`PascalCase\` |
+| constants | \`*.ts\` | \`SCREAMING_SNAKE_CASE\` |
+| utils | \`*.ts\` | \`—\` |
+
+
+### Required Companions
+
+| File Type | Required | Optional |
+|-----------|----------|----------|
+| component | — | \`*.test.tsx\` |
+| hook | — | — |
+| store | — | — |
+| service | — | — |
+| types | — | — |
+| constants | — | — |
+| utils | — | — |
+
+
+### Structure Rules
+- **Co-location:** none — companions must live beside source file
+- **Test placement:** colocated
+- **Public API:** optional
+- **Max directory depth:** N/A
+- **Barrel exports:** optional
+
+### Forbidden Patterns
+- \`deep-nesting\`
+- \`huge-component-file\`
+
+---
+
+## Component Composition Rules
+- **Max lines:** 300
+- **Max props:** 8 — split into compound component if exceeded
+- **No prop drilling beyond depth 3** — lift to store or context
+- **Logic in components:** allowed
+- **Presentational components** must not import from \`state\` or \`services\` layers
+- **Prefer composition over configuration:** optional
+
+---
+
+## Abstraction Rules
+- Extract to **hook** when: logic repeats across 2+ components OR exceeds 20 lines inside component
+- Extract to **service** when: logic touches external I/O (API, storage, cookies)
+- Extract to **utility** when: logic is pure, stateless, domain-agnostic
+- **Do not abstract preemptively** — wrong abstraction costs more than duplication
+
+---
+
+## State & Async Rules
+- **Scope:** any
+- **Derived state:** any
+- **Data fetching:** any, consumed via hooks
+- **All promises must be handled** — no floating async calls
+- **API errors must not reach UI raw** — map to domain error types in service layer
+- **Every async UI operation requires** loading state + error state
+
+---
+
+## Type Rules
+- **No \`any\`** — use \`unknown\` + type narrowing
+- **Props interface required** per component — no inline type literals
+- **No type assertions (\`as\`)** except at data boundaries (API responses, DOM events)
+
+---
+
+*Generated by agent-arch · [edit templates to change rules]*"
+`;
+
+exports[`Markdown Renderer Atomic balanced output matches snapshot 1`] = `
+"# Architecture Policy
+> Pattern: **atomic** | State: **hybrid** | Styling: **utility-first**
+
+---
+
+## Layer Rules
+Imports are unidirectional. Each layer may only import from layers listed below it.
+Violations of import rules are **not permitted**.
+
+| Layer | May Import | Responsibilities | Side Effects |
+|-------|------------|------------------|--------------|
+| pages | templates, organisms, molecules, atoms, shared | **Owns:** Route components, Data fetching, Connecting templates to real data<br>**Not:** Contain complex UI logic, Directly define complex layouts | ✓ allowed |
+| templates | organisms, molecules, atoms, shared | **Owns:** Page-level layout structures, Slot-based composition<br>**Not:** Know about real data, Manage business logic | ✗ forbidden |
+| organisms | molecules, atoms, shared | **Owns:** Complex, standalone UI sections, Local state for interaction logic<br>**Not:** Know about routing, Directly access global state if possible | ✓ allowed |
+| molecules | atoms, shared | **Owns:** Simple combinations of atoms, Purely presentational logic<br>**Not:** Fetch data, Contain business rules | ✗ forbidden |
+| atoms | shared | **Owns:** Single HTML element wrappers, Basic styling and primitive behavior<br>**Not:** Import from any other layer, Contain any business logic | ✗ forbidden |
+| shared | — | **Owns:** Utils, Theme constants, Global types<br>**Not:** Import from UI layers | ✗ forbidden |
+
+
+
+
+**Cross-feature imports:** via public api only
+**Circular imports:** FORBIDDEN
+
+---
+
+## Expected Directory Structure
+
+\`\`\`
+src/
+├── pages/
+│   ├── <route>/
+│   │   └── PageName.tsx
+├── templates/
+│   ├── <component>/
+│   │   ├── ComponentName.tsx
+│   │   └── ComponentName.module.css
+├── organisms/
+│   ├── <component>/
+│   │   ├── ComponentName.tsx
+│   │   └── ComponentName.module.css
+├── molecules/
+│   ├── <component>/
+│   │   ├── ComponentName.tsx
+│   │   └── ComponentName.module.css
+├── atoms/
+│   ├── <component>/
+│   │   ├── ComponentName.tsx
+│   │   └── ComponentName.module.css
+└── shared/
+    ├── utils/
+    ├── types/
+    └── theme/
+\`\`\`
+
+---
+
+## File Conventions
+
+### Naming
+> Files: \`kebab-case\` globally · Symbols: per-type rules below
+
+| Type | File Pattern | Export Name Convention |
+|------|--------------|------------------------|
+| component | \`*.tsx\` | \`PascalCase\` |
+| types | \`*.types.ts\` | \`—\` |
+| constants | \`*.constants.ts\` | \`—\` |
+
+
+### Required Companions
+
+| File Type | Required | Optional |
+|-----------|----------|----------|
+| component | \`*.test.tsx\` | — |
+| types | — | — |
+| constants | — | — |
+
+
+### Structure Rules
+- **Co-location:** strict — companions must live beside source file
+- **Test placement:** colocated
+- **Public API:** every feature root requires \`index.ts\` — internal files must not be imported directly
+- **Max directory depth:** N/A
+- **Barrel exports:** required at feature roots only
+
+### Forbidden Patterns
+
+
+---
+
+## Component Composition Rules
+- **Max lines:** 100
+- **Max props:** 10 — split into compound component if exceeded
+- **No prop drilling beyond depth 3** — lift to store or context
+- **Logic in components:** allowed
+- **Presentational components** must not import from \`state\` or \`services\` layers
+- **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
+
+---
+
+## Abstraction Rules
+- Extract to **hook** when: logic repeats across 2+ components OR exceeds 20 lines inside component
+- Extract to **service** when: logic touches external I/O (API, storage, cookies)
+- Extract to **utility** when: logic is pure, stateless, domain-agnostic
+- **Do not abstract preemptively** — wrong abstraction costs more than duplication
+
+---
+
+## State & Async Rules
+- **Scope:** minimal
+- **Derived state:** selectors
+- **Data fetching:** pages, consumed via hooks
+- **All promises must be handled** — no floating async calls
+- **API errors must not reach UI raw** — map to domain error types in service layer
+- **Every async UI operation requires** loading state + error state
+
+---
+
+## Type Rules
+- **No \`any\`** — use \`unknown\` + type narrowing
+- **Props interface required** per component — no inline type literals
+- **No type assertions (\`as\`)** except at data boundaries (API responses, DOM events)
+
+---
+
+*Generated by agent-arch · [edit templates to change rules]*"
+`;

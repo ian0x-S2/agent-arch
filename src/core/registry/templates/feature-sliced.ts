@@ -3,7 +3,6 @@ import type { Policy } from '../../../schema/policy.schema';
 export const featureSlicedTemplate: Policy = {
   "meta": {
     "version": "1.0.0",
-    "enforcement": "strict",
     "output_mode": "balanced",
     "generated_at": ""
   },
@@ -14,19 +13,95 @@ export const featureSlicedTemplate: Policy = {
     "styling_strategy": "utility-first",
     "routing_strategy": "declarative"
   },
+  "fsd_config": {
+    "segments": ["ui", "model", "api", "lib", "config"]
+  },
   "layers": [
-    { "id": "ui",       "allowed_imports": ["hooks", "state", "types"] },
-    { "id": "hooks",    "allowed_imports": ["state", "services", "types"] },
-    { "id": "state",    "allowed_imports": ["services", "types"] },
-    { "id": "services", "allowed_imports": ["types"] },
-    { "id": "types",    "allowed_imports": [] }
+    { 
+      "id": "app", 
+      "allowed_imports": ["pages", "widgets", "features", "entities", "shared"],
+      "responsibilities": {
+        "owns": ["providers", "routing", "global styles", "app initialization"],
+        "must_not": ["contain business logic"],
+        "depends_on_abstractions": false
+      }
+    },
+    { 
+      "id": "pages", 
+      "allowed_imports": ["widgets", "features", "entities", "shared"],
+      "responsibilities": {
+        "owns": ["composition of widgets for a route"],
+        "must_not": ["contain business logic"],
+        "depends_on_abstractions": false
+      }
+    },
+    { 
+      "id": "widgets", 
+      "allowed_imports": ["features", "entities", "shared"],
+      "responsibilities": {
+        "owns": ["composition of features", "reusable page sections"],
+        "must_not": ["contain business logic directly"],
+        "depends_on_abstractions": false
+      }
+    },
+    { 
+      "id": "features", 
+      "allowed_imports": ["entities", "shared"],
+      "responsibilities": {
+        "owns": ["user interactions with business value (AddToCart, LoginForm)"],
+        "must_not": ["import from other features", "know about pages"],
+        "depends_on_abstractions": true
+      }
+    },
+    { 
+      "id": "entities", 
+      "allowed_imports": ["shared"],
+      "responsibilities": {
+        "owns": ["business objects and their operations (User, Product, Order)"],
+        "must_not": ["import from features or above", "contain UI components ideally"],
+        "depends_on_abstractions": true
+      }
+    },
+    { 
+      "id": "shared", 
+      "allowed_imports": [],
+      "responsibilities": {
+        "owns": ["reusable infra with no business logic (ui-kit, api client, utils)"],
+        "must_not": ["import from any other layer", "contain business logic"],
+        "depends_on_abstractions": false
+      }
+    }
   ],
   "import_matrix": {
-    "ui":       ["hooks", "state", "types"],
-    "hooks":    ["state", "services", "types"],
-    "state":    ["services", "types"],
-    "services": ["types"],
-    "types":    []
+    "app":      ["pages", "widgets", "features", "entities", "shared"],
+    "pages":    ["widgets", "features", "entities", "shared"],
+    "widgets":  ["features", "entities", "shared"],
+    "features": ["entities", "shared"],
+    "entities": ["shared"],
+    "shared":   []
+  },
+  "abstraction_boundaries": [
+    {
+      "boundary_name": "features→entities",
+      "inner_layer": "entities",
+      "outer_layer": "features",
+      "interface_required": true,
+      "interface_location": "model",
+      "forbidden_leakage": ["API raw responses", "implementation details of storage"]
+    }
+  ],
+  "domain_rules": {
+    "entities_location": "entities",
+    "value_objects_allowed": true,
+    "entity_rules": {
+      "must_be_immutable": true,
+      "no_framework_imports": true,
+      "validation_location": "factory-function"
+    },
+    "anemic_model_allowed": false,
+    "ubiquitous_language": {
+      "enforced": true
+    }
   },
   "structural_constraints": {
     "max_component_depth": 5,
@@ -50,10 +125,10 @@ export const featureSlicedTemplate: Policy = {
     "forbidden_patterns": ["direct-mutation", "prop-drilling"]
   },
   "side_effect_boundaries": {
-    "allowed_in_layers": ["hooks", "services"],
-    "forbidden_in_layers": ["ui", "state", "types"],
+    "allowed_in_layers": ["features", "entities"],
+    "forbidden_in_layers": ["ui", "shared"],
     "async_pattern": "async-await",
-    "data_fetching_scope": "services"
+    "data_fetching_scope": "entities"
   },
   "naming_conventions": {
     "global_strategy": "kebab-case",

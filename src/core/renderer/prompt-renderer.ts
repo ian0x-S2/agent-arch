@@ -29,7 +29,7 @@ const renderCompact = (policy: Policy): string => {
   const namingLines = flattenFileConventions(file_conventions).join(' | ');
 
   return [
-    `ARCH_POLICY v${meta.version} | ${stack.domain} | ${stack.pattern} | ${meta.enforcement.toUpperCase()}`,
+    `ARCH_POLICY v${meta.version} | ${stack.domain} | ${stack.pattern}`,
     `STACK state=${stack.state_philosophy} style=${stack.styling_strategy} routing=${stack.routing_strategy}`,
     `LAYERS ${layerLines}`,
     `RULES circular=FORBIDDEN cross_feature=${structural_constraints.cross_feature_imports} max_depth=${structural_constraints.max_component_depth} barrel=${structural_constraints.barrel_exports_required ? 'REQUIRED' : 'OPTIONAL'}`,
@@ -39,7 +39,7 @@ const renderCompact = (policy: Policy): string => {
     `SIDE_EFFECTS allowed=[${side_effect_boundaries.allowed_in_layers.join(',')}] forbidden=[${side_effect_boundaries.forbidden_in_layers.join(',')}] fetch=${side_effect_boundaries.data_fetching_scope}`,
     `NAMING ${Object.entries(naming_conventions).map(([k, v]) => `${k}=${v}`).join(' ')}`,
     `FILES ${namingLines}`,
-    `COLOC=${file_conventions.colocation.toUpperCase()} TEST=${file_conventions.test_placement} PUBLIC_API=${file_conventions.public_api.required ? 'REQUIRED' : 'OPTIONAL'}`,
+    `COLOC=${file_conventions.colocation.toUpperCase()} TEST=${file_conventions.test_placement} PUBLIC_API=${file_conventions.public_api.required ? 'REQUIRED(index.ts)' : 'OPTIONAL'}`,
     file_conventions.forbidden_patterns.length
       ? `FILE_FORBIDDEN ${file_conventions.forbidden_patterns.join(',')}`
       : null,
@@ -50,50 +50,36 @@ const renderCompact = (policy: Policy): string => {
 const renderBalanced = (policy: Policy): string => {
   const { stack, meta, layers, import_matrix, structural_constraints,
           ui_constraints, state_constraints, file_conventions,
-          naming_conventions, side_effect_boundaries } = policy;
+          naming_conventions, side_effect_boundaries,
+          abstraction_boundaries, domain_rules } = policy;
 
-  const enforcementHeader = meta.enforcement === 'strict'
-    ? `# ARCH POLICY — STRICT ENFORCEMENT\n# VIOLATIONS MUST NOT BE INTRODUCED\n`
-    : meta.enforcement === 'moderate'
-    ? `# ARCH POLICY — MODERATE ENFORCEMENT\n# VIOLATIONS TRIGGER WARNINGS\n`
-    : `# ARCH POLICY — RELAXED ENFORCEMENT\n# RULES ARE ADVISORY\n`;
+  const header = `# ARCH POLICY v${meta.version}`;
 
   const layerBlock = layers
-    .map(l => `  ${l.id.toUpperCase()}: [${(import_matrix[l.id] ?? []).join(', ')}]`)
+    .map(l => {
+      let line = `  ${l.id.toUpperCase()}: [${(import_matrix[l.id] ?? []).join(', ')}]`;
+      if (l.responsibilities) {
+        line += `\n    OWNS: ${l.responsibilities.owns.join(', ')}`;
+        line += `\n    NOT: ${l.responsibilities.must_not.join(', ')}`;
+      }
+      return line;
+    })
     .join('\n');
 
-  const fileBlock = flattenFileConventions(file_conventions)
-    .map(line => `  ${line}`)
-    .join('\n');
-
-  const namingBlock = Object.entries(naming_conventions)
-    .map(([k, v]) => `  ${k}: ${v}`)
-    .join('\n');
+  const boundaryBlock = abstraction_boundaries?.map(b => 
+    `  ${b.boundary_name}: ${b.inner_layer} (inner) ← ${b.outer_layer} (outer) [API_REQ=${b.interface_required}]`
+  ).join('\n');
 
   return [
-    enforcementHeader.trimEnd(),
+    header,
     `STACK: ${stack.domain} | ${stack.pattern} | state=${stack.state_philosophy} | style=${stack.styling_strategy} | routing=${stack.routing_strategy}`,
-    `\nLAYERS (unidirectional, import only as declared):\n${layerBlock}`,
+    `\nLAYERS & RESPONSIBILITIES:\n${layerBlock}`,
     `  circular=FORBIDDEN | cross_feature=${structural_constraints.cross_feature_imports}`,
-    `\nFILE CONVENTIONS:\n${fileBlock}`,
+    boundaryBlock ? `\nABSTRACTION BOUNDARIES:\n${boundaryBlock}` : null,
+    domain_rules ? `\nDOMAIN RULES: Entity location: ${domain_rules.entities_location} | No framework: ${domain_rules.entity_rules.no_framework_imports} | Anemic allowed: ${domain_rules.anemic_model_allowed}` : null,
+    `\nFILE CONVENTIONS:`,
+    ...flattenFileConventions(file_conventions).map(line => `  ${line}`),
     `  colocation=${file_conventions.colocation} | test=${file_conventions.test_placement} | public_api=${file_conventions.public_api.required ? 'REQUIRED(index.ts)' : 'OPTIONAL'}`,
-    file_conventions.forbidden_patterns.length
-      ? `FILE FORBIDDEN: ${file_conventions.forbidden_patterns.join(', ')}`
-      : null,
-    `\nNAMING:\n${namingBlock}`,
-    `\nCONSTRAINTS:`,
-    `  component_max_lines=${ui_constraints.component_max_lines}`,
-    `  logic_in_components=${ui_constraints.logic_in_components ? 'ALLOWED' : 'FORBIDDEN'}`,
-    `  max_dir_depth=${structural_constraints.max_component_depth}`,
-    `  barrel_exports=${structural_constraints.barrel_exports_required ? 'REQUIRED' : 'OPTIONAL'}`,
-    `  style_colocation=${ui_constraints.style_co_location ? 'REQUIRED' : 'OPTIONAL'}`,
-    `\nSTATE:`,
-    `  scope=${state_constraints.global_state_scope} | local=${state_constraints.local_state_allowed ? 'ALLOWED' : 'FORBIDDEN'} | derived=${state_constraints.derived_state_strategy}`,
-    `  forbidden: ${state_constraints.forbidden_patterns.join(', ')}`,
-    `\nSIDE EFFECTS:`,
-    `  allowed_in=[${side_effect_boundaries.allowed_in_layers.join(', ')}]`,
-    `  forbidden_in=[${side_effect_boundaries.forbidden_in_layers.join(', ')}]`,
-    `  pattern=${side_effect_boundaries.async_pattern} | fetch_scope=${side_effect_boundaries.data_fetching_scope}`,
   ].filter(v => v !== null).join('\n');
 };
 
@@ -101,83 +87,63 @@ const renderBalanced = (policy: Policy): string => {
 const renderVerbose = (policy: Policy): string => {
   const { stack, meta, layers, import_matrix, structural_constraints,
           ui_constraints, state_constraints, file_conventions,
-          naming_conventions, side_effect_boundaries } = policy;
+          naming_conventions, side_effect_boundaries,
+          abstraction_boundaries, domain_rules } = policy;
 
   const layerBlock = layers.map(l => {
     const allowed = import_matrix[l.id] ?? [];
     const forbidden = l.forbidden_imports ?? [];
+    const res = l.responsibilities;
     return [
       `### ${l.id.toUpperCase()}`,
       `  MAY IMPORT: ${allowed.length ? allowed.join(', ') : 'nothing'}`,
       forbidden.length ? `  MUST NOT IMPORT: ${forbidden.join(', ')}` : null,
+      res ? `  RESPONSIBILITIES: ${res.owns.join(', ')}` : null,
+      res ? `  MUST NOT DO: ${res.must_not.join(', ')}` : null,
+      res?.depends_on_abstractions ? `  DEPENDS ON ABSTRACTIONS: YES (DIP enforced)` : null,
     ].filter(Boolean).join('\n');
   }).join('\n');
 
-  const fileBlock = flattenFileConventions(file_conventions)
-    .map(line => `  ${line}`)
-    .join('\n');
+  const boundaryBlock = abstraction_boundaries?.map(b => 
+    `### Boundary: ${b.boundary_name}\n  Inner: ${b.inner_layer}, Outer: ${b.outer_layer}\n  Interface Required: ${b.interface_required} at ${b.interface_location}\n  Forbidden leakage: ${b.forbidden_leakage.join(', ')}`
+  ).join('\n');
 
   return [
     `# ARCHITECTURAL POLICY`,
     `# Version: ${meta.version} | Generated: ${meta.generated_at}`,
-    `# Enforcement: ${meta.enforcement.toUpperCase()}`,
-    meta.enforcement === 'strict' ? `# CRITICAL: All rules are mandatory. Do not deviate under any circumstance.` : null,
-    meta.enforcement === 'moderate' ? `# Violations are permitted only with explicit justification.` : null,
-    meta.enforcement === 'relaxed' ? `# Rules are advisory. Deviations are acceptable if justified.` : null,
     ``,
     `## STACK`,
-    `Domain: ${stack.domain}`,
-    `Pattern: ${stack.pattern}`,
-    `State philosophy: ${stack.state_philosophy}`,
-    `Styling strategy: ${stack.styling_strategy}`,
-    `Routing strategy: ${stack.routing_strategy}`,
+    `Domain: ${stack.domain} | Pattern: ${stack.pattern} | State: ${stack.state_philosophy}`,
     ``,
     `## LAYER ARCHITECTURE`,
-    `Layers are unidirectional. A layer may only import from layers listed under it.`,
     layerBlock,
-    `Cross-feature imports: ${structural_constraints.cross_feature_imports}`,
-    `Circular imports: FORBIDDEN`,
     ``,
+    abstraction_boundaries?.length ? `## ABSTRACTION BOUNDARIES\n${boundaryBlock}\n` : null,
+    domain_rules ? `## DOMAIN RULES\n  Entities: ${domain_rules.entities_location}\n  Validation: ${domain_rules.entity_rules.validation_location}\n  Immutable: ${domain_rules.entity_rules.must_be_immutable}\n  Ubiquitous Language: ${domain_rules.ubiquitous_language.enforced}\n` : null,
     `## FILE CONVENTIONS`,
-    fileBlock,
-    `Colocation policy: ${file_conventions.colocation} (companions must live beside source file)`,
+    ...flattenFileConventions(file_conventions).map(line => `  ${line}`),
+    `Colocation policy: ${file_conventions.colocation}`,
     `Test placement: ${file_conventions.test_placement}`,
-    `Public API: ${file_conventions.public_api.required ? 'Each feature must expose an index.ts. Internal files must not be imported directly.' : 'No index file required.'}`,
-    file_conventions.forbidden_patterns.length
-      ? `Forbidden file patterns: ${file_conventions.forbidden_patterns.join(', ')}`
-      : null,
     ``,
     `## NAMING CONVENTIONS`,
     ...Object.entries(naming_conventions).map(([k, v]) => `${k}: ${v}`),
-    ``,
-    `## CONSTRAINTS`,
-    `Max lines per component: ${ui_constraints.component_max_lines}`,
-    `Logic in UI components: ${ui_constraints.logic_in_components ? 'ALLOWED (minimal)' : 'FORBIDDEN — extract to hooks'}`,
-    `Max directory depth: ${structural_constraints.max_component_depth}`,
-    `Barrel exports: ${structural_constraints.barrel_exports_required ? 'REQUIRED at feature roots' : 'OPTIONAL'}`,
-    `Style co-location: ${ui_constraints.style_co_location ? 'REQUIRED — style file must live next to component' : 'OPTIONAL'}`,
-    ``,
-    `## STATE MANAGEMENT`,
-    `Global scope: ${state_constraints.global_state_scope}`,
-    `local state: ${state_constraints.local_state_allowed ? 'ALLOWED for UI-only state' : 'FORBIDDEN'}`,
-    `Derived state: use ${state_constraints.derived_state_strategy}`,
-    `Forbidden patterns: ${state_constraints.forbidden_patterns.join(', ')}`,
-    ``,
-    `## SIDE EFFECTS`,
-    `Allowed in layers: ${side_effect_boundaries.allowed_in_layers.join(', ')}`,
-    `Forbidden in layers: ${side_effect_boundaries.forbidden_in_layers.join(', ')}`,
-    `Async pattern: ${side_effect_boundaries.async_pattern}`,
-    `Data fetching scope: ${side_effect_boundaries.data_fetching_scope}`,
   ].filter(v => v !== null).join('\n');
 };
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 export const renderPrompt = (policy: Policy): string => {
   const mode: RenderMode = policy.meta.output_mode;
+  let rendered = '';
   switch (mode) {
-    case 'compact':  return renderCompact(policy);
-    case 'verbose':  return renderVerbose(policy);
+    case 'compact':  rendered = renderCompact(policy); break;
+    case 'verbose':  rendered = renderVerbose(policy); break;
     case 'balanced':
-    default:         return renderBalanced(policy);
+    default:         rendered = renderBalanced(policy); break;
   }
+
+  // Estimate tokens (~4 chars per token)
+  const tokens = Math.ceil(rendered.length / 4);
+  policy.token_metadata.estimated_prompt_tokens = tokens;
+  
+  return rendered;
 };

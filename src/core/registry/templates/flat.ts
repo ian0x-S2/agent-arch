@@ -3,7 +3,6 @@ import type { Policy } from '../../../schema/policy.schema';
 export const flatTemplate: Policy = {
   "meta": {
     "version": "1.0.0",
-    "enforcement": "moderate",
     "output_mode": "balanced",
     "generated_at": ""
   },
@@ -15,7 +14,15 @@ export const flatTemplate: Policy = {
     "routing_strategy": "any"
   },
   "layers": [
-    { "id": "src", "allowed_imports": ["src"] }
+    { 
+      "id": "src", 
+      "allowed_imports": ["src"],
+      "responsibilities": {
+        "owns": ["everything at this scale"],
+        "must_not": ["nothing forbidden at this scale - this is intentional simplicity"],
+        "depends_on_abstractions": false
+      }
+    }
   ],
   "import_matrix": {
     "src": ["src"]
@@ -39,7 +46,11 @@ export const flatTemplate: Policy = {
     "global_state_scope": "any",
     "local_state_allowed": true,
     "derived_state_strategy": "any",
-    "forbidden_patterns": []
+    "forbidden_patterns": [
+      "prop-drilling-beyond-3-levels",
+      "global-state-in-component",
+      "duplicate-data-fetching"
+    ]
   },
   "side_effect_boundaries": {
     "allowed_in_layers": ["src"],
@@ -68,6 +79,22 @@ export const flatTemplate: Policy = {
         "pattern": "*.ts",
         "companions": null
       },
+      "store": {
+        "pattern": "*.ts",
+        "companions": null
+      },
+      "service": {
+        "pattern": "*.ts",
+        "companions": null
+      },
+      "types": {
+        "pattern": "*.ts",
+        "companions": null
+      },
+      "constants": {
+        "pattern": "*.ts",
+        "companions": null
+      },
       "utils": {
         "pattern": "*.ts",
         "companions": null
@@ -79,7 +106,10 @@ export const flatTemplate: Policy = {
       "expose_internals": true
     },
     "test_placement": "colocated",
-    "forbidden_patterns": []
+    "forbidden_patterns": [
+      "deep-nesting",
+      "huge-component-file"
+    ]
   },
   "token_metadata": {
     "estimated_prompt_tokens": 0,
