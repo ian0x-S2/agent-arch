@@ -3,6 +3,105 @@ import { composePolicy } from "../composer";
 import type { Layer } from "../../schema/policy.schema";
 
 describe("Composer", () => {
+  test("FSD derives state as feature-based automatically", () => {
+    const policy = composePolicy({
+      pattern: "feature-sliced",
+      output_mode: "balanced",
+      naming_strategy: "PascalCase",
+    });
+
+    expect(policy.stack.state_philosophy).toBe("feature-based");
+    expect(policy.state_constraints.global_state_scope).toBe("feature-based");
+  });
+
+  test("flat derives state as flexible automatically", () => {
+    const policy = composePolicy({
+      pattern: "flat",
+      output_mode: "balanced",
+      naming_strategy: "kebab-case",
+    });
+
+    expect(policy.stack.state_philosophy).toBe("flexible");
+    expect(policy.state_constraints.global_state_scope).toBe("any");
+  });
+
+  test("modular derives state as module-based automatically", () => {
+    const policy = composePolicy({
+      pattern: "modular",
+      output_mode: "balanced",
+      naming_strategy: "PascalCase",
+    });
+
+    expect(policy.stack.state_philosophy).toBe("module-based");
+    expect(policy.state_constraints.global_state_scope).toBe("module-based");
+  });
+
+  test("atomic derives state as minimal automatically", () => {
+    const policy = composePolicy({
+      pattern: "atomic",
+      output_mode: "balanced",
+      naming_strategy: "kebab-case",
+    });
+
+    expect(policy.stack.state_philosophy).toBe("minimal");
+    expect(policy.state_constraints.global_state_scope).toBe("minimal");
+  });
+
+  test("utility-first styling removes style companions", () => {
+    const policy = composePolicy({
+      pattern: "feature-sliced",
+      output_mode: "balanced",
+      naming_strategy: "kebab-case",
+      styling_strategy: "utility-first",
+    });
+
+    const component = policy.file_conventions.types.component!;
+    expect(component.companions?.style).toBeUndefined();
+    expect(policy.ui_constraints.style_co_location).toBe(false);
+    expect(policy.ui_constraints.allowed_style_extensions).toHaveLength(0);
+  });
+
+  test("scoped styling adds companion .module.css required", () => {
+    const policy = composePolicy({
+      pattern: "feature-sliced",
+      output_mode: "balanced",
+      naming_strategy: "kebab-case",
+      styling_strategy: "scoped",
+    });
+
+    const component = policy.file_conventions.types.component!;
+    expect(component.companions?.style?.required).toBe(true);
+    expect(component.companions?.style?.extensions).toContain(".module.css");
+    expect(policy.ui_constraints.style_co_location).toBe(true);
+  });
+
+  test("css-in-js removes companion but keeps co_location true", () => {
+    const policy = composePolicy({
+      pattern: "modular",
+      output_mode: "balanced",
+      naming_strategy: "PascalCase",
+      styling_strategy: "css-in-js",
+    });
+
+    const component = policy.file_conventions.types.component!;
+    expect(component.companions?.style).toBeUndefined();
+    expect(policy.ui_constraints.style_co_location).toBe(true);
+    expect(policy.ui_constraints.allowed_style_extensions).toHaveLength(0);
+  });
+
+  test("atomic + utility-first has no style companions", () => {
+    const policy = composePolicy({
+      pattern: "atomic",
+      output_mode: "balanced",
+      naming_strategy: "kebab-case",
+      styling_strategy: "utility-first",
+    });
+
+    for (const typeDef of Object.values(policy.file_conventions.types)) {
+      expect(typeDef.companions?.style).toBeUndefined();
+    }
+  });
+
   test("FSD with PascalCase naming applies correct file patterns", () => {
     const policy = composePolicy({
       pattern: "feature-sliced",

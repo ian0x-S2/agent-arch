@@ -1,137 +1,313 @@
 {
   "meta": {
     "version": "1.0.0",
-    "generated_at": "2026-03-02T21:53:03.329Z",
-    "output_mode": "compact"
+    "generated_at": "2026-03-02T22:19:46.414Z",
+    "output_mode": "balanced"
   },
   "stack": {
     "domain": "frontend",
-    "pattern": "flat",
-    "state_philosophy": "distributed",
-    "styling_strategy": "css-in-js",
-    "routing_strategy": "any"
+    "pattern": "feature-sliced",
+    "state_philosophy": "feature-based",
+    "styling_strategy": "utility-first",
+    "routing_strategy": "declarative"
+  },
+  "fsd_config": {
+    "segments": [
+      "ui",
+      "model",
+      "api",
+      "lib",
+      "config"
+    ]
   },
   "layers": [
     {
-      "id": "src",
+      "id": "app",
       "allowed_imports": [
-        "src"
+        "pages",
+        "widgets",
+        "features",
+        "entities",
+        "shared"
       ],
       "responsibilities": {
         "owns": [
-          "everything at this scale"
+          "providers",
+          "routing",
+          "global styles",
+          "app initialization"
         ],
         "must_not": [
-          "nothing forbidden at this scale - this is intentional simplicity"
+          "contain business logic"
+        ],
+        "depends_on_abstractions": false
+      }
+    },
+    {
+      "id": "pages",
+      "allowed_imports": [
+        "widgets",
+        "features",
+        "entities",
+        "shared"
+      ],
+      "responsibilities": {
+        "owns": [
+          "composition of widgets for a route"
+        ],
+        "must_not": [
+          "contain business logic"
+        ],
+        "depends_on_abstractions": false
+      }
+    },
+    {
+      "id": "widgets",
+      "allowed_imports": [
+        "features",
+        "entities",
+        "shared"
+      ],
+      "responsibilities": {
+        "owns": [
+          "composition of features",
+          "reusable page sections"
+        ],
+        "must_not": [
+          "contain business logic directly"
+        ],
+        "depends_on_abstractions": false
+      }
+    },
+    {
+      "id": "features",
+      "allowed_imports": [
+        "entities",
+        "shared"
+      ],
+      "responsibilities": {
+        "owns": [
+          "user interactions with business value (AddToCart, LoginForm)"
+        ],
+        "must_not": [
+          "import from other features",
+          "know about pages"
+        ],
+        "depends_on_abstractions": true
+      }
+    },
+    {
+      "id": "entities",
+      "allowed_imports": [
+        "shared"
+      ],
+      "responsibilities": {
+        "owns": [
+          "business objects and their operations (User, Product, Order)"
+        ],
+        "must_not": [
+          "import from features or above",
+          "contain UI components ideally"
+        ],
+        "depends_on_abstractions": true
+      }
+    },
+    {
+      "id": "shared",
+      "allowed_imports": [],
+      "responsibilities": {
+        "owns": [
+          "reusable infra with no business logic (ui-kit, api client, utils)"
+        ],
+        "must_not": [
+          "import from any other layer",
+          "contain business logic"
         ],
         "depends_on_abstractions": false
       }
     }
   ],
   "import_matrix": {
-    "src": [
-      "src"
-    ]
+    "app": [
+      "pages",
+      "widgets",
+      "features",
+      "entities",
+      "shared"
+    ],
+    "pages": [
+      "widgets",
+      "features",
+      "entities",
+      "shared"
+    ],
+    "widgets": [
+      "features",
+      "entities",
+      "shared"
+    ],
+    "features": [
+      "entities",
+      "shared"
+    ],
+    "entities": [
+      "shared"
+    ],
+    "shared": []
+  },
+  "abstraction_boundaries": [
+    {
+      "boundary_name": "features→entities",
+      "inner_layer": "entities",
+      "outer_layer": "features",
+      "interface_required": true,
+      "interface_location": "model",
+      "forbidden_leakage": [
+        "API raw responses",
+        "implementation details of storage"
+      ]
+    }
+  ],
+  "domain_rules": {
+    "entities_location": "entities",
+    "value_objects_allowed": true,
+    "entity_rules": {
+      "must_be_immutable": true,
+      "no_framework_imports": true,
+      "validation_location": "factory-function"
+    },
+    "anemic_model_allowed": false,
+    "ubiquitous_language": {
+      "enforced": true
+    }
   },
   "structural_constraints": {
-    "max_component_depth": 3,
-    "barrel_exports_required": false,
+    "max_component_depth": 5,
+    "barrel_exports_required": true,
     "circular_imports": "FORBIDDEN",
-    "cross_feature_imports": "allowed"
+    "cross_feature_imports": "via-public-api-only"
   },
   "ui_constraints": {
-    "component_max_lines": 300,
-    "component_max_props": 8,
-    "prop_drilling_max_depth": 3,
-    "logic_in_components": true,
+    "component_max_lines": 150,
+    "component_max_props": 5,
+    "prop_drilling_max_depth": 2,
+    "logic_in_components": false,
     "style_co_location": false,
-    "allowed_style_extensions": [
-      ".css",
-      ".scss",
-      ".sass",
-      ".less"
-    ],
-    "prefer_composition": false
+    "allowed_style_extensions": [],
+    "prefer_composition": true
   },
   "state_constraints": {
-    "global_state_scope": "any",
+    "global_state_scope": "feature-based",
     "local_state_allowed": true,
-    "derived_state_strategy": "any",
+    "derived_state_strategy": "selectors",
     "forbidden_patterns": [
-      "prop-drilling-beyond-3-levels",
-      "global-state-in-component",
-      "duplicate-data-fetching"
+      "direct-mutation",
+      "prop-drilling"
     ]
   },
   "side_effect_boundaries": {
     "allowed_in_layers": [
-      "src"
+      "features",
+      "entities"
     ],
-    "forbidden_in_layers": [],
-    "async_pattern": "any",
-    "data_fetching_scope": "any"
+    "forbidden_in_layers": [
+      "ui",
+      "shared"
+    ],
+    "async_pattern": "async-await",
+    "data_fetching_scope": "entities"
   },
   "naming_conventions": {
-    "global_strategy": "snake_case",
+    "global_strategy": "kebab-case",
     "component": "PascalCase",
-    "hook": "camelCase",
-    "store": "camelCase",
-    "service": "camelCase",
-    "type": "PascalCase",
+    "hook": "camelCase (use* prefix)",
+    "store": "camelCase (*Store suffix)",
+    "service": "camelCase (*Service suffix)",
+    "type": "PascalCase (*Type | *Props suffix)",
     "constant": "SCREAMING_SNAKE_CASE"
   },
   "file_conventions": {
     "types": {
       "component": {
-        "pattern": "*_component.tsx",
+        "pattern": "*.component.tsx",
         "companions": {
           "test": {
-            "required": false,
+            "required": true,
             "extensions": [
               ".test.tsx",
+              ".test.ts",
               ".spec.tsx"
             ]
           }
         }
       },
       "hook": {
-        "pattern": "*_hook.ts",
-        "companions": null
+        "pattern": "*.hook.ts",
+        "companions": {
+          "test": {
+            "required": true,
+            "extensions": [
+              ".test.ts",
+              ".spec.ts"
+            ]
+          }
+        }
       },
       "store": {
-        "pattern": "*_store.ts",
-        "companions": null
+        "pattern": "*.store.ts",
+        "companions": {
+          "test": {
+            "required": true,
+            "extensions": [
+              ".test.ts",
+              ".spec.ts"
+            ]
+          }
+        }
       },
       "service": {
-        "pattern": "*_service.ts",
-        "companions": null
+        "pattern": "*.service.ts",
+        "companions": {
+          "test": {
+            "required": false,
+            "extensions": [
+              ".test.ts"
+            ]
+          }
+        }
       },
       "types": {
-        "pattern": "*_types.ts",
+        "pattern": "*.types.ts",
         "companions": null
       },
       "constants": {
-        "pattern": "*_constants.ts",
-        "companions": null
-      },
-      "utils": {
-        "pattern": "*.ts",
+        "pattern": "*.constants.ts",
         "companions": null
       }
     },
-    "colocation": "none",
+    "colocation": "strict",
     "public_api": {
-      "required": false,
-      "expose_internals": true
+      "required": true,
+      "filename": "index",
+      "extensions": [
+        ".ts",
+        ".tsx"
+      ],
+      "expose_internals": false
     },
     "test_placement": "colocated",
+    "directory": {
+      "max_depth": 5,
+      "feature_root_marker": "index.ts"
+    },
     "forbidden_patterns": [
-      "deep-nesting",
-      "huge-component-file"
+      "default-export-on-utility",
+      "barrel-in-non-feature-root",
+      "named-export-mix-in-component-file"
     ]
   },
   "token_metadata": {
-    "estimated_prompt_tokens": 238,
+    "estimated_prompt_tokens": 438,
     "compression_applied": false,
     "omitted_sections": []
   }

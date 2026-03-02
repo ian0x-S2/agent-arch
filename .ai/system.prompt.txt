@@ -1,12 +1,40 @@
-ARCH_POLICY v1.0.0 | frontend | flat
-STACK state=distributed style=css-in-js routing=any
-LAYERS SRC→[src]
-RULES circular=FORBIDDEN cross_feature=allowed max_depth=3 barrel=OPTIONAL
-UI max_lines=300 logic=ALLOWED style_coloc=OPTIONAL
-STATE scope=any local=ALLOWED derived=any
-STATE_FORBIDDEN prop-drilling-beyond-3-levels,global-state-in-component,duplicate-data-fetching
-SIDE_EFFECTS allowed=[src] forbidden=[] fetch=any
-NAMING global_strategy=snake_case component=PascalCase hook=camelCase store=camelCase service=camelCase type=PascalCase constant=SCREAMING_SNAKE_CASE
-FILES component=*_component.tsx companions=[test(optional)] | hook=*_hook.ts companions=[none] | store=*_store.ts companions=[none] | service=*_service.ts companions=[none] | types=*_types.ts companions=[none] | constants=*_constants.ts companions=[none] | utils=*.ts companions=[none]
-COLOC=NONE TEST=colocated PUBLIC_API=OPTIONAL
-FILE_FORBIDDEN deep-nesting,huge-component-file
+# ARCH POLICY v1.0.0
+STACK: frontend | feature-sliced | state=feature-based | style=utility-first | routing=declarative
+
+LAYERS & RESPONSIBILITIES:
+  APP: [pages, widgets, features, entities, shared]
+    OWNS: providers, routing, global styles, app initialization
+    NOT: contain business logic
+  PAGES: [widgets, features, entities, shared]
+    OWNS: composition of widgets for a route
+    NOT: contain business logic
+  WIDGETS: [features, entities, shared]
+    OWNS: composition of features, reusable page sections
+    NOT: contain business logic directly
+  FEATURES: [entities, shared]
+    OWNS: user interactions with business value (AddToCart, LoginForm)
+    NOT: import from other features, know about pages
+  ENTITIES: [shared]
+    OWNS: business objects and their operations (User, Product, Order)
+    NOT: import from features or above, contain UI components ideally
+  SHARED: []
+    OWNS: reusable infra with no business logic (ui-kit, api client, utils)
+    NOT: import from any other layer, contain business logic
+  circular=FORBIDDEN | cross_feature=via-public-api-only
+
+ABSTRACTION BOUNDARIES:
+  features→entities: entities (inner) ← features (outer) [API_REQ=true]
+
+DOMAIN RULES: Entity location: entities | No framework: true | Anemic allowed: false
+
+EXPECTED STRUCTURE:
+  FSD: src/{app, pages, widgets, features, entities, shared}/<slice>/{ui,model,api,lib,config}
+
+FILE CONVENTIONS:
+  component=*.component.tsx companions=[test(required)]
+  hook=*.hook.ts companions=[test(required)]
+  store=*.store.ts companions=[test(required)]
+  service=*.service.ts companions=[test(optional)]
+  types=*.types.ts companions=[none]
+  constants=*.constants.ts companions=[none]
+  colocation=strict | test=colocated | public_api=REQUIRED(index.ts)

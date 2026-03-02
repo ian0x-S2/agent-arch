@@ -253,12 +253,12 @@ src/
 
 | Type | File Pattern | Export Name Convention |
 |------|--------------|------------------------|
-| component | \`*Component.tsx\` | \`PascalCase\` |
-| hook | \`*Hook.ts\` | \`camelCase\` |
-| store | \`*Store.ts\` | \`camelCase\` |
-| service | \`*Service.ts\` | \`camelCase\` |
-| types | \`*Types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
-| constants | \`*Constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
+| component | \`*.tsx\` | \`PascalCase\` |
+| hook | \`use*.ts\` | \`camelCase\` |
+| store | \`*.store.ts\` | \`camelCase\` |
+| service | \`*.service.ts\` | \`camelCase\` |
+| types | \`*.types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
+| constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
 
 
 ### Required Companions
@@ -372,12 +372,12 @@ src/
 
 | Type | File Pattern | Export Name Convention |
 |------|--------------|------------------------|
-| component | \`*.component.tsx\` | \`PascalCase\` |
-| hook | \`*.hook.ts\` | \`camelCase\` |
-| store | \`*.store.ts\` | \`camelCase\` |
-| service | \`*.service.ts\` | \`camelCase\` |
-| types | \`*.types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
-| constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
+| component | \`*.tsx\` | \`PascalCase\` |
+| hook | \`*.ts\` | \`camelCase\` |
+| store | \`*.ts\` | \`camelCase\` |
+| service | \`*.ts\` | \`camelCase\` |
+| types | \`*.ts\` | \`PascalCase (*Type | *Props suffix)\` |
+| constants | \`*.ts\` | \`SCREAMING_SNAKE_CASE\` |
 | utils | \`*.ts\` | \`camelCase\` |
 
 

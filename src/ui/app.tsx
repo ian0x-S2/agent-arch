@@ -10,7 +10,6 @@ import { writePolicyFiles } from '../core/writer';
 type Step =
   | 'welcome'
   | 'pattern'
-  | 'state'
   | 'styling'
   | 'naming'
   | 'mode'
@@ -34,7 +33,7 @@ const OPTIONS: Record<string, OptionWithMeta[]> = {
       label: 'Express Setup  ✦ fastest',
       value: 'express',
       description: 'Use recommended defaults. Get up and running in 5 seconds.',
-      hint: 'Pattern: FSD | State: Hybrid | Styling: Utility | Naming: kebab',
+      hint: 'Pattern: FSD | Styling: Utility | Naming: kebab',
     },
     {
       label: 'Guided Setup',
@@ -71,29 +70,6 @@ const OPTIONS: Record<string, OptionWithMeta[]> = {
       description: 'Organizes UI by complexity (Atoms, Molecules, Organisms).',
       hint: 'Scaling: Medium | Complexity: Medium | Best for design systems.',
       impact: '⚡ Prompt: Enforces strict composition hierarchy (Atoms → Molecules → ...).',
-    },
-  ],
-  state: [
-    {
-      label: 'Hybrid  ✦ recommended',
-      value: 'hybrid',
-      description: 'Local UI state combined with feature-specific shared stores.',
-      hint: 'Flexible: High | Performance: High.',
-      impact: '⚡ Prompt: Agent uses stores for shared data, local state for UI.',
-    },
-    {
-      label: 'Centralized',
-      value: 'centralized',
-      description: 'A single, global source of truth (e.g., Redux, global Store).',
-      hint: 'Consistency: High | Overhead: Medium.',
-      impact: '⚡ Prompt: Agent is instructed to pipe all data through the global store.',
-    },
-    {
-      label: 'Distributed',
-      description: 'Strictly component-local state and props. No global store.',
-      value: 'distributed',
-      hint: 'Simplicity: High | Sync: Low.',
-      impact: '⚡ Prompt: Agent avoids stores, focuses on prop-drilling/context.',
     },
   ],
   styling: [
@@ -165,7 +141,6 @@ const OPTIONS: Record<string, OptionWithMeta[]> = {
 const STEP_LABELS: Record<Step, string> = {
   welcome: 'Start',
   pattern: 'Pattern',
-  state: 'State',
   styling: 'Styling',
   naming: 'Naming',
   mode: 'Mode',
@@ -174,7 +149,7 @@ const STEP_LABELS: Record<Step, string> = {
   done: 'Done',
 };
 
-const GUIDED_STEPS: Step[] = ['pattern', 'state', 'styling', 'naming', 'mode', 'confirm'];
+const GUIDED_STEPS: Step[] = ['pattern', 'styling', 'naming', 'mode', 'confirm'];
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -262,6 +237,14 @@ const ConfirmScreen = ({
     if (key.escape || input === 'b') onBack();
   });
 
+  const STATE_BY_PATTERN: Record<string, string> = {
+    'feature-sliced': 'feature-based',
+    'modular': 'module-based',
+    'flat': 'flexible',
+    'atomic': 'minimal',
+  };
+  const derivedState = STATE_BY_PATTERN[selections.pattern ?? ''] ?? 'flexible';
+
   return (
     <Box flexDirection="column">
       <Text bold color="yellow">Review & Confirm</Text>
@@ -270,10 +253,9 @@ const ConfirmScreen = ({
       <Box flexDirection="column" marginTop={1} borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1}>
         <Text bold color="cyan">Selected Configuration</Text>
         <Box marginTop={1} flexDirection="column">
-          {(['pattern', 'state_philosophy', 'styling_strategy', 'naming_strategy', 'output_mode'] as const).map((key) => {
+          {(['pattern', 'styling_strategy', 'naming_strategy', 'output_mode'] as const).map((key) => {
              const labelMap: Record<string, string> = {
                pattern: 'Pattern',
-               state_philosophy: 'State',
                styling_strategy: 'Styling',
                naming_strategy: 'Naming',
                output_mode: 'Mode'
@@ -287,6 +269,13 @@ const ConfirmScreen = ({
               </Box>
              );
           })}
+          <Box marginTop={1}>
+            <Box width={22}>
+              <Text dimColor>State:</Text>
+            </Box>
+            <Text color="cyan" bold>{derivedState}</Text>
+            <Text dimColor> ← derived from pattern</Text>
+          </Box>
         </Box>
       </Box>
 
@@ -304,7 +293,6 @@ const ConfirmScreen = ({
 
 const RECOMMENDED_DEFAULTS: UserSelections = {
   pattern: 'feature-sliced',
-  state_philosophy: 'hybrid',
   styling_strategy: 'utility-first',
   naming_strategy: 'kebab-case',
   output_mode: 'balanced',
@@ -333,8 +321,7 @@ export const App = () => {
 
   const handleSelect = (stepKey: Step, value: string) => {
     let mapping: Partial<UserSelections> = {};
-    if (stepKey === 'state') mapping = { state_philosophy: value };
-    else if (stepKey === 'styling') mapping = { styling_strategy: value };
+    if (stepKey === 'styling') mapping = { styling_strategy: value };
     else if (stepKey === 'naming') mapping = { naming_strategy: value as UserSelections['naming_strategy'] };
     else if (stepKey === 'mode') mapping = { output_mode: value as any };
     else mapping = { [stepKey]: value } as any;
@@ -376,7 +363,7 @@ export const App = () => {
         {step === 'welcome' && <QuestionStep stepKey="welcome" onSelect={handleWelcomeSelect} />}
 
         {/* Wizard steps */}
-        {(['pattern', 'state', 'styling', 'naming', 'mode'] as const).map(
+        {(['pattern', 'styling', 'naming', 'mode'] as const).map(
           (s) =>
             step === s && (
               <QuestionStep key={s} stepKey={s} onSelect={(val) => handleSelect(s, val)} />
