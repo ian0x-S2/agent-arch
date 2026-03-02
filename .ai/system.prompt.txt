@@ -1,37 +1,12 @@
-# ARCHITECTURAL POLICY
-# Version: 1.0.0 | Generated: 2026-03-02T20:19:31.420Z
-
-## STACK
-Domain: frontend | Pattern: modular | State: centralized
-
-## LAYER ARCHITECTURE
-### MODULES
-  MAY IMPORT: shared
-  RESPONSIBILITIES: business logic, components, hooks, services
-  MUST NOT DO: import directly from other modules
-  DEPENDS ON ABSTRACTIONS: YES (DIP enforced)
-### SHARED
-  MAY IMPORT: shared
-  RESPONSIBILITIES: design system, utils, global types, api client
-  MUST NOT DO: contain business logic, import from modules
-
-## EXPECTED STRUCTURE
-  MODULAR: src/{modules/<name>/{components,hooks,services,types},shared/{ui,utils,types}}
-## FILE CONVENTIONS
-  component=*_component.tsx companions=[style(optional), test(required)]
-  hook=*_hook.ts companions=[test(required)]
-  store=*_store.ts companions=[test(required)]
-  service=*_service.ts companions=[test(optional)]
-  types=*_types.ts companions=[none]
-  constants=*_constants.ts companions=[none]
-Colocation policy: strict
-Test placement: colocated
-
-## NAMING CONVENTIONS
-global_strategy: snake_case
-component: PascalCase
-hook: camelCase
-store: camelCase
-service: camelCase
-type: PascalCase
-constant: SCREAMING_SNAKE_CASE
+ARCH_POLICY v1.0.0 | frontend | flat
+STACK state=distributed style=css-in-js routing=any
+LAYERS SRC→[src]
+RULES circular=FORBIDDEN cross_feature=allowed max_depth=3 barrel=OPTIONAL
+UI max_lines=300 logic=ALLOWED style_coloc=OPTIONAL
+STATE scope=any local=ALLOWED derived=any
+STATE_FORBIDDEN prop-drilling-beyond-3-levels,global-state-in-component,duplicate-data-fetching
+SIDE_EFFECTS allowed=[src] forbidden=[] fetch=any
+NAMING global_strategy=snake_case component=PascalCase hook=camelCase store=camelCase service=camelCase type=PascalCase constant=SCREAMING_SNAKE_CASE
+FILES component=*_component.tsx companions=[test(optional)] | hook=*_hook.ts companions=[none] | store=*_store.ts companions=[none] | service=*_service.ts companions=[none] | types=*_types.ts companions=[none] | constants=*_constants.ts companions=[none] | utils=*.ts companions=[none]
+COLOC=NONE TEST=colocated PUBLIC_API=OPTIONAL
+FILE_FORBIDDEN deep-nesting,huge-component-file

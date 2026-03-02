@@ -4,7 +4,6 @@ import SelectInput from 'ink-select-input';
 import { composePolicy } from '../core/composer';
 import type { UserSelections } from '../core/composer';
 import { writePolicyFiles } from '../core/writer';
-import { renderMarkdown } from '../core/renderer/markdown-renderer';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -352,11 +351,9 @@ export const App = () => {
     setStep('generating');
     try {
       const policy = composePolicy(selections as UserSelections);
-      await writePolicyFiles(policy);
+      const { mdContent } = await writePolicyFiles(policy);
       
-      // Generate preview
-      const prompt = renderMarkdown(policy);
-      setGeneratedPrompt(prompt);
+      setGeneratedPrompt(mdContent);
       
       setStep('done');
     } catch (err) {

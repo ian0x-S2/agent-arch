@@ -71,4 +71,24 @@ describe("Composer", () => {
       0,
     );
   });
+
+  test("throws on unknown pattern", () => {
+    expect(() =>
+      composePolicy({
+        pattern: "non-existent",
+        output_mode: "balanced",
+        naming_strategy: "kebab-case",
+      }),
+    ).toThrow("Template not found: non-existent");
+  });
+
+  test("throws on invalid output_mode", () => {
+    expect(() =>
+      composePolicy({
+        pattern: "flat",
+        output_mode: "invalid-mode" as any,
+        naming_strategy: "kebab-case",
+      }),
+    ).toThrow();
+  });
 });

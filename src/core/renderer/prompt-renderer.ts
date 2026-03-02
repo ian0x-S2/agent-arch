@@ -57,7 +57,10 @@ const renderCompactStructure = (policy: Policy): string => {
   }
 
   if (pattern === 'modular') {
-    return `MODULAR: src/{modules/<name>/{components,hooks,services,types},shared/{ui,utils,types}}`;
+    const internals = Object.keys(policy.file_conventions.types)
+      .filter(t => !['types', 'constants'].includes(t))
+      .join(',');
+    return `MODULAR: src/{modules/<name>/{${internals}},shared/{ui,utils,types}}`;
   }
 
   if (pattern === 'flat') {

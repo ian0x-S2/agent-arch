@@ -1,98 +1,75 @@
 {
   "meta": {
     "version": "1.0.0",
-    "generated_at": "2026-03-02T20:19:31.420Z",
-    "output_mode": "verbose"
+    "generated_at": "2026-03-02T21:53:03.329Z",
+    "output_mode": "compact"
   },
   "stack": {
     "domain": "frontend",
-    "pattern": "modular",
-    "state_philosophy": "centralized",
-    "styling_strategy": "scoped",
+    "pattern": "flat",
+    "state_philosophy": "distributed",
+    "styling_strategy": "css-in-js",
     "routing_strategy": "any"
   },
   "layers": [
     {
-      "id": "modules",
+      "id": "src",
       "allowed_imports": [
-        "shared",
-        "modules"
+        "src"
       ],
       "responsibilities": {
         "owns": [
-          "business logic",
-          "components",
-          "hooks",
-          "services"
+          "everything at this scale"
         ],
         "must_not": [
-          "import directly from other modules"
-        ],
-        "depends_on_abstractions": true
-      }
-    },
-    {
-      "id": "shared",
-      "allowed_imports": [
-        "shared"
-      ],
-      "responsibilities": {
-        "owns": [
-          "design system",
-          "utils",
-          "global types",
-          "api client"
-        ],
-        "must_not": [
-          "contain business logic",
-          "import from modules"
+          "nothing forbidden at this scale - this is intentional simplicity"
         ],
         "depends_on_abstractions": false
       }
     }
   ],
   "import_matrix": {
-    "modules": [
-      "shared"
-    ],
-    "shared": [
-      "shared"
+    "src": [
+      "src"
     ]
   },
   "structural_constraints": {
-    "max_component_depth": 4,
-    "barrel_exports_required": true,
+    "max_component_depth": 3,
+    "barrel_exports_required": false,
     "circular_imports": "FORBIDDEN",
-    "cross_feature_imports": "via-public-api-only"
+    "cross_feature_imports": "allowed"
   },
   "ui_constraints": {
-    "component_max_lines": 200,
-    "component_max_props": 5,
-    "prop_drilling_max_depth": 2,
-    "logic_in_components": false,
-    "style_co_location": true,
+    "component_max_lines": 300,
+    "component_max_props": 8,
+    "prop_drilling_max_depth": 3,
+    "logic_in_components": true,
+    "style_co_location": false,
     "allowed_style_extensions": [
       ".css",
-      ".module.css"
+      ".scss",
+      ".sass",
+      ".less"
     ],
-    "prefer_composition": true
+    "prefer_composition": false
   },
   "state_constraints": {
-    "global_state_scope": "module-based",
+    "global_state_scope": "any",
     "local_state_allowed": true,
-    "derived_state_strategy": "selectors",
+    "derived_state_strategy": "any",
     "forbidden_patterns": [
-      "direct-mutation"
+      "prop-drilling-beyond-3-levels",
+      "global-state-in-component",
+      "duplicate-data-fetching"
     ]
   },
   "side_effect_boundaries": {
     "allowed_in_layers": [
-      "modules",
-      "shared"
+      "src"
     ],
     "forbidden_in_layers": [],
-    "async_pattern": "async-await",
-    "data_fetching_scope": "modules"
+    "async_pattern": "any",
+    "data_fetching_scope": "any"
   },
   "naming_conventions": {
     "global_strategy": "snake_case",
@@ -108,55 +85,26 @@
       "component": {
         "pattern": "*_component.tsx",
         "companions": {
-          "style": {
+          "test": {
             "required": false,
             "extensions": [
-              ".css",
-              ".module.css"
-            ]
-          },
-          "test": {
-            "required": true,
-            "extensions": [
-              ".test.tsx"
+              ".test.tsx",
+              ".spec.tsx"
             ]
           }
         }
       },
       "hook": {
         "pattern": "*_hook.ts",
-        "companions": {
-          "test": {
-            "required": true,
-            "extensions": [
-              ".test.ts",
-              ".spec.ts"
-            ]
-          }
-        }
+        "companions": null
       },
       "store": {
         "pattern": "*_store.ts",
-        "companions": {
-          "test": {
-            "required": true,
-            "extensions": [
-              ".test.ts",
-              ".spec.ts"
-            ]
-          }
-        }
+        "companions": null
       },
       "service": {
         "pattern": "*_service.ts",
-        "companions": {
-          "test": {
-            "required": false,
-            "extensions": [
-              ".test.ts"
-            ]
-          }
-        }
+        "companions": null
       },
       "types": {
         "pattern": "*_types.ts",
@@ -165,21 +113,25 @@
       "constants": {
         "pattern": "*_constants.ts",
         "companions": null
+      },
+      "utils": {
+        "pattern": "*.ts",
+        "companions": null
       }
     },
-    "colocation": "strict",
+    "colocation": "none",
     "public_api": {
-      "required": true,
-      "expose_internals": false
+      "required": false,
+      "expose_internals": true
     },
     "test_placement": "colocated",
     "forbidden_patterns": [
-      "default-export-on-utility",
-      "barrel-in-non-feature-root"
+      "deep-nesting",
+      "huge-component-file"
     ]
   },
   "token_metadata": {
-    "estimated_prompt_tokens": 294,
+    "estimated_prompt_tokens": 238,
     "compression_applied": false,
     "omitted_sections": []
   }

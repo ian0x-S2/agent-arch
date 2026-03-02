@@ -28,9 +28,16 @@ const renderNamingTable = (policy: Policy): string => {
     constants: 'constant',
   };
   
-  Object.entries(file_conventions.types).forEach(([typeName, def]) => {
+  const getNamingConvention = (typeName: string): string => {
+    if (typeName === 'types') return 'PascalCase (*Type | *Props suffix)';
+    if (typeName === 'constants') return 'SCREAMING_SNAKE_CASE';
+    
     const namingKey = keyMap[typeName] || typeName;
-    const symbolConv = naming_conventions[namingKey] || '—';
+    return naming_conventions[namingKey] || naming_conventions.global_strategy || '—';
+  };
+  
+  Object.entries(file_conventions.types).forEach(([typeName, def]) => {
+    const symbolConv = getNamingConvention(typeName);
     table += `| ${typeName} | \`${def.pattern}\` | \`${symbolConv}\` |\n`;
   });
   
@@ -209,31 +216,32 @@ const renderFlatStructure = (policy: Policy): string => {
 
 const renderAtomicStructure = (policy: Policy): string => {
   const { layers } = policy;
+  const totalLayers = layers.length;
   
-  return [
-    'src/',
-    ...layers.map((layer, i) => {
-      const prefix = i === layers.length - 1 ? '└──' : '├──';
-      const nested = i === layers.length - 1 ? '    ' : '│   ';
-      
-      let lines = [`${prefix} ${layer.id}/`];
-      
-      if (layer.id === 'pages') {
-        lines.push(`${nested}├── <route>/`);
-        lines.push(`${nested}│   └── PageName.tsx`);
-      } else if (!['shared'].includes(layer.id)) {
-        lines.push(`${nested}├── <component>/`);
-        lines.push(`${nested}│   ├── ComponentName.tsx`);
-        lines.push(`${nested}│   └── ComponentName.module.css`);
-      } else {
-        lines.push(`${nested}├── utils/`);
-        lines.push(`${nested}├── types/`);
-        lines.push(`${nested}└── theme/`);
-      }
-      
-      return lines.join('\n');
-    }),
-  ].join('\n');
+  const layerLines = layers.flatMap((layer, i) => {
+    const isLast = i === totalLayers - 1;
+    const prefix = isLast ? '└──' : '├──';
+    const childPrefix = isLast ? '    ' : '│   ';
+    
+    let lines = [`${prefix} ${layer.id}/`];
+    
+    if (layer.id === 'pages') {
+      lines.push(`${childPrefix}├── <route>/`);
+      lines.push(`${childPrefix}│   └── PageName.tsx`);
+    } else if (!['shared'].includes(layer.id)) {
+      lines.push(`${childPrefix}├── <component>/`);
+      lines.push(`${childPrefix}│   ├── ComponentName.tsx`);
+      lines.push(`${childPrefix}│   └── ComponentName.module.css`);
+    } else {
+      lines.push(`${childPrefix}├── utils/`);
+      lines.push(`${childPrefix}├── types/`);
+      lines.push(`${childPrefix}└── theme/`);
+    }
+    
+    return lines;
+  });
+
+  return ['src/', ...layerLines].join('\n');
 };
 
 const renderExpectedStructure = (policy: Policy): string => {

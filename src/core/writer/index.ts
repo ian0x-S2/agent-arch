@@ -30,6 +30,8 @@ export const writePolicyFiles = async (policy: Policy, targetDir: string = '.ai'
   return {
     policyMdPath,
     promptTxtPath,
-    policyJsonPath
+    policyJsonPath,
+    mdContent,
+    promptContent,
   };
 };
