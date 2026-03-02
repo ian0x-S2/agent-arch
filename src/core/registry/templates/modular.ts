@@ -34,7 +34,7 @@ export const modularTemplate: Policy = {
     }
   ],
   "import_matrix": {
-    "modules": ["shared", "modules"],
+    "modules": ["shared"],
     "shared":  ["shared"]
   },
   "structural_constraints": {

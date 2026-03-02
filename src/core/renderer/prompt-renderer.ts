@@ -46,6 +46,32 @@ const renderCompact = (policy: Policy): string => {
   ].filter(Boolean).join('\n');
 };
 
+const renderCompactStructure = (policy: Policy): string => {
+  const { stack, layers, fsd_config } = policy;
+  const pattern = stack.pattern;
+
+  if (pattern === 'feature-sliced') {
+    const segments = fsd_config?.segments ?? ['ui', 'model', 'api', 'lib'];
+    const layerDirs = layers.map(l => l.id).join(', ');
+    return `FSD: src/{${layerDirs}}/<slice>/{${segments.join(',')}}`;
+  }
+
+  if (pattern === 'modular') {
+    return `MODULAR: src/{modules/<name>/{components,hooks,services,types},shared/{ui,utils,types}}`;
+  }
+
+  if (pattern === 'flat') {
+    return `FLAT: src/{components,hooks,services,types,utils} - graduation signals: >20 components, duplicate fetch in 3+ places`;
+  }
+
+  if (pattern === 'atomic') {
+    const layerDirs = layers.map(l => l.id).join(' → ');
+    return `ATOMIC: src/{${layerDirs}}`;
+  }
+
+  return '';
+};
+
 // ─── Balanced: estruturado, sem linhas em branco desnecessárias ───────────────
 const renderBalanced = (policy: Policy): string => {
   const { stack, meta, layers, import_matrix, structural_constraints,
@@ -77,6 +103,7 @@ const renderBalanced = (policy: Policy): string => {
     `  circular=FORBIDDEN | cross_feature=${structural_constraints.cross_feature_imports}`,
     boundaryBlock ? `\nABSTRACTION BOUNDARIES:\n${boundaryBlock}` : null,
     domain_rules ? `\nDOMAIN RULES: Entity location: ${domain_rules.entities_location} | No framework: ${domain_rules.entity_rules.no_framework_imports} | Anemic allowed: ${domain_rules.anemic_model_allowed}` : null,
+    `\nEXPECTED STRUCTURE:\n  ${renderCompactStructure(policy)}`,
     `\nFILE CONVENTIONS:`,
     ...flattenFileConventions(file_conventions).map(line => `  ${line}`),
     `  colocation=${file_conventions.colocation} | test=${file_conventions.test_placement} | public_api=${file_conventions.public_api.required ? 'REQUIRED(index.ts)' : 'OPTIONAL'}`,
@@ -120,6 +147,8 @@ const renderVerbose = (policy: Policy): string => {
     ``,
     abstraction_boundaries?.length ? `## ABSTRACTION BOUNDARIES\n${boundaryBlock}\n` : null,
     domain_rules ? `## DOMAIN RULES\n  Entities: ${domain_rules.entities_location}\n  Validation: ${domain_rules.entity_rules.validation_location}\n  Immutable: ${domain_rules.entity_rules.must_be_immutable}\n  Ubiquitous Language: ${domain_rules.ubiquitous_language.enforced}\n` : null,
+    `## EXPECTED STRUCTURE`,
+    `  ${renderCompactStructure(policy)}`,
     `## FILE CONVENTIONS`,
     ...flattenFileConventions(file_conventions).map(line => `  ${line}`),
     `Colocation policy: ${file_conventions.colocation}`,
@@ -131,7 +160,12 @@ const renderVerbose = (policy: Policy): string => {
 };
 
 // ─── Public API ───────────────────────────────────────────────────────────────
-export const renderPrompt = (policy: Policy): string => {
+export interface RenderResult {
+  content: string;
+  tokens: number;
+}
+
+export const renderPrompt = (policy: Policy): RenderResult => {
   const mode: RenderMode = policy.meta.output_mode;
   let rendered = '';
   switch (mode) {
@@ -141,9 +175,7 @@ export const renderPrompt = (policy: Policy): string => {
     default:         rendered = renderBalanced(policy); break;
   }
 
-  // Estimate tokens (~4 chars per token)
   const tokens = Math.ceil(rendered.length / 4);
-  policy.token_metadata.estimated_prompt_tokens = tokens;
   
-  return rendered;
+  return { content: rendered, tokens };
 };

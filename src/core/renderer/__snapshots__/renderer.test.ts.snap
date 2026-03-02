@@ -45,7 +45,7 @@ src/
 │   # must not: contain business logic
 │   ├── <slice>/          # business domain unit
 │   │   ├── ui/
-│   │   │   # components — max 150 lines, no logic — extract to model
+│   │   │   # route components only — compose widgets, no business logic
 │   │   ├── model/
 │   │   │   # store, selectors, types — no side effects
 │   │   ├── api/
@@ -77,9 +77,9 @@ src/
 │   │   ├── ui/
 │   │   │   # components — max 150 lines, no logic — extract to model
 │   │   ├── model/
-│   │   │   # store, selectors, types — no side effects
+│   │   │   # feature state, selectors — only for this feature
 │   │   ├── api/
-│   │   │   # data fetching — async-await, map errors to domain types
+│   │   │   # feature-specific mutations — calls entity api, never raw fetch
 │   │   ├── lib/
 │   │   │   # pure utils — stateless, no imports from ui or model
 │   │   ├── config/
@@ -92,9 +92,9 @@ src/
 │   │   ├── ui/
 │   │   │   # components — max 150 lines, no logic — extract to model
 │   │   ├── model/
-│   │   │   # store, selectors, types — no side effects
+│   │   │   # entity state, selectors, types — pure business logic
 │   │   ├── api/
-│   │   │   # data fetching — async-await, map errors to domain types
+│   │   │   # data access for this entity — maps to domain types, no raw responses
 │   │   ├── lib/
 │   │   │   # pure utils — stateless, no imports from ui or model
 │   │   ├── config/
@@ -213,7 +213,7 @@ Violations of import rules are **not permitted**.
 
 | Layer | May Import | Responsibilities | Side Effects |
 |-------|------------|------------------|--------------|
-| modules | shared, modules | **Owns:** business logic, components, hooks, services<br>**Not:** import directly from other modules | ✓ allowed |
+| modules | shared | **Owns:** business logic, components, hooks, services<br>**Not:** import directly from other modules | ✓ allowed |
 | shared | shared | **Owns:** design system, utils, global types, api client<br>**Not:** contain business logic, import from modules | ✓ allowed |
 
 
@@ -253,12 +253,12 @@ src/
 
 | Type | File Pattern | Export Name Convention |
 |------|--------------|------------------------|
-| component | \`*.tsx\` | \`PascalCase\` |
-| hook | \`use*.ts\` | \`camelCase\` |
-| store | \`*.store.ts\` | \`camelCase\` |
-| service | \`*.service.ts\` | \`camelCase\` |
-| types | \`*.types.ts\` | \`PascalCase\` |
-| constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
+| component | \`*Component.tsx\` | \`PascalCase\` |
+| hook | \`*Hook.ts\` | \`camelCase\` |
+| store | \`*Store.ts\` | \`camelCase\` |
+| service | \`*Service.ts\` | \`camelCase\` |
+| types | \`*Types.ts\` | \`PascalCase\` |
+| constants | \`*Constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
 
 
 ### Required Companions
@@ -372,12 +372,12 @@ src/
 
 | Type | File Pattern | Export Name Convention |
 |------|--------------|------------------------|
-| component | \`*.tsx\` | \`PascalCase\` |
-| hook | \`*.ts\` | \`camelCase\` |
-| store | \`*.ts\` | \`camelCase\` |
-| service | \`*.ts\` | \`camelCase\` |
-| types | \`*.ts\` | \`PascalCase\` |
-| constants | \`*.ts\` | \`SCREAMING_SNAKE_CASE\` |
+| component | \`*.component.tsx\` | \`PascalCase\` |
+| hook | \`*.hook.ts\` | \`camelCase\` |
+| store | \`*.store.ts\` | \`camelCase\` |
+| service | \`*.service.ts\` | \`camelCase\` |
+| types | \`*.types.ts\` | \`PascalCase\` |
+| constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
 | utils | \`*.ts\` | \`—\` |
 
 

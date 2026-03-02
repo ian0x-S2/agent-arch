@@ -93,8 +93,24 @@ const renderBoundariesTable = (policy: Policy): string => {
   return table;
 };
 
-const getSegmentRules = (segment: string, policy: Policy): string => {
+const getSegmentRules = (segment: string, layerId: string, policy: Policy): string => {
   const { ui_constraints, side_effect_boundaries } = policy;
+  
+  if (layerId === 'pages' && segment === 'ui') {
+    return 'route components only — compose widgets, no business logic';
+  }
+  if (layerId === 'entities' && segment === 'api') {
+    return 'data access for this entity — maps to domain types, no raw responses';
+  }
+  if (layerId === 'features' && segment === 'api') {
+    return 'feature-specific mutations — calls entity api, never raw fetch';
+  }
+  if (layerId === 'entities' && segment === 'model') {
+    return 'entity state, selectors, types — pure business logic';
+  }
+  if (layerId === 'features' && segment === 'model') {
+    return 'feature state, selectors — only for this feature';
+  }
   
   const rules: Record<string, string> = {
     ui:     `components — max ${ui_constraints.component_max_lines} lines, ${ui_constraints.logic_in_components ? 'logic allowed' : 'no logic — extract to model'}`,
@@ -129,7 +145,7 @@ const renderFSDStructure = (policy: Policy): string => {
       
       const segments = fsd_config?.segments ?? ['ui', 'model', 'api', 'lib'];
       for (const seg of segments) {
-        const segRules = getSegmentRules(seg, policy);
+        const segRules = getSegmentRules(seg, layer.id, policy);
         lines.push(`│   │   ├── ${seg}/`);
         if (segRules) lines.push(`│   │   │   # ${segRules}`);
       }

@@ -9,7 +9,7 @@ Violations of import rules are **not permitted**.
 
 | Layer | May Import | Responsibilities | Side Effects |
 |-------|------------|------------------|--------------|
-| modules | shared, modules | **Owns:** business logic, components, hooks, services<br>**Not:** import directly from other modules | ✓ allowed |
+| modules | shared | **Owns:** business logic, components, hooks, services<br>**Not:** import directly from other modules | ✓ allowed |
 | shared | shared | **Owns:** design system, utils, global types, api client<br>**Not:** contain business logic, import from modules | ✓ allowed |
 
 
@@ -45,16 +45,16 @@ src/
 ## File Conventions
 
 ### Naming
-> Files: `PascalCase` globally · Symbols: per-type rules below
+> Files: `snake_case` globally · Symbols: per-type rules below
 
 | Type | File Pattern | Export Name Convention |
 |------|--------------|------------------------|
-| component | `*Component.tsx` | `PascalCase` |
-| hook | `*Hook.ts` | `camelCase` |
-| store | `*Store.ts` | `camelCase` |
-| service | `*Service.ts` | `camelCase` |
-| types | `*Types.ts` | `PascalCase` |
-| constants | `*Constants.ts` | `SCREAMING_SNAKE_CASE` |
+| component | `*_component.tsx` | `PascalCase` |
+| hook | `*_hook.ts` | `camelCase` |
+| store | `*_store.ts` | `camelCase` |
+| service | `*_service.ts` | `camelCase` |
+| types | `*_types.ts` | `PascalCase` |
+| constants | `*_constants.ts` | `SCREAMING_SNAKE_CASE` |
 
 
 ### Required Companions

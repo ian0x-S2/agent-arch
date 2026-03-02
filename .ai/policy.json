@@ -1,7 +1,7 @@
 {
   "meta": {
     "version": "1.0.0",
-    "generated_at": "2026-03-02T20:01:44.617Z",
+    "generated_at": "2026-03-02T20:19:31.420Z",
     "output_mode": "verbose"
   },
   "stack": {
@@ -53,8 +53,7 @@
   ],
   "import_matrix": {
     "modules": [
-      "shared",
-      "modules"
+      "shared"
     ],
     "shared": [
       "shared"
@@ -96,7 +95,7 @@
     "data_fetching_scope": "modules"
   },
   "naming_conventions": {
-    "global_strategy": "PascalCase",
+    "global_strategy": "snake_case",
     "component": "PascalCase",
     "hook": "camelCase",
     "store": "camelCase",
@@ -107,7 +106,7 @@
   "file_conventions": {
     "types": {
       "component": {
-        "pattern": "*Component.tsx",
+        "pattern": "*_component.tsx",
         "companions": {
           "style": {
             "required": false,
@@ -125,7 +124,7 @@
         }
       },
       "hook": {
-        "pattern": "*Hook.ts",
+        "pattern": "*_hook.ts",
         "companions": {
           "test": {
             "required": true,
@@ -137,7 +136,7 @@
         }
       },
       "store": {
-        "pattern": "*Store.ts",
+        "pattern": "*_store.ts",
         "companions": {
           "test": {
             "required": true,
@@ -149,7 +148,7 @@
         }
       },
       "service": {
-        "pattern": "*Service.ts",
+        "pattern": "*_service.ts",
         "companions": {
           "test": {
             "required": false,
@@ -160,11 +159,11 @@
         }
       },
       "types": {
-        "pattern": "*Types.ts",
+        "pattern": "*_types.ts",
         "companions": null
       },
       "constants": {
-        "pattern": "*Constants.ts",
+        "pattern": "*_constants.ts",
         "companions": null
       }
     },
@@ -180,7 +179,7 @@
     ]
   },
   "token_metadata": {
-    "estimated_prompt_tokens": 0,
+    "estimated_prompt_tokens": 294,
     "compression_applied": false,
     "omitted_sections": []
   }

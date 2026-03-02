@@ -30,13 +30,19 @@ describe('Markdown Renderer', () => {
 
 describe('Prompt Renderer', () => {
   test('FSD compact output renders without errors', () => {
-    const output = renderPrompt(featureSlicedTemplate);
-    expect(output.length).toBeGreaterThan(0);
+    const { content, tokens } = renderPrompt(featureSlicedTemplate);
+    expect(content.length).toBeGreaterThan(0);
+    expect(tokens).toBeGreaterThan(0);
   });
 
   test('FSD output contains key sections', () => {
-    const output = renderPrompt(featureSlicedTemplate);
-    expect(output).toContain('feature-sliced');
-    expect(output).toContain('LAYERS');
+    const { content } = renderPrompt(featureSlicedTemplate);
+    expect(content).toContain('feature-sliced');
+    expect(content).toContain('LAYERS');
+  });
+
+  test('FSD balanced output contains structure', () => {
+    const { content } = renderPrompt(featureSlicedTemplate);
+    expect(content).toContain('EXPECTED STRUCTURE');
   });
 });

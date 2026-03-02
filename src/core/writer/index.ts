@@ -11,14 +11,19 @@ export const writePolicyFiles = async (policy: Policy, targetDir: string = '.ai'
   const promptTxtPath = path.join(targetDir, 'system.prompt.txt');
   const policyJsonPath = path.join(targetDir, 'policy.json');
 
-  // Write Source of Truth
-  await fs.writeJson(policyJsonPath, policy, { spaces: 2 });
+  const { content: promptContent, tokens } = renderPrompt(policy);
+  
+  const policyWithTokens: Policy = {
+    ...policy,
+    token_metadata: {
+      ...policy.token_metadata,
+      estimated_prompt_tokens: tokens,
+    }
+  };
 
-  // Write Prompt (The Agent interface) - Needs to be before MD to update token_metadata
-  const promptContent = renderPrompt(policy);
+  await fs.writeJson(policyJsonPath, policyWithTokens, { spaces: 2 });
   await fs.writeFile(promptTxtPath, promptContent);
 
-  // Write Markdown (The UI/Human interface)
   const mdContent = renderMarkdown(policy);
   await fs.writeFile(policyMdPath, mdContent);
 

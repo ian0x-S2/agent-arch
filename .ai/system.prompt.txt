@@ -1,12 +1,12 @@
 # ARCHITECTURAL POLICY
-# Version: 1.0.0 | Generated: 2026-03-02T20:01:44.617Z
+# Version: 1.0.0 | Generated: 2026-03-02T20:19:31.420Z
 
 ## STACK
 Domain: frontend | Pattern: modular | State: centralized
 
 ## LAYER ARCHITECTURE
 ### MODULES
-  MAY IMPORT: shared, modules
+  MAY IMPORT: shared
   RESPONSIBILITIES: business logic, components, hooks, services
   MUST NOT DO: import directly from other modules
   DEPENDS ON ABSTRACTIONS: YES (DIP enforced)
@@ -15,18 +15,20 @@ Domain: frontend | Pattern: modular | State: centralized
   RESPONSIBILITIES: design system, utils, global types, api client
   MUST NOT DO: contain business logic, import from modules
 
+## EXPECTED STRUCTURE
+  MODULAR: src/{modules/<name>/{components,hooks,services,types},shared/{ui,utils,types}}
 ## FILE CONVENTIONS
-  component=*Component.tsx companions=[style(optional), test(required)]
-  hook=*Hook.ts companions=[test(required)]
-  store=*Store.ts companions=[test(required)]
-  service=*Service.ts companions=[test(optional)]
-  types=*Types.ts companions=[none]
-  constants=*Constants.ts companions=[none]
+  component=*_component.tsx companions=[style(optional), test(required)]
+  hook=*_hook.ts companions=[test(required)]
+  store=*_store.ts companions=[test(required)]
+  service=*_service.ts companions=[test(optional)]
+  types=*_types.ts companions=[none]
+  constants=*_constants.ts companions=[none]
 Colocation policy: strict
 Test placement: colocated
 
 ## NAMING CONVENTIONS
-global_strategy: PascalCase
+global_strategy: snake_case
 component: PascalCase
 hook: camelCase
 store: camelCase
