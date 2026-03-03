@@ -9,7 +9,7 @@ export const atomicTemplate: Policy = {
   stack: {
     domain: 'frontend',
     pattern: 'atomic',
-    state_philosophy: 'hybrid',
+    state_philosophy: 'minimal',
     styling_strategy: 'utility-first',
     routing_strategy: 'declarative',
   },

@@ -1,113 +1,31 @@
 {
   "meta": {
     "version": "1.0.0",
-    "generated_at": "2026-03-02T22:19:46.414Z",
-    "output_mode": "balanced"
+    "generated_at": "2026-03-03T00:45:05.660Z",
+    "output_mode": "verbose"
   },
   "stack": {
     "domain": "frontend",
-    "pattern": "feature-sliced",
-    "state_philosophy": "feature-based",
-    "styling_strategy": "utility-first",
-    "routing_strategy": "declarative"
-  },
-  "fsd_config": {
-    "segments": [
-      "ui",
-      "model",
-      "api",
-      "lib",
-      "config"
-    ]
+    "pattern": "modular",
+    "state_philosophy": "module-based",
+    "styling_strategy": "scoped",
+    "routing_strategy": "any"
   },
   "layers": [
     {
-      "id": "app",
-      "allowed_imports": [
-        "pages",
-        "widgets",
-        "features",
-        "entities",
-        "shared"
-      ],
-      "responsibilities": {
-        "owns": [
-          "providers",
-          "routing",
-          "global styles",
-          "app initialization"
-        ],
-        "must_not": [
-          "contain business logic"
-        ],
-        "depends_on_abstractions": false
-      }
-    },
-    {
-      "id": "pages",
-      "allowed_imports": [
-        "widgets",
-        "features",
-        "entities",
-        "shared"
-      ],
-      "responsibilities": {
-        "owns": [
-          "composition of widgets for a route"
-        ],
-        "must_not": [
-          "contain business logic"
-        ],
-        "depends_on_abstractions": false
-      }
-    },
-    {
-      "id": "widgets",
-      "allowed_imports": [
-        "features",
-        "entities",
-        "shared"
-      ],
-      "responsibilities": {
-        "owns": [
-          "composition of features",
-          "reusable page sections"
-        ],
-        "must_not": [
-          "contain business logic directly"
-        ],
-        "depends_on_abstractions": false
-      }
-    },
-    {
-      "id": "features",
-      "allowed_imports": [
-        "entities",
-        "shared"
-      ],
-      "responsibilities": {
-        "owns": [
-          "user interactions with business value (AddToCart, LoginForm)"
-        ],
-        "must_not": [
-          "import from other features",
-          "know about pages"
-        ],
-        "depends_on_abstractions": true
-      }
-    },
-    {
-      "id": "entities",
+      "id": "modules",
       "allowed_imports": [
         "shared"
       ],
       "responsibilities": {
         "owns": [
-          "business objects and their operations (User, Product, Order)"
+          "business logic",
+          "components",
+          "hooks",
+          "services"
         ],
         "must_not": [
-          "import from features or above",
-          "contain UI components ideally"
+          "import directly from other modules"
         ],
         "depends_on_abstractions": true
       }
@@ -117,132 +35,93 @@
       "allowed_imports": [],
       "responsibilities": {
         "owns": [
-          "reusable infra with no business logic (ui-kit, api client, utils)"
+          "design system",
+          "utils",
+          "global types",
+          "api client"
         ],
         "must_not": [
-          "import from any other layer",
-          "contain business logic"
+          "contain business logic",
+          "import from modules"
         ],
         "depends_on_abstractions": false
       }
     }
   ],
   "import_matrix": {
-    "app": [
-      "pages",
-      "widgets",
-      "features",
-      "entities",
+    "modules": [
       "shared"
     ],
-    "pages": [
-      "widgets",
-      "features",
-      "entities",
+    "shared": [
       "shared"
-    ],
-    "widgets": [
-      "features",
-      "entities",
-      "shared"
-    ],
-    "features": [
-      "entities",
-      "shared"
-    ],
-    "entities": [
-      "shared"
-    ],
-    "shared": []
-  },
-  "abstraction_boundaries": [
-    {
-      "boundary_name": "features→entities",
-      "inner_layer": "entities",
-      "outer_layer": "features",
-      "interface_required": true,
-      "interface_location": "model",
-      "forbidden_leakage": [
-        "API raw responses",
-        "implementation details of storage"
-      ]
-    }
-  ],
-  "domain_rules": {
-    "entities_location": "entities",
-    "value_objects_allowed": true,
-    "entity_rules": {
-      "must_be_immutable": true,
-      "no_framework_imports": true,
-      "validation_location": "factory-function"
-    },
-    "anemic_model_allowed": false,
-    "ubiquitous_language": {
-      "enforced": true
-    }
+    ]
   },
   "structural_constraints": {
-    "max_component_depth": 5,
+    "max_component_depth": 4,
     "barrel_exports_required": true,
     "circular_imports": "FORBIDDEN",
     "cross_feature_imports": "via-public-api-only"
   },
   "ui_constraints": {
-    "component_max_lines": 150,
+    "component_max_lines": 200,
     "component_max_props": 5,
     "prop_drilling_max_depth": 2,
     "logic_in_components": false,
-    "style_co_location": false,
-    "allowed_style_extensions": [],
+    "style_co_location": true,
+    "allowed_style_extensions": [
+      ".module.css",
+      ".css"
+    ],
     "prefer_composition": true
   },
   "state_constraints": {
-    "global_state_scope": "feature-based",
+    "global_state_scope": "module-based",
     "local_state_allowed": true,
     "derived_state_strategy": "selectors",
     "forbidden_patterns": [
-      "direct-mutation",
-      "prop-drilling"
+      "direct-mutation"
     ]
   },
   "side_effect_boundaries": {
     "allowed_in_layers": [
-      "features",
-      "entities"
-    ],
-    "forbidden_in_layers": [
-      "ui",
+      "modules",
       "shared"
     ],
+    "forbidden_in_layers": [],
     "async_pattern": "async-await",
-    "data_fetching_scope": "entities"
+    "data_fetching_scope": "modules"
   },
   "naming_conventions": {
-    "global_strategy": "kebab-case",
+    "global_strategy": "snake_case",
     "component": "PascalCase",
-    "hook": "camelCase (use* prefix)",
-    "store": "camelCase (*Store suffix)",
-    "service": "camelCase (*Service suffix)",
-    "type": "PascalCase (*Type | *Props suffix)",
+    "hook": "camelCase",
+    "store": "camelCase",
+    "service": "camelCase",
+    "type": "PascalCase",
     "constant": "SCREAMING_SNAKE_CASE"
   },
   "file_conventions": {
     "types": {
       "component": {
-        "pattern": "*.component.tsx",
+        "pattern": "*_component.tsx",
         "companions": {
+          "style": {
+            "required": true,
+            "extensions": [
+              ".module.css",
+              ".css"
+            ]
+          },
           "test": {
             "required": true,
             "extensions": [
-              ".test.tsx",
-              ".test.ts",
-              ".spec.tsx"
+              ".test.tsx"
             ]
           }
         }
       },
       "hook": {
-        "pattern": "*.hook.ts",
+        "pattern": "*_hook.ts",
         "companions": {
           "test": {
             "required": true,
@@ -254,7 +133,7 @@
         }
       },
       "store": {
-        "pattern": "*.store.ts",
+        "pattern": "*_store.ts",
         "companions": {
           "test": {
             "required": true,
@@ -266,7 +145,7 @@
         }
       },
       "service": {
-        "pattern": "*.service.ts",
+        "pattern": "*_service.ts",
         "companions": {
           "test": {
             "required": false,
@@ -277,37 +156,27 @@
         }
       },
       "types": {
-        "pattern": "*.types.ts",
+        "pattern": "*_types.ts",
         "companions": null
       },
       "constants": {
-        "pattern": "*.constants.ts",
+        "pattern": "*_constants.ts",
         "companions": null
       }
     },
     "colocation": "strict",
     "public_api": {
       "required": true,
-      "filename": "index",
-      "extensions": [
-        ".ts",
-        ".tsx"
-      ],
       "expose_internals": false
     },
     "test_placement": "colocated",
-    "directory": {
-      "max_depth": 5,
-      "feature_root_marker": "index.ts"
-    },
     "forbidden_patterns": [
       "default-export-on-utility",
-      "barrel-in-non-feature-root",
-      "named-export-mix-in-component-file"
+      "barrel-in-non-feature-root"
     ]
   },
   "token_metadata": {
-    "estimated_prompt_tokens": 438,
+    "estimated_prompt_tokens": 293,
     "compression_applied": false,
     "omitted_sections": []
   }

@@ -2,7 +2,7 @@
 
 exports[`Markdown Renderer FSD balanced output matches snapshot 1`] = `
 "# Architecture Policy
-> Pattern: **feature-sliced** | State: **hybrid** | Styling: **utility-first**
+> Pattern: **feature-sliced** | State: **feature-based** | Styling: **utility-first**
 
 ---
 
@@ -447,7 +447,7 @@ src/
 
 exports[`Markdown Renderer Atomic balanced output matches snapshot 1`] = `
 "# Architecture Policy
-> Pattern: **atomic** | State: **hybrid** | Styling: **utility-first**
+> Pattern: **atomic** | State: **minimal** | Styling: **utility-first**
 
 ---
 
@@ -482,19 +482,15 @@ src/
 ├── templates/
 │   ├── <component>/
 │   │   ├── ComponentName.tsx
-│   │   └── ComponentName.module.css
 ├── organisms/
 │   ├── <component>/
 │   │   ├── ComponentName.tsx
-│   │   └── ComponentName.module.css
 ├── molecules/
 │   ├── <component>/
 │   │   ├── ComponentName.tsx
-│   │   └── ComponentName.module.css
 ├── atoms/
 │   ├── <component>/
 │   │   ├── ComponentName.tsx
-│   │   └── ComponentName.module.css
 └── shared/
     ├── utils/
     ├── types/

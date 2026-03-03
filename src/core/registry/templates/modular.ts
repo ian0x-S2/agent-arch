@@ -16,7 +16,7 @@ export const modularTemplate: Policy = {
   "layers": [
     { 
       "id": "modules", 
-      "allowed_imports": ["shared", "modules"],
+      "allowed_imports": ["shared"],
       "responsibilities": {
         "owns": ["business logic", "components", "hooks", "services"],
         "must_not": ["import directly from other modules"],
@@ -25,7 +25,7 @@ export const modularTemplate: Policy = {
     },
     { 
       "id": "shared",  
-      "allowed_imports": ["shared"],
+      "allowed_imports": [],
       "responsibilities": {
         "owns": ["design system", "utils", "global types", "api client"],
         "must_not": ["contain business logic", "import from modules"],

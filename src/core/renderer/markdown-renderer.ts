@@ -215,8 +215,9 @@ const renderFlatStructure = (policy: Policy): string => {
 };
 
 const renderAtomicStructure = (policy: Policy): string => {
-  const { layers } = policy;
+  const { layers, stack } = policy;
   const totalLayers = layers.length;
+  const hasStyleFile = !['utility-first', 'css-in-js'].includes(stack.styling_strategy ?? '');
   
   const layerLines = layers.flatMap((layer, i) => {
     const isLast = i === totalLayers - 1;
@@ -231,7 +232,9 @@ const renderAtomicStructure = (policy: Policy): string => {
     } else if (!['shared'].includes(layer.id)) {
       lines.push(`${childPrefix}├── <component>/`);
       lines.push(`${childPrefix}│   ├── ComponentName.tsx`);
-      lines.push(`${childPrefix}│   └── ComponentName.module.css`);
+      if (hasStyleFile) {
+        lines.push(`${childPrefix}│   └── ComponentName.module.css`);
+      }
     } else {
       lines.push(`${childPrefix}├── utils/`);
       lines.push(`${childPrefix}├── types/`);

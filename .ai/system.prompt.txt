@@ -1,40 +1,37 @@
-# ARCH POLICY v1.0.0
-STACK: frontend | feature-sliced | state=feature-based | style=utility-first | routing=declarative
+# ARCHITECTURAL POLICY
+# Version: 1.0.0 | Generated: 2026-03-03T00:45:05.660Z
 
-LAYERS & RESPONSIBILITIES:
-  APP: [pages, widgets, features, entities, shared]
-    OWNS: providers, routing, global styles, app initialization
-    NOT: contain business logic
-  PAGES: [widgets, features, entities, shared]
-    OWNS: composition of widgets for a route
-    NOT: contain business logic
-  WIDGETS: [features, entities, shared]
-    OWNS: composition of features, reusable page sections
-    NOT: contain business logic directly
-  FEATURES: [entities, shared]
-    OWNS: user interactions with business value (AddToCart, LoginForm)
-    NOT: import from other features, know about pages
-  ENTITIES: [shared]
-    OWNS: business objects and their operations (User, Product, Order)
-    NOT: import from features or above, contain UI components ideally
-  SHARED: []
-    OWNS: reusable infra with no business logic (ui-kit, api client, utils)
-    NOT: import from any other layer, contain business logic
-  circular=FORBIDDEN | cross_feature=via-public-api-only
+## STACK
+Domain: frontend | Pattern: modular | State: module-based
 
-ABSTRACTION BOUNDARIES:
-  features→entities: entities (inner) ← features (outer) [API_REQ=true]
+## LAYER ARCHITECTURE
+### MODULES
+  MAY IMPORT: shared
+  RESPONSIBILITIES: business logic, components, hooks, services
+  MUST NOT DO: import directly from other modules
+  DEPENDS ON ABSTRACTIONS: YES (DIP enforced)
+### SHARED
+  MAY IMPORT: shared
+  RESPONSIBILITIES: design system, utils, global types, api client
+  MUST NOT DO: contain business logic, import from modules
 
-DOMAIN RULES: Entity location: entities | No framework: true | Anemic allowed: false
+## EXPECTED STRUCTURE
+  MODULAR: src/{modules/<name>/{component,hook,store,service},shared/{ui,utils,types}}
+## FILE CONVENTIONS
+  component=*_component.tsx companions=[style(required), test(required)]
+  hook=*_hook.ts companions=[test(required)]
+  store=*_store.ts companions=[test(required)]
+  service=*_service.ts companions=[test(optional)]
+  types=*_types.ts companions=[none]
+  constants=*_constants.ts companions=[none]
+Colocation policy: strict
+Test placement: colocated
 
-EXPECTED STRUCTURE:
-  FSD: src/{app, pages, widgets, features, entities, shared}/<slice>/{ui,model,api,lib,config}
-
-FILE CONVENTIONS:
-  component=*.component.tsx companions=[test(required)]
-  hook=*.hook.ts companions=[test(required)]
-  store=*.store.ts companions=[test(required)]
-  service=*.service.ts companions=[test(optional)]
-  types=*.types.ts companions=[none]
-  constants=*.constants.ts companions=[none]
-  colocation=strict | test=colocated | public_api=REQUIRED(index.ts)
+## NAMING CONVENTIONS
+global_strategy: snake_case
+component: PascalCase
+hook: camelCase
+store: camelCase
+service: camelCase
+type: PascalCase
+constant: SCREAMING_SNAKE_CASE

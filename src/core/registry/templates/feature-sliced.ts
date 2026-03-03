@@ -9,7 +9,7 @@ export const featureSlicedTemplate: Policy = {
   "stack": {
     "domain": "frontend",
     "pattern": "feature-sliced",
-    "state_philosophy": "hybrid",
+    "state_philosophy": "feature-based",
     "styling_strategy": "utility-first",
     "routing_strategy": "declarative"
   },

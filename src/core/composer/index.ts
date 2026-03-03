@@ -2,6 +2,7 @@ import * as v from 'valibot';
 import { PolicySchema, type Policy } from '../../schema/policy.schema';
 import { TemplateRegistry } from '../registry';
 import { resolveNamingPatterns } from './naming';
+import { STATE_BY_PATTERN } from '../shared/pattern-state';
 
 export interface UserSelections {
   pattern: string;
@@ -9,13 +10,6 @@ export interface UserSelections {
   naming_strategy: 'kebab-case' | 'PascalCase' | 'snake_case';
   styling_strategy?: string;
 }
-
-const STATE_BY_PATTERN: Record<string, { philosophy: string; scope: string }> = {
-  'feature-sliced': { philosophy: 'feature-based', scope: 'feature-based' },
-  'modular':        { philosophy: 'module-based',  scope: 'module-based'  },
-  'flat':           { philosophy: 'flexible',      scope: 'any'           },
-  'atomic':         { philosophy: 'minimal',       scope: 'minimal'       },
-};
 
 const STYLING_EXTENSIONS: Record<string, string[]> = {
   'scoped':       ['.module.css', '.css'],

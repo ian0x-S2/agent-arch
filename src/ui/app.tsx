@@ -4,6 +4,7 @@ import SelectInput from 'ink-select-input';
 import { composePolicy } from '../core/composer';
 import type { UserSelections } from '../core/composer';
 import { writePolicyFiles } from '../core/writer';
+import { STATE_DISPLAY_MAP } from '../core/shared/pattern-state';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -237,13 +238,7 @@ const ConfirmScreen = ({
     if (key.escape || input === 'b') onBack();
   });
 
-  const STATE_BY_PATTERN: Record<string, string> = {
-    'feature-sliced': 'feature-based',
-    'modular': 'module-based',
-    'flat': 'flexible',
-    'atomic': 'minimal',
-  };
-  const derivedState = STATE_BY_PATTERN[selections.pattern ?? ''] ?? 'flexible';
+  const derivedState = STATE_DISPLAY_MAP[selections.pattern ?? ''] ?? 'flexible';
 
   return (
     <Box flexDirection="column">
