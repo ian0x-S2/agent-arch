@@ -11,7 +11,6 @@ export const flatTemplate: Policy = {
     "pattern": "flat",
     "state_philosophy": "flexible",
     "styling_strategy": "any",
-    "routing_strategy": "any"
   },
   "layers": [
     { 

@@ -24,9 +24,7 @@ export const TemplateRegistry = {
     return Object.keys(TEMPLATES);
   },
   registerTemplate: (id: string, template: Policy): void => {
-    if (TEMPLATES[id]) {
-      throw new Error(`Template "${id}" is already registered. Use a unique id.`);
-    }
+    // Allows overwriting existing templates (useful for re-imports)
     TEMPLATES[id] = template;
   },
 

@@ -128,7 +128,6 @@ export const PolicySchema = v.object({
     pattern: v.string(),
     state_philosophy: v.string(),
     styling_strategy: v.string(),
-    routing_strategy: v.string(),
   }),
   fsd_config: v.optional(v.object({
     segments: v.array(v.string()),

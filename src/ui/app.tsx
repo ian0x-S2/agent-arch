@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
-import SelectInput from 'ink-select-input';
 import { composePolicy } from '../core/composer';
 import type { UserSelections } from '../core/composer';
 import { writePolicyFiles } from '../core/writer';
-import { STATE_BY_PATTERN } from '../core/shared/pattern-state';
+import { Header } from './components/Header';
+import { QuestionStep } from './components/QuestionStep';
+import { ConfirmScreen } from './components/ConfirmScreen';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,42 +31,36 @@ interface OptionWithMeta {
 const OPTIONS: Record<string, OptionWithMeta[]> = {
   welcome: [
     {
-      label: 'Express Setup  ✦ fastest',
-      value: 'express',
-      description: 'Use recommended defaults. Get up and running in 5 seconds.',
-      hint: 'Pattern: FSD | Styling: Utility | Naming: kebab',
-    },
-    {
-      label: 'Guided Setup',
+      label: '🚀 Start Setup',
       value: 'guided',
-      description: 'Step-by-step configuration of all architectural rules.',
-      hint: 'Best for specialized projects or strict team requirements.',
+      description: 'Step-by-step configuration of architectural rules.',
+      hint: 'Pattern | Styling | Naming',
     },
   ],
   pattern: [
     {
-      label: 'Feature-Sliced (FSD)  ✦ recommended',
+      label: '🏗️  Feature-Sliced (FSD)',
       value: 'feature-sliced',
       description: 'Organizes code by business domain (e.g., /auth, /billing).',
       hint: 'Scaling: High | Complexity: High | Use for medium-to-large apps.',
       impact: '⚡ Prompt: Adds strict layer hierarchy and import rules (ui→hooks→state).',
     },
     {
-      label: 'Modular Layered',
+      label: '📦 Modular Layered',
       value: 'modular',
       description: 'Organizes by technical layers (components/, hooks/, services/).',
       hint: 'Scaling: Medium | Complexity: Low | Standard for many teams.',
       impact: '⚡ Prompt: Defines clear technical boundaries between layers.',
     },
     {
-      label: 'Flat Layered',
+      label: '📄 Flat Layered',
       value: 'flat',
       description: 'Simple, flat structure with minimal hierarchy.',
       hint: 'Scaling: Low | Complexity: Very Low | Best for MVPs.',
       impact: '⚡ Prompt: Minimizes structural noise, focused on simple exports.',
     },
     {
-      label: 'Atomic Design',
+      label: '⚛️  Atomic Design',
       value: 'atomic',
       description: 'Organizes UI by complexity (Atoms, Molecules, Organisms).',
       hint: 'Scaling: Medium | Complexity: Medium | Best for design systems.',
@@ -74,21 +69,21 @@ const OPTIONS: Record<string, OptionWithMeta[]> = {
   ],
   styling: [
     {
-      label: 'Utility-First (Tailwind)  ✦ recommended',
+      label: '🎨 Utility-First (Tailwind)',
       value: 'utility-first',
       description: 'Atomic classes directly in markup.',
       hint: 'Speed: Extreme | Bundle Size: Minimal.',
       impact: '⚡ Prompt: Agent writes CSS directly in JSX attributes.',
     },
     {
-      label: 'Scoped / Modular (CSS Modules)',
+      label: '🧩 Scoped / Modular (CSS Modules)',
       value: 'scoped',
       description: 'Component-specific styles with local scope.',
       hint: 'Encapsulation: High | Reuse: Medium.',
       impact: '⚡ Prompt: Agent creates companion .module.css files.',
     },
     {
-      label: 'CSS-in-JS (Emotion/Styled)',
+      label: '💅 CSS-in-JS (Emotion/Styled)',
       value: 'css-in-js',
       description: 'Styles defined within the TypeScript code.',
       hint: 'Dynamic: High | Portability: Low.',
@@ -97,203 +92,47 @@ const OPTIONS: Record<string, OptionWithMeta[]> = {
   ],
   naming: [
     {
-      label: 'kebab-case',
+      label: '🔗 kebab-case (user-profile.ts)',
       value: 'kebab-case',
-      description: 'Lowercase words separated by hyphens (e.g., user-modal.ts).',
-      hint: 'Web standard for filenames.',
+      description: 'Lowercase words separated by hyphens.',
+      hint: 'The most common standard for web filenames.',
     },
     {
-      label: 'camelCase',
+      label: '🐪 camelCase (userProfile.ts)',
       value: 'camelCase',
-      description: 'Lowercase first letter, capitalized subsequent words (e.g., userModal.ts).',
+      description: 'Lowercase first letter, capitalized subsequent words.',
       hint: 'Standard for many JavaScript/TypeScript projects.',
     },
     {
-      label: 'PascalCase',
+      label: '🏛️  PascalCase (UserProfile.tsx)',
       value: 'PascalCase',
-      description: 'All words capitalized (e.g., UserModal.tsx).',
+      description: 'All words capitalized.',
       hint: 'Standard for React/Vue component names.',
     },
     {
-      label: 'snake_case',
+      label: '🐍 snake_case (user_profile.ts)',
       value: 'snake_case',
-      description: 'Words separated by underscores (e.g., user_modal.ts).',
-      hint: 'Common in some backend-heavy frontend projects.',
+      description: 'Words separated by underscores.',
+      hint: 'Common in backend-heavy or Python-influenced projects.',
     },
   ],
 };
 
-const STEP_LABELS: Record<Step, string> = {
-  welcome: 'Start',
-  pattern: 'Pattern',
-  styling: 'Styling',
-  naming: 'Naming',
-  confirm: 'Confirm',
-  generating: 'Generating...',
-  done: 'Done',
-};
-
 const GUIDED_STEPS: Step[] = ['pattern', 'styling', 'naming', 'confirm'];
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
-
-const Header = ({ stepIndex, totalSteps }: { stepIndex: number; totalSteps: number }) => (
-  <Box flexDirection="column" marginBottom={1}>
-    <Box>
-      <Text color="cyan" bold>AGENT-ARCH </Text>
-      <Text dimColor>— AI Agent Architecture Policy Generator</Text>
-    </Box>
-    {totalSteps > 1 && (
-      <Box marginTop={1}>
-        {GUIDED_STEPS.map((s, i) => (
-          <Text key={s}>
-            <Text color={i < stepIndex ? 'green' : i === stepIndex ? 'cyan' : 'gray'}>
-              {i < stepIndex ? '●' : i === stepIndex ? '◉' : '○'}
-            </Text>
-            <Text color={i === stepIndex ? 'cyan' : 'gray'}> {STEP_LABELS[s]}</Text>
-            {i < GUIDED_STEPS.length - 1 && <Text dimColor> › </Text>}
-          </Text>
-        ))}
-      </Box>
-    )}
-  </Box>
-);
-
-const OptionDescription = ({ option }: { option: OptionWithMeta | undefined }) => {
-  if (!option) return null;
-  return (
-    <Box flexDirection="column" marginTop={1} borderStyle="single" borderColor="gray" paddingX={1}>
-      <Text color="white">{option.description}</Text>
-      <Box marginTop={1}>
-        <Text dimColor italic>💡 {option.hint}</Text>
-      </Box>
-      {option.impact && (
-        <Box marginTop={1}>
-          <Text color="yellow">{option.impact}</Text>
-        </Box>
-      )}
-    </Box>
-  );
-};
-
-const QuestionStep = ({
-  stepKey,
-  onSelect,
-}: {
-  stepKey: string;
-  onSelect: (value: string) => void;
-}) => {
-  const options = OPTIONS[stepKey] ?? [];
-  const [focused, setFocused] = useState(options[0]?.value ?? '');
-
-  const inkItems = options.map((o) => ({ label: o.label, value: o.value }));
-  const focusedOption = options.find((o) => o.value === focused);
-
-  return (
-    <Box flexDirection="column">
-      <Text bold color="yellow">
-        {stepKey === 'welcome' ? 'How do you want to start?' : `Select ${STEP_LABELS[stepKey as Step]}`}
-      </Text>
-      <Text dimColor>Use ↑↓ to navigate, Enter to select</Text>
-      <Box marginTop={1}>
-        <SelectInput
-          items={inkItems}
-          onSelect={(item) => onSelect(item.value)}
-          onHighlight={(item) => setFocused(item.value)}
-        />
-      </Box>
-      <OptionDescription option={focusedOption} />
-    </Box>
-  );
-};
-
-const ConfirmScreen = ({
-  selections,
-  onConfirm,
-  onBack,
-}: {
-  selections: Partial<UserSelections>;
-  onConfirm: () => void;
-  onBack: () => void;
-}) => {
-  useInput((input, key) => {
-    if (key.return) onConfirm();
-    if (key.escape || input === 'b') onBack();
-  });
-
-  const derivedState = STATE_BY_PATTERN[selections.pattern ?? '']?.philosophy ?? 'flexible';
-
-  return (
-    <Box flexDirection="column">
-      <Text bold color="yellow">Review & Confirm</Text>
-      <Text dimColor>Verify your choices before generating the policy.</Text>
-
-      <Box flexDirection="column" marginTop={1} borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1}>
-        <Text bold color="cyan">Selected Configuration</Text>
-        <Box marginTop={1} flexDirection="column">
-          {(['pattern', 'styling_strategy', 'naming_strategy'] as const).map((key) => {
-             const labelMap: Record<string, string> = {
-               pattern: 'Pattern',
-               styling_strategy: 'Styling',
-               naming_strategy: 'Naming',
-             };
-             return (
-              <Box key={key}>
-                <Box width={22}>
-                  <Text dimColor>{labelMap[key]}:</Text>
-                </Box>
-                <Text color="green" bold>{(selections as any)[key]}</Text>
-              </Box>
-             );
-          })}
-          <Box marginTop={1}>
-            <Box width={22}>
-              <Text dimColor>State:</Text>
-            </Box>
-            <Text color="cyan" bold>{derivedState}</Text>
-            <Text dimColor> ← derived from pattern</Text>
-          </Box>
-        </Box>
-      </Box>
-
-      <Box marginTop={1}>
-        <Text color="green" bold>↵ Enter </Text>
-        <Text>to generate  </Text>
-        <Text color="yellow" bold>Esc / b </Text>
-        <Text>to go back</Text>
-      </Box>
-    </Box>
-  );
-};
-
 // ─── Main App ──────────────────────────────────────────────────────────────────
-
-const RECOMMENDED_DEFAULTS: UserSelections = {
-  pattern: 'feature-sliced',
-  styling_strategy: 'utility-first',
-  naming_strategy: 'kebab-case',
-  output_mode: 'compact',
-};
 
 export const App = () => {
   const { exit } = useApp();
   const [step, setStep] = useState<Step>('welcome');
   const [selections, setSelections] = useState<Partial<UserSelections>>({});
-  const [isExpressMode, setIsExpressMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedPrompt, setGeneratedPrompt] = useState<string>('');
 
   const stepIndex = GUIDED_STEPS.indexOf(step);
 
-  const handleWelcomeSelect = (value: string) => {
-    if (value === 'express') {
-      setIsExpressMode(true);
-      setSelections(RECOMMENDED_DEFAULTS);
-      setStep('confirm');
-    } else {
-      setIsExpressMode(false);
-      setStep('pattern');
-    }
+  const handleWelcomeSelect = () => {
+    setStep('pattern');
   };
 
   const handleSelect = (stepKey: Step, value: string) => {
@@ -317,7 +156,6 @@ export const App = () => {
       const { mdContent } = await writePolicyFiles(policy);
       
       setGeneratedPrompt(mdContent);
-      
       setStep('done');
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -333,17 +171,28 @@ export const App = () => {
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Header stepIndex={stepIndex} totalSteps={step === 'welcome' ? 1 : GUIDED_STEPS.length} />
+      <Header step={step} stepIndex={stepIndex} totalSteps={step === 'welcome' ? 1 : GUIDED_STEPS.length} />
 
       <Box marginTop={1}>
         {/* Welcome */}
-        {step === 'welcome' && <QuestionStep stepKey="welcome" onSelect={handleWelcomeSelect} />}
+        {step === 'welcome' && (
+          <QuestionStep 
+            stepKey="welcome" 
+            options={OPTIONS.welcome} 
+            onSelect={handleWelcomeSelect} 
+          />
+        )}
 
         {/* Wizard steps */}
         {(['pattern', 'styling', 'naming'] as const).map(
           (s) =>
             step === s && (
-              <QuestionStep key={s} stepKey={s} onSelect={(val) => handleSelect(s, val)} />
+              <QuestionStep 
+                key={s} 
+                stepKey={s} 
+                options={OPTIONS[s]} 
+                onSelect={(val) => handleSelect(s, val)} 
+              />
             ),
         )}
 
@@ -352,40 +201,45 @@ export const App = () => {
           <ConfirmScreen
             selections={selections}
             onConfirm={handleConfirm}
-            onBack={() => setStep(isExpressMode ? 'welcome' : 'naming')}
+            onBack={() => setStep('naming')}
           />
         )}
 
         {/* Generating */}
         {step === 'generating' && (
-          <Box flexDirection="column">
+          <Box flexDirection="column" paddingLeft={1}>
             <Text color="yellow" bold>⟳ Generating policy artifacts...</Text>
-            <Box flexDirection="column" marginLeft={2}>
-              <Text dimColor>• Rendering policy.md</Text>
-              <Text dimColor>• Rendering system.prompt.txt</Text>
+            <Box flexDirection="column" marginLeft={2} marginTop={1}>
+              <Text color="cyan">▶ Rendering policy.md</Text>
             </Box>
           </Box>
         )}
 
         {/* Done */}
         {step === 'done' && (
-          <Box flexDirection="column">
+          <Box flexDirection="column" paddingLeft={1}>
             <Box borderStyle="round" borderColor="green" paddingX={2} paddingY={1} flexDirection="column">
-              <Text color="green" bold>✓ Architecture policy generated successfully!</Text>
-              <Box marginTop={1} flexDirection="column">
-                <Text dimColor>Artifacts created in .ai/ folder.</Text>
+              <Text color="green" bold>✓ SUCCESS</Text>
+              <Text color="white">Architecture policy generated successfully!</Text>
+              <Box marginTop={1}>
+                <Text dimColor>Artifact created in </Text>
+                <Text color="yellow" bold>.ai/policy.md</Text>
               </Box>
             </Box>
 
+            <Box marginTop={1} flexDirection="column" paddingLeft={1}>
+              <Text bold color="cyan">🚀 Next Step:</Text>
+              <Text> 1. Attach <Text color="yellow">.ai/policy.md</Text> to your AI Agent.</Text>
+            </Box>
+
             <Box marginTop={1} flexDirection="column">
-              <Text bold color="cyan">Preview: .ai/policy.md</Text>
+              <Text bold color="cyan" underline>Preview: .ai/policy.md</Text>
               <Box borderStyle="single" borderColor="gray" paddingX={1} marginTop={1}>
-                {/* Use the markdown preview instead */}
                 <Text>
                   {generatedPrompt
                     .split('\n')
-                    .slice(0, 12)
-                    .map(line => line.replace(/^#+\s/, '').replace(/\*\*/g, ''))
+                    .slice(0, 15)
+                    .map(line => line.replace(/^#+\s/, '➤ ').replace(/\*\*/g, ''))
                     .join('\n')}
                 </Text>
                 <Text dimColor>... (truncated)</Text>
@@ -402,8 +256,9 @@ export const App = () => {
 
         {/* Error */}
         {error && (
-          <Box borderStyle="single" borderColor="red" paddingX={1} marginTop={1}>
-            <Text color="red">✗ Error: {error}</Text>
+          <Box borderStyle="single" borderColor="red" paddingX={2} paddingY={1} marginTop={1}>
+            <Text color="red" bold>✖ Error</Text>
+            <Text color="red">{error}</Text>
           </Box>
         )}
       </Box>

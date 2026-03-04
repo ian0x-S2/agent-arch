@@ -1,6 +1,6 @@
 # Architecture Policy
 
-> Pattern: **modular** | State: **module-based** | Styling: **scoped**
+> Pattern: **feature-sliced** | State: **feature-based** | Styling: **utility-first**
 
 ---
 
@@ -9,10 +9,20 @@
 Imports are unidirectional. Each layer may only import from layers listed below it.
 Violations of import rules are **not permitted**.
 
-| Layer   | May Import | Responsibilities                                                                                                 | Side Effects |
-| ------- | ---------- | ---------------------------------------------------------------------------------------------------------------- | ------------ |
-| modules | shared     | **Owns:** business logic, components, hooks, services<br>**Not:** import directly from other modules             | ✓ allowed    |
-| shared  | —          | **Owns:** design system, utils, global types, api client<br>**Not:** contain business logic, import from modules | ✓ allowed    |
+| Layer    | May Import                                 | Responsibilities                                                                                                                                | Side Effects |
+| -------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| app      | pages, widgets, features, entities, shared | **Owns:** providers, routing, global styles, app initialization<br>**Not:** contain business logic                                              | ✗ forbidden  |
+| pages    | widgets, features, entities, shared        | **Owns:** composition of widgets for a route<br>**Not:** contain business logic                                                                 | ✗ forbidden  |
+| widgets  | features, entities, shared                 | **Owns:** composition of features, reusable page sections<br>**Not:** contain business logic directly                                           | ✗ forbidden  |
+| features | entities, shared                           | **Owns:** user interactions with business value (AddToCart, LoginForm)<br>**Not:** import from other features, know about pages                 | ✓ allowed    |
+| entities | shared                                     | **Owns:** business objects and their operations (User, Product, Order)<br>**Not:** import from features or above, contain UI components ideally | ✓ allowed    |
+| shared   | —                                          | **Owns:** reusable infra with no business logic (ui-kit, api client, utils)<br>**Not:** import from any other layer, contain business logic     | ✗ forbidden  |
+
+### Abstraction Boundaries
+
+| Boundary          | Inner    | Outer    | Interface Required | Forbidden Leakage                                    |
+| ----------------- | -------- | -------- | ------------------ | ---------------------------------------------------- |
+| features→entities | entities | features | ✓ (model)          | API raw responses, implementation details of storage |
 
 **Cross-feature imports:** via public api only
 **Circular imports:** FORBIDDEN
@@ -23,21 +33,89 @@ Violations of import rules are **not permitted**.
 
 ```
 src/
-├── modules/
-│   ├── <module-name>/        # one per business capability
-│   │   ├── components/       # max 200 lines each
-│   │   │   └── ComponentName.tsx
-│   │   │       # no logic — use hooks/
-│   │   ├── hooks/            # all logic lives here
-│   │   ├── services/         # external I/O only — API, storage
-│   │   ├── types/            # module-scoped types
-│   │   └── index.ts          # public api — never import internals directly
-│   │   # cross-module imports: FORBIDDEN — use shared/
+├── app/
+│   # imports: [pages, widgets, features, entities, shared]
+│   # must not: contain business logic
+├── pages/
+│   # imports: [widgets, features, entities, shared]
+│   # must not: contain business logic
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # route components only — compose widgets, no business logic
+│   │   ├── model/
+│   │   │   # store, selectors, types — no side effects
+│   │   ├── api/
+│   │   │   # data fetching — async-await, map errors to domain types
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── widgets/
+│   # imports: [features, entities, shared]
+│   # must not: contain business logic directly
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # components — max 150 lines, no logic — extract to model
+│   │   ├── model/
+│   │   │   # store, selectors, types — no side effects
+│   │   ├── api/
+│   │   │   # data fetching — async-await, map errors to domain types
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── features/
+│   # imports: [entities, shared]
+│   # must not: import from other features
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # components — max 150 lines, no logic — extract to model
+│   │   ├── model/
+│   │   │   # feature state, selectors — only for this feature
+│   │   ├── api/
+│   │   │   # feature-specific mutations — calls entity api, never raw fetch
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── entities/
+│   # imports: [shared]
+│   # must not: import from features or above
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # components — max 150 lines, no logic — extract to model
+│   │   ├── model/
+│   │   │   # entity state, selectors, types — pure business logic
+│   │   ├── api/
+│   │   │   # data access for this entity — maps to domain types, no raw responses
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
 ├── shared/
-│   ├── ui/                   # design system, generic components
-│   ├── utils/                # pure functions — min 2 consumers to justify
-│   └── types/                # global contracts only
+│   # imports: [none]
+│   # must not: import from any other layer
+│   ├── ui-kit/           # design system primitives
+│   ├── api/              # base http client, interceptors
+│   ├── lib/              # pure utils — no business logic
+│   └── types/            # global types only
 ```
+
+---
+
+## Domain Rules
+
+- **Entities location:** `entities`
+- **Value objects:** allowed
+- **Immutable entities:** YES
+- **Framework-agnostic domain:** YES (no React/Axios/etc in entities)
+- **Validation:** factory-function
+- **Anemic model:** FORBIDDEN — business logic belongs in entities
+- **Ubiquitous Language:** enforced
 
 ---
 
@@ -47,44 +125,45 @@ src/
 
 > Files: `camelCase` globally · Symbols: per-type rules below
 
-| Type      | File Pattern      | Export Name Convention |
-| --------- | ----------------- | ---------------------- | ---------------- |
-| component | `*.component.tsx` | `PascalCase`           |
-| hook      | `*.hook.ts`       | `camelCase`            |
-| store     | `*.store.ts`      | `camelCase`            |
-| service   | `*.service.ts`    | `camelCase`            |
-| types     | `*.types.ts`      | `PascalCase (\*Type    | \*Props suffix)` |
-| constants | `*.constants.ts`  | `SCREAMING_SNAKE_CASE` |
+| Type      | File Pattern      | Export Name Convention        |
+| --------- | ----------------- | ----------------------------- | ---------------- |
+| component | `*.component.tsx` | `PascalCase`                  |
+| hook      | `*.hook.ts`       | `camelCase (use* prefix)`     |
+| store     | `*.store.ts`      | `camelCase (*Store suffix)`   |
+| service   | `*.service.ts`    | `camelCase (*Service suffix)` |
+| types     | `*.types.ts`      | `PascalCase (\*Type           | \*Props suffix)` |
+| constants | `*.constants.ts`  | `SCREAMING_SNAKE_CASE`        |
 
 ### Required Companions
 
-| File Type | Required                      | Optional    |
-| --------- | ----------------------------- | ----------- |
-| component | `*.module.css` + `*.test.tsx` | —           |
-| hook      | `*.test.ts`                   | —           |
-| store     | `*.test.ts`                   | —           |
-| service   | —                             | `*.test.ts` |
-| types     | —                             | —           |
-| constants | —                             | —           |
+| File Type | Required     | Optional    |
+| --------- | ------------ | ----------- |
+| component | `*.test.tsx` | —           |
+| hook      | `*.test.ts`  | —           |
+| store     | `*.test.ts`  | —           |
+| service   | —            | `*.test.ts` |
+| types     | —            | —           |
+| constants | —            | —           |
 
 ### Structure Rules
 
 - **Co-location:** strict — companions must live beside source file
 - **Test placement:** colocated
 - **Public API:** every feature root requires `index.ts` — internal files must not be imported directly
-- **Max directory depth:** N/A
+- **Max directory depth:** 5
 - **Barrel exports:** required at feature roots only
 
 ### Forbidden Patterns
 
 - `default-export-on-utility`
 - `barrel-in-non-feature-root`
+- `named-export-mix-in-component-file`
 
 ---
 
 ## Component Composition Rules
 
-- **Max lines:** 200
+- **Max lines:** 150
 - **Max props:** 5 — split into compound component if exceeded
 - **No prop drilling beyond depth 2** — lift to store or context
 - **Logic in components:** FORBIDDEN — extract to hooks
@@ -104,9 +183,9 @@ src/
 
 ## State & Async Rules
 
-- **Scope:** module-based
+- **Scope:** feature-based
 - **Derived state:** selectors
-- **Data fetching:** modules, consumed via hooks
+- **Data fetching:** entities, consumed via hooks
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state

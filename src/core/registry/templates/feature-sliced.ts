@@ -11,7 +11,6 @@ export const featureSlicedTemplate: Policy = {
     "pattern": "feature-sliced",
     "state_philosophy": "feature-based",
     "styling_strategy": "utility-first",
-    "routing_strategy": "declarative"
   },
   "fsd_config": {
     "segments": ["ui", "model", "api", "lib", "config"]

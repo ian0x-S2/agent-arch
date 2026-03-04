@@ -11,7 +11,6 @@ export const modularTemplate: Policy = {
     "pattern": "modular",
     "state_philosophy": "module-based",
     "styling_strategy": "any",
-    "routing_strategy": "any"
   },
   "layers": [
     { 

@@ -8,21 +8,14 @@ const program = new Command();
 
 program
   .name('agent-arch')
-  .description('Opinionated architecture governance for AI agents')
+  .description('Generate architecture policy for AI agents')
   .version('1.0.0');
 
 program
   .command('init')
-  .description('Initialize architecture policy for the project')
-  .option('-t, --template <path>', 'Path to a custom JSON template file')
-  .action(async (options) => {
-    if (options.template) {
-      // Load the custom template before launching the UI
-      const { TemplateRegistry } = await import('./core/registry');
-      TemplateRegistry.loadFromFile(options.template);
-      console.log(`Custom template loaded from: ${options.template}`);
-    }
+  .description('Interactive wizard to generate policy.md')
+  .action(() => {
     render(React.createElement(App));
   });
 
-program.parse(process.argv);
+program.parse();

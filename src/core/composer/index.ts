@@ -57,9 +57,12 @@ export const composePolicy = (selections: UserSelections): Policy => {
   
   // 2. Derivar state da arch — não do input do usuário
   const state = STATE_BY_PATTERN[selections.pattern] ?? {
-    philosophy: 'flexible',
-    scope: 'any',
+    philosophy: template.stack.state_philosophy || 'flexible',
+    scope: template.state_constraints?.global_state_scope || 'any',
   };
+
+  const stylingStrategy = selections.styling_strategy || template.stack.styling_strategy || 'any';
+  const namingStrategy = selections.naming_strategy || template.naming_conventions.global_strategy;
 
   // 3. Define overrides
   const overrides: any = {
@@ -70,14 +73,14 @@ export const composePolicy = (selections: UserSelections): Policy => {
     stack: {
       pattern: selections.pattern,
       state_philosophy: state.philosophy,
-      styling_strategy: selections.styling_strategy || 'any',
+      styling_strategy: stylingStrategy,
     },
     state_constraints: {
       global_state_scope: state.scope,
       derived_state_strategy: selections.pattern === 'flat' ? 'any' : 'selectors',
     },
     naming_conventions: {
-      global_strategy: selections.naming_strategy
+      global_strategy: namingStrategy
     }
   };
 
@@ -85,10 +88,12 @@ export const composePolicy = (selections: UserSelections): Policy => {
   let merged = deepMerge(template, overrides);
 
   // 5. Update naming patterns based on strategy
-  merged.file_conventions.types = resolveNamingPatterns(
-    merged.file_conventions.types,
-    selections.naming_strategy
-  );
+  if (namingStrategy) {
+    merged.file_conventions.types = resolveNamingPatterns(
+      merged.file_conventions.types,
+      namingStrategy
+    );
+  }
 
   // 6. Pattern-specific overrides
   if (selections.pattern === 'flat') {
@@ -96,7 +101,7 @@ export const composePolicy = (selections: UserSelections): Policy => {
   }
 
   // 7. Styling-specific companion + extension overrides
-  const styleExts = STYLING_EXTENSIONS[selections.styling_strategy ?? ''];
+  const styleExts = STYLING_EXTENSIONS[stylingStrategy];
 
   for (const typeDef of Object.values(merged.file_conventions.types) as any[]) {
     if (!typeDef.companions?.style) continue;
