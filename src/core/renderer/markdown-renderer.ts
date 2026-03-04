@@ -26,14 +26,19 @@ const renderNamingTable = (policy: Policy): string => {
   const keyMap: Record<string, string> = {
     types: 'type',
     constants: 'constant',
+    store: 'store',
+    service: 'service',
+    hook: 'hook',
+    component: 'component',
   };
   
   const getNamingConvention = (typeName: string): string => {
-    if (typeName === 'types') return 'PascalCase (*Type | *Props suffix)';
+    if (typeName === 'types')     return 'PascalCase (*Type | *Props suffix)';
     if (typeName === 'constants') return 'SCREAMING_SNAKE_CASE';
+    if (typeName === 'utils')     return 'camelCase';
     
     const namingKey = keyMap[typeName] || typeName;
-    return naming_conventions[namingKey] || naming_conventions.global_strategy || '—';
+    return naming_conventions[namingKey] || '—';
   };
   
   Object.entries(file_conventions.types).forEach(([typeName, def]) => {
@@ -45,36 +50,25 @@ const renderNamingTable = (policy: Policy): string => {
 };
 
 const renderCompanionsTable = (policy: Policy): string => {
-  const { file_conventions, stack } = policy;
-  const isUtilityFirst = stack.styling_strategy.toLowerCase().includes('utility') || 
-                         stack.styling_strategy.toLowerCase().includes('tailwind');
+  const { file_conventions } = policy;
   
   let table = '| File Type | Required | Optional |\n';
   table += '|-----------|----------|----------|\n';
   
   Object.entries(file_conventions.types).forEach(([typeName, def]) => {
-    if (!def.companions) {
+    if (!def.companions || Object.keys(def.companions).length === 0) {
       table += `| ${typeName} | — | — |\n`;
       return;
     }
 
-    const filterStyles = (entries: [string, any][]) => 
-      entries.filter(([key, rule]) => {
-        if (isUtilityFirst && (key === 'style' || rule.extensions.some((e: string) => e.includes('css') || e.includes('scss') || e.includes('less')))) {
-          return false;
-        }
-        return true;
-      });
-    
     const companionEntries = Object.entries(def.companions);
-    const filteredEntries = filterStyles(companionEntries);
 
-    const required = filteredEntries
+    const required = companionEntries
       .filter(([_, rule]) => rule.required)
       .map(([_, rule]) => `\`*${rule.extensions[0]}\``)
       .join(' + ') || '—';
       
-    const optional = filteredEntries
+    const optional = companionEntries
       .filter(([_, rule]) => !rule.required)
       .map(([_, rule]) => `\`*${rule.extensions[0]}\``)
       .join(', ') || '—';

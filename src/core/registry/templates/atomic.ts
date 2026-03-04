@@ -4,7 +4,7 @@ export const atomicTemplate: Policy = {
   meta: {
     version: '1.0.0',
     generated_at: new Date().toISOString(),
-    output_mode: 'balanced',
+    output_mode: 'compact',
   },
   stack: {
     domain: 'frontend',
@@ -99,8 +99,8 @@ export const atomicTemplate: Policy = {
     forbidden_patterns: ['prop-drilling-beyond-3-levels', 'global-state-for-ui-toggle'],
   },
   side_effect_boundaries: {
-    allowed_in_layers: ['pages', 'organisms'],
-    forbidden_in_layers: ['templates', 'molecules', 'atoms'],
+    allowed_in_layers: ['pages', 'templates', 'organisms'],
+    forbidden_in_layers: ['molecules', 'atoms'],
     async_pattern: 'hooks',
     data_fetching_scope: 'pages',
   },

@@ -14,7 +14,14 @@ program
 program
   .command('init')
   .description('Initialize architecture policy for the project')
-  .action(() => {
+  .option('-t, --template <path>', 'Path to a custom JSON template file')
+  .action(async (options) => {
+    if (options.template) {
+      // Load the custom template before launching the UI
+      const { TemplateRegistry } = await import('./core/registry');
+      TemplateRegistry.loadFromFile(options.template);
+      console.log(`Custom template loaded from: ${options.template}`);
+    }
     render(React.createElement(App));
   });
 

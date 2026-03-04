@@ -3,13 +3,13 @@ import type { Policy } from '../../../schema/policy.schema';
 export const modularTemplate: Policy = {
   "meta": {
     "version": "1.0.0",
-    "output_mode": "balanced",
+    "output_mode": "compact",
     "generated_at": ""
   },
   "stack": {
     "domain": "frontend",
     "pattern": "modular",
-    "state_philosophy": "modular",
+    "state_philosophy": "module-based",
     "styling_strategy": "any",
     "routing_strategy": "any"
   },
@@ -35,7 +35,7 @@ export const modularTemplate: Policy = {
   ],
   "import_matrix": {
     "modules": ["shared"],
-    "shared":  ["shared"]
+    "shared":  []
   },
   "structural_constraints": {
     "max_component_depth": 4,
@@ -101,12 +101,10 @@ export const modularTemplate: Policy = {
         }
       },
       "types": {
-        "pattern": "*.types.ts",
-        "companions": null
+        "pattern": "*.types.ts"
       },
       "constants": {
-        "pattern": "*.constants.ts",
-        "companions": null
+        "pattern": "*.constants.ts"
       }
     },
     "colocation": "strict",

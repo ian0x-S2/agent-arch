@@ -6,7 +6,7 @@ describe("Composer", () => {
   test("FSD derives state as feature-based automatically", () => {
     const policy = composePolicy({
       pattern: "feature-sliced",
-      output_mode: "balanced",
+      output_mode: "compact",
       naming_strategy: "PascalCase",
     });
 
@@ -17,7 +17,7 @@ describe("Composer", () => {
   test("flat derives state as flexible automatically", () => {
     const policy = composePolicy({
       pattern: "flat",
-      output_mode: "balanced",
+      output_mode: "compact",
       naming_strategy: "kebab-case",
     });
 
@@ -28,7 +28,7 @@ describe("Composer", () => {
   test("modular derives state as module-based automatically", () => {
     const policy = composePolicy({
       pattern: "modular",
-      output_mode: "balanced",
+      output_mode: "compact",
       naming_strategy: "PascalCase",
     });
 
@@ -39,7 +39,7 @@ describe("Composer", () => {
   test("atomic derives state as minimal automatically", () => {
     const policy = composePolicy({
       pattern: "atomic",
-      output_mode: "balanced",
+      output_mode: "compact",
       naming_strategy: "kebab-case",
     });
 
@@ -50,7 +50,7 @@ describe("Composer", () => {
   test("utility-first styling removes style companions", () => {
     const policy = composePolicy({
       pattern: "feature-sliced",
-      output_mode: "balanced",
+      output_mode: "compact",
       naming_strategy: "kebab-case",
       styling_strategy: "utility-first",
     });
@@ -64,7 +64,7 @@ describe("Composer", () => {
   test("scoped styling adds companion .module.css required", () => {
     const policy = composePolicy({
       pattern: "feature-sliced",
-      output_mode: "balanced",
+      output_mode: "compact",
       naming_strategy: "kebab-case",
       styling_strategy: "scoped",
     });
@@ -78,7 +78,7 @@ describe("Composer", () => {
   test("css-in-js removes companion but keeps co_location true", () => {
     const policy = composePolicy({
       pattern: "modular",
-      output_mode: "balanced",
+      output_mode: "compact",
       naming_strategy: "PascalCase",
       styling_strategy: "css-in-js",
     });
@@ -92,7 +92,7 @@ describe("Composer", () => {
   test("atomic + utility-first has no style companions", () => {
     const policy = composePolicy({
       pattern: "atomic",
-      output_mode: "balanced",
+      output_mode: "compact",
       naming_strategy: "kebab-case",
       styling_strategy: "utility-first",
     });
@@ -105,7 +105,7 @@ describe("Composer", () => {
   test("FSD with PascalCase naming applies correct file patterns", () => {
     const policy = composePolicy({
       pattern: "feature-sliced",
-      output_mode: "balanced",
+      output_mode: "compact",
       naming_strategy: "PascalCase",
     });
 
@@ -126,7 +126,7 @@ describe("Composer", () => {
   test("flat pattern disables barrel exports regardless of template default", () => {
     const policy = composePolicy({
       pattern: "flat",
-      output_mode: "balanced",
+      output_mode: "compact",
       naming_strategy: "kebab-case",
     });
     expect(policy.structural_constraints.barrel_exports_required).toBe(false);
@@ -135,7 +135,7 @@ describe("Composer", () => {
   test("modular template has correct import_matrix (no self-import)", () => {
     const policy = composePolicy({
       pattern: "modular",
-      output_mode: "balanced",
+      output_mode: "compact",
       naming_strategy: "PascalCase",
     });
 
@@ -159,7 +159,7 @@ describe("Composer", () => {
   test("flat template has meaningful forbidden_patterns", () => {
     const policy = composePolicy({
       pattern: "flat",
-      output_mode: "balanced",
+      output_mode: "compact",
       naming_strategy: "kebab-case",
     });
 
@@ -175,19 +175,20 @@ describe("Composer", () => {
     expect(() =>
       composePolicy({
         pattern: "non-existent",
-        output_mode: "balanced",
+        output_mode: "compact",
         naming_strategy: "kebab-case",
       }),
     ).toThrow("Template not found: non-existent");
   });
 
-  test("throws on invalid output_mode", () => {
-    expect(() =>
-      composePolicy({
-        pattern: "flat",
-        output_mode: "invalid-mode" as any,
-        naming_strategy: "kebab-case",
-      }),
-    ).toThrow();
+  test("camelCase naming strategy produces valid patterns", () => {
+    const policy = composePolicy({
+      pattern: 'flat',
+      output_mode: 'compact',
+      naming_strategy: 'camelCase',
+    });
+    expect(policy.naming_conventions.global_strategy).toBe('camelCase');
+    expect(policy.file_conventions.types.component?.pattern).toBe('*.component.tsx');
+    expect(policy.file_conventions.types.hook?.pattern).toBe('*.hook.ts');
   });
 });

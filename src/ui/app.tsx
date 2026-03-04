@@ -4,7 +4,7 @@ import SelectInput from 'ink-select-input';
 import { composePolicy } from '../core/composer';
 import type { UserSelections } from '../core/composer';
 import { writePolicyFiles } from '../core/writer';
-import { STATE_DISPLAY_MAP } from '../core/shared/pattern-state';
+import { STATE_BY_PATTERN } from '../core/shared/pattern-state';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -13,7 +13,6 @@ type Step =
   | 'pattern'
   | 'styling'
   | 'naming'
-  | 'mode'
   | 'confirm'
   | 'generating'
   | 'done';
@@ -104,6 +103,12 @@ const OPTIONS: Record<string, OptionWithMeta[]> = {
       hint: 'Web standard for filenames.',
     },
     {
+      label: 'camelCase',
+      value: 'camelCase',
+      description: 'Lowercase first letter, capitalized subsequent words (e.g., userModal.ts).',
+      hint: 'Standard for many JavaScript/TypeScript projects.',
+    },
+    {
       label: 'PascalCase',
       value: 'PascalCase',
       description: 'All words capitalized (e.g., UserModal.tsx).',
@@ -116,27 +121,6 @@ const OPTIONS: Record<string, OptionWithMeta[]> = {
       hint: 'Common in some backend-heavy frontend projects.',
     },
   ],
-  mode: [
-    {
-      label: 'Balanced  ✦ recommended',
-      value: 'balanced',
-      description: 'Clear structure with concise descriptions (~600 tokens).',
-      hint: 'Sweet spot for GPT-4 / Claude 3.5 Sonnet.',
-    },
-    {
-      label: 'Compact',
-      value: 'compact',
-      description: 'Declarative constraints only. No explanations (~390 tokens).',
-      hint: 'Best for small context windows or expert agents.',
-      impact: '⚡ Prompt: Reduces token usage by ~40%.',
-    },
-    {
-      label: 'Verbose',
-      value: 'verbose',
-      description: 'Full definitions with rationale and examples (~900 tokens).',
-      hint: 'Best for training or less capable models.',
-    },
-  ],
 };
 
 const STEP_LABELS: Record<Step, string> = {
@@ -144,13 +128,12 @@ const STEP_LABELS: Record<Step, string> = {
   pattern: 'Pattern',
   styling: 'Styling',
   naming: 'Naming',
-  mode: 'Mode',
   confirm: 'Confirm',
   generating: 'Generating...',
   done: 'Done',
 };
 
-const GUIDED_STEPS: Step[] = ['pattern', 'styling', 'naming', 'mode', 'confirm'];
+const GUIDED_STEPS: Step[] = ['pattern', 'styling', 'naming', 'confirm'];
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -238,7 +221,7 @@ const ConfirmScreen = ({
     if (key.escape || input === 'b') onBack();
   });
 
-  const derivedState = STATE_DISPLAY_MAP[selections.pattern ?? ''] ?? 'flexible';
+  const derivedState = STATE_BY_PATTERN[selections.pattern ?? '']?.philosophy ?? 'flexible';
 
   return (
     <Box flexDirection="column">
@@ -248,12 +231,11 @@ const ConfirmScreen = ({
       <Box flexDirection="column" marginTop={1} borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1}>
         <Text bold color="cyan">Selected Configuration</Text>
         <Box marginTop={1} flexDirection="column">
-          {(['pattern', 'styling_strategy', 'naming_strategy', 'output_mode'] as const).map((key) => {
+          {(['pattern', 'styling_strategy', 'naming_strategy'] as const).map((key) => {
              const labelMap: Record<string, string> = {
                pattern: 'Pattern',
                styling_strategy: 'Styling',
                naming_strategy: 'Naming',
-               output_mode: 'Mode'
              };
              return (
               <Box key={key}>
@@ -290,7 +272,7 @@ const RECOMMENDED_DEFAULTS: UserSelections = {
   pattern: 'feature-sliced',
   styling_strategy: 'utility-first',
   naming_strategy: 'kebab-case',
-  output_mode: 'balanced',
+  output_mode: 'compact',
 };
 
 export const App = () => {
@@ -318,10 +300,9 @@ export const App = () => {
     let mapping: Partial<UserSelections> = {};
     if (stepKey === 'styling') mapping = { styling_strategy: value };
     else if (stepKey === 'naming') mapping = { naming_strategy: value as UserSelections['naming_strategy'] };
-    else if (stepKey === 'mode') mapping = { output_mode: value as any };
     else mapping = { [stepKey]: value } as any;
 
-    const next: Partial<UserSelections> = { ...selections, ...mapping };
+    const next: Partial<UserSelections> = { ...selections, ...mapping, output_mode: 'compact' };
     setSelections(next);
 
     const idx = GUIDED_STEPS.indexOf(stepKey);
@@ -340,6 +321,7 @@ export const App = () => {
       setStep('done');
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
+      setStep('confirm');
     }
   };
 
@@ -358,7 +340,7 @@ export const App = () => {
         {step === 'welcome' && <QuestionStep stepKey="welcome" onSelect={handleWelcomeSelect} />}
 
         {/* Wizard steps */}
-        {(['pattern', 'styling', 'naming', 'mode'] as const).map(
+        {(['pattern', 'styling', 'naming'] as const).map(
           (s) =>
             step === s && (
               <QuestionStep key={s} stepKey={s} onSelect={(val) => handleSelect(s, val)} />
@@ -370,7 +352,7 @@ export const App = () => {
           <ConfirmScreen
             selections={selections}
             onConfirm={handleConfirm}
-            onBack={() => setStep(isExpressMode ? 'welcome' : 'mode')}
+            onBack={() => setStep(isExpressMode ? 'welcome' : 'naming')}
           />
         )}
 

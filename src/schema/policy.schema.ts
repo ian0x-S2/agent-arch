@@ -1,10 +1,6 @@
 import * as v from 'valibot';
 
-export const OutputModeSchema = v.union([
-  v.literal('compact'),
-  v.literal('balanced'),
-  v.literal('verbose'),
-]);
+export const OutputModeSchema = v.literal('compact');
 
 export const LayerResponsibilitiesSchema = v.object({
   owns: v.array(v.string()),
@@ -27,8 +23,8 @@ export const CompanionRuleSchema = v.object({
 
 export const FileTypeConventionSchema = v.object({
   pattern: v.string(),             // ex: "*.component.tsx"
-  companions: v.optional(          // null = sem companions obrigatórios
-    v.nullable(v.record(v.string(), CompanionRuleSchema))
+  companions: v.optional(          // undefined = sem companions obrigatórios
+    v.record(v.string(), CompanionRuleSchema)
   ),
   // ex: { test: { required: true, extensions: ['.test.ts'] },
   //        style: { required: false, extensions: ['.module.css'] } }
@@ -160,7 +156,21 @@ export const PolicySchema = v.object({
     forbidden_patterns: v.array(v.string()),
   }),
   side_effect_boundaries: SideEffectBoundariesSchema,
-  naming_conventions: v.record(v.string(), v.string()),
+  naming_conventions: v.looseObject({
+    global_strategy: v.union([
+      v.literal('kebab-case'),
+      v.literal('PascalCase'),
+      v.literal('snake_case'),
+      v.literal('camelCase'),
+    ]),
+    component: v.optional(v.string()),
+    hook: v.optional(v.string()),
+    store: v.optional(v.string()),
+    service: v.optional(v.string()),
+    constant: v.optional(v.string()),
+    type: v.optional(v.string()),
+    test: v.optional(v.string()),
+  }),
   file_conventions: FileConventionsSchema,
   token_metadata: v.object({
     estimated_prompt_tokens: v.number(),

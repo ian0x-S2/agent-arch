@@ -3,7 +3,7 @@ import type { Policy } from '../../../schema/policy.schema';
 export const featureSlicedTemplate: Policy = {
   "meta": {
     "version": "1.0.0",
-    "output_mode": "balanced",
+    "output_mode": "compact",
     "generated_at": ""
   },
   "stack": {
@@ -167,12 +167,10 @@ export const featureSlicedTemplate: Policy = {
         }
       },
       "types": {
-        "pattern": "*.types.ts",
-        "companions": null
+        "pattern": "*.types.ts"
       },
       "constants": {
-        "pattern": "*.constants.ts",
-        "companions": null
+        "pattern": "*.constants.ts"
       }
     },
     "colocation": "strict",

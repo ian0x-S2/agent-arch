@@ -1,7 +1,7 @@
 # agent-arch
 
 CLI that generates structured instruction bundles for AI coding agents.
-Scope: frontend only. No scaffolding. No framework assumptions.
+Scope: frontend only. No scaffolding.
 
 ## Stack
 

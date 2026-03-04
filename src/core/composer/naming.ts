@@ -25,7 +25,18 @@ const FILE_SUFFIXES: Record<string, Record<string, string>> = {
     types:     '*_types.ts',
     constants: '*_constants.ts',
   },
+  'camelCase': {
+    component: '*.component.tsx',
+    hook:      '*.hook.ts',
+    store:     '*.store.ts',
+    service:   '*.service.ts',
+    types:     '*.types.ts',
+    constants: '*.constants.ts',
+  },
 };
+
+export const VALID_STRATEGIES = ['kebab-case', 'PascalCase', 'snake_case', 'camelCase'] as const;
+export type NamingStrategy = typeof VALID_STRATEGIES[number];
 
 export const resolveNamingPatterns = (
   types: Policy['file_conventions']['types'],
@@ -33,7 +44,7 @@ export const resolveNamingPatterns = (
 ): Policy['file_conventions']['types'] => {
   const suffixes = FILE_SUFFIXES[strategy];
   if (!suffixes) {
-    throw new Error(`Unknown naming strategy: "${strategy}". Valid: ${Object.keys(FILE_SUFFIXES).join(', ')}`);
+    throw new Error(`Unknown naming strategy: "${strategy}". Valid: ${VALID_STRATEGIES.join(', ')}`);
   }
 
   const result = JSON.parse(JSON.stringify(types));

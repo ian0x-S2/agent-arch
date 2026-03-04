@@ -1,8 +1,8 @@
 {
   "meta": {
     "version": "1.0.0",
-    "generated_at": "2026-03-03T00:45:05.660Z",
-    "output_mode": "verbose"
+    "generated_at": "2026-03-04T19:40:16.301Z",
+    "output_mode": "compact"
   },
   "stack": {
     "domain": "frontend",
@@ -52,9 +52,7 @@
     "modules": [
       "shared"
     ],
-    "shared": [
-      "shared"
-    ]
+    "shared": []
   },
   "structural_constraints": {
     "max_component_depth": 4,
@@ -92,18 +90,18 @@
     "data_fetching_scope": "modules"
   },
   "naming_conventions": {
-    "global_strategy": "snake_case",
+    "global_strategy": "camelCase",
     "component": "PascalCase",
     "hook": "camelCase",
     "store": "camelCase",
     "service": "camelCase",
-    "type": "PascalCase",
-    "constant": "SCREAMING_SNAKE_CASE"
+    "constant": "SCREAMING_SNAKE_CASE",
+    "type": "PascalCase"
   },
   "file_conventions": {
     "types": {
       "component": {
-        "pattern": "*_component.tsx",
+        "pattern": "*.component.tsx",
         "companions": {
           "style": {
             "required": true,
@@ -121,7 +119,7 @@
         }
       },
       "hook": {
-        "pattern": "*_hook.ts",
+        "pattern": "*.hook.ts",
         "companions": {
           "test": {
             "required": true,
@@ -133,7 +131,7 @@
         }
       },
       "store": {
-        "pattern": "*_store.ts",
+        "pattern": "*.store.ts",
         "companions": {
           "test": {
             "required": true,
@@ -145,7 +143,7 @@
         }
       },
       "service": {
-        "pattern": "*_service.ts",
+        "pattern": "*.service.ts",
         "companions": {
           "test": {
             "required": false,
@@ -156,12 +154,10 @@
         }
       },
       "types": {
-        "pattern": "*_types.ts",
-        "companions": null
+        "pattern": "*.types.ts"
       },
       "constants": {
-        "pattern": "*_constants.ts",
-        "companions": null
+        "pattern": "*.constants.ts"
       }
     },
     "colocation": "strict",
@@ -176,7 +172,7 @@
     ]
   },
   "token_metadata": {
-    "estimated_prompt_tokens": 293,
+    "estimated_prompt_tokens": 290,
     "compression_applied": false,
     "omitted_sections": []
   }

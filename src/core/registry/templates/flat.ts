@@ -3,7 +3,7 @@ import type { Policy } from '../../../schema/policy.schema';
 export const flatTemplate: Policy = {
   "meta": {
     "version": "1.0.0",
-    "output_mode": "balanced",
+    "output_mode": "compact",
     "generated_at": ""
   },
   "stack": {
@@ -76,28 +76,22 @@ export const flatTemplate: Policy = {
         }
       },
       "hook": {
-        "pattern": "*.ts",
-        "companions": null
+        "pattern": "*.ts"
       },
       "store": {
-        "pattern": "*.ts",
-        "companions": null
+        "pattern": "*.ts"
       },
       "service": {
-        "pattern": "*.ts",
-        "companions": null
+        "pattern": "*.ts"
       },
       "types": {
-        "pattern": "*.ts",
-        "companions": null
+        "pattern": "*.ts"
       },
       "constants": {
-        "pattern": "*.ts",
-        "companions": null
+        "pattern": "*.ts"
       },
       "utils": {
-        "pattern": "*.ts",
-        "companions": null
+        "pattern": "*.ts"
       }
     },
     "colocation": "none",

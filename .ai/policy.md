@@ -12,7 +12,7 @@ Violations of import rules are **not permitted**.
 | Layer   | May Import | Responsibilities                                                                                                 | Side Effects |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------- | ------------ |
 | modules | shared     | **Owns:** business logic, components, hooks, services<br>**Not:** import directly from other modules             | ✓ allowed    |
-| shared  | shared     | **Owns:** design system, utils, global types, api client<br>**Not:** contain business logic, import from modules | ✓ allowed    |
+| shared  | —          | **Owns:** design system, utils, global types, api client<br>**Not:** contain business logic, import from modules | ✓ allowed    |
 
 **Cross-feature imports:** via public api only
 **Circular imports:** FORBIDDEN
@@ -45,16 +45,16 @@ src/
 
 ### Naming
 
-> Files: `snake_case` globally · Symbols: per-type rules below
+> Files: `camelCase` globally · Symbols: per-type rules below
 
 | Type      | File Pattern      | Export Name Convention |
 | --------- | ----------------- | ---------------------- | ---------------- |
-| component | `*_component.tsx` | `PascalCase`           |
-| hook      | `*_hook.ts`       | `camelCase`            |
-| store     | `*_store.ts`      | `camelCase`            |
-| service   | `*_service.ts`    | `camelCase`            |
-| types     | `*_types.ts`      | `PascalCase (\*Type    | \*Props suffix)` |
-| constants | `*_constants.ts`  | `SCREAMING_SNAKE_CASE` |
+| component | `*.component.tsx` | `PascalCase`           |
+| hook      | `*.hook.ts`       | `camelCase`            |
+| store     | `*.store.ts`      | `camelCase`            |
+| service   | `*.service.ts`    | `camelCase`            |
+| types     | `*.types.ts`      | `PascalCase (\*Type    | \*Props suffix)` |
+| constants | `*.constants.ts`  | `SCREAMING_SNAKE_CASE` |
 
 ### Required Companions
 

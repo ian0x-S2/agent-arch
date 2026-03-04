@@ -1,15 +1,17 @@
 import * as v from 'valibot';
 import { PolicySchema, type Policy } from '../../schema/policy.schema';
 import { TemplateRegistry } from '../registry';
-import { resolveNamingPatterns } from './naming';
+import { resolveNamingPatterns, VALID_STRATEGIES } from './naming';
 import { STATE_BY_PATTERN } from '../shared/pattern-state';
 
 export interface UserSelections {
   pattern: string;
-  output_mode: 'compact' | 'balanced' | 'verbose';
-  naming_strategy: 'kebab-case' | 'PascalCase' | 'snake_case';
+  output_mode: 'compact';
+  naming_strategy: typeof VALID_STRATEGIES[number];
   styling_strategy?: string;
 }
+
+const VALID_STYLING = ['utility-first', 'scoped', 'css-in-js', 'any'] as const;
 
 const STYLING_EXTENSIONS: Record<string, string[]> = {
   'scoped':       ['.module.css', '.css'],
@@ -25,25 +27,31 @@ function isObject(item: any): item is Record<string, any> {
   return item && typeof item === 'object' && !Array.isArray(item);
 }
 
+/**
+ * Deep merges two objects. Arrays are replaced entirely by source (no concat).
+ * Scalar overrides and nested object merges work recursively.
+ */
 function deepMerge(target: any, source: any): any {
+  if (!isObject(target) || !isObject(source)) return source;
   const output = { ...target };
-  if (isObject(target) && isObject(source)) {
-    Object.keys(source).forEach((key) => {
-      if (isObject(source[key])) {
-        if (!(key in target)) {
-          Object.assign(output, { [key]: source[key] });
-        } else {
-          output[key] = deepMerge(target[key], source[key]);
-        }
-      } else {
-        Object.assign(output, { [key]: source[key] });
-      }
-    });
+  for (const key of Object.keys(source)) {
+    if (Array.isArray(source[key])) {
+      output[key] = source[key]; // arrays: source always wins
+    } else if (isObject(source[key]) && isObject(target[key])) {
+      output[key] = deepMerge(target[key], source[key]);
+    } else {
+      output[key] = source[key];
+    }
   }
   return output;
 }
 
 export const composePolicy = (selections: UserSelections): Policy => {
+  // Validate styling_strategy
+  if (selections.styling_strategy && !VALID_STYLING.includes(selections.styling_strategy as any)) {
+    throw new Error(`Invalid styling_strategy: "${selections.styling_strategy}". Valid: ${VALID_STYLING.join(', ')}`);
+  }
+
   // 1. Get base template (clone to avoid mutation)
   const template = deepClone(TemplateRegistry.getTemplate(selections.pattern));
   
@@ -56,15 +64,17 @@ export const composePolicy = (selections: UserSelections): Policy => {
   // 3. Define overrides
   const overrides: any = {
     meta: {
-      output_mode: selections.output_mode,
+      output_mode: 'compact' as 'compact',
       generated_at: new Date().toISOString()
     },
     stack: {
+      pattern: selections.pattern,
       state_philosophy: state.philosophy,
-      ...(selections.styling_strategy && { styling_strategy: selections.styling_strategy }),
+      styling_strategy: selections.styling_strategy || 'any',
     },
     state_constraints: {
       global_state_scope: state.scope,
+      derived_state_strategy: selections.pattern === 'flat' ? 'any' : 'selectors',
     },
     naming_conventions: {
       global_strategy: selections.naming_strategy

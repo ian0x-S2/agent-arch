@@ -1,37 +1,13 @@
-# ARCHITECTURAL POLICY
-# Version: 1.0.0 | Generated: 2026-03-03T00:45:05.660Z
-
-## STACK
-Domain: frontend | Pattern: modular | State: module-based
-
-## LAYER ARCHITECTURE
-### MODULES
-  MAY IMPORT: shared
-  RESPONSIBILITIES: business logic, components, hooks, services
-  MUST NOT DO: import directly from other modules
-  DEPENDS ON ABSTRACTIONS: YES (DIP enforced)
-### SHARED
-  MAY IMPORT: shared
-  RESPONSIBILITIES: design system, utils, global types, api client
-  MUST NOT DO: contain business logic, import from modules
-
-## EXPECTED STRUCTURE
-  MODULAR: src/{modules/<name>/{component,hook,store,service},shared/{ui,utils,types}}
-## FILE CONVENTIONS
-  component=*_component.tsx companions=[style(required), test(required)]
-  hook=*_hook.ts companions=[test(required)]
-  store=*_store.ts companions=[test(required)]
-  service=*_service.ts companions=[test(optional)]
-  types=*_types.ts companions=[none]
-  constants=*_constants.ts companions=[none]
-Colocation policy: strict
-Test placement: colocated
-
-## NAMING CONVENTIONS
-global_strategy: snake_case
-component: PascalCase
-hook: camelCase
-store: camelCase
-service: camelCase
-type: PascalCase
-constant: SCREAMING_SNAKE_CASE
+ARCH_POLICY v1.0.0 | frontend | modular
+STACK state=module-based style=scoped routing=any
+LAYERS MODULES→[shared] | SHARED→[]
+STRUCTURE MODULAR: src/{modules/<name>/{component,hook,store,service},shared/{ui,utils,types}}
+RULES circular=FORBIDDEN cross_feature=via-public-api-only max_depth=4 barrel=REQUIRED
+UI max_lines=200 max_props=5 prop_drilling=2 logic=FORBIDDEN style_coloc=REQUIRED preferred_extensions=.module.css,.css
+STATE scope=module-based local=ALLOWED derived=selectors
+STATE_FORBIDDEN direct-mutation
+SIDE_EFFECTS allowed=[modules,shared] forbidden=[] fetch=modules
+NAMING global_strategy=camelCase component=PascalCase hook=camelCase store=camelCase service=camelCase constant=SCREAMING_SNAKE_CASE type=PascalCase
+FILES component=*.component.tsx companions=[style(required), test(required)] | hook=*.hook.ts companions=[test(required)] | store=*.store.ts companions=[test(required)] | service=*.service.ts companions=[test(optional)] | types=*.types.ts companions=[none] | constants=*.constants.ts companions=[none]
+COLOC=STRICT TEST=colocated PUBLIC_API=REQUIRED(index.ts)
+FILE_FORBIDDEN default-export-on-utility,barrel-in-non-feature-root
