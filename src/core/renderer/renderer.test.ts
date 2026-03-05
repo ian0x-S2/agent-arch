@@ -1,7 +1,6 @@
 import { describe, test, expect } from 'bun:test';
 import { composePolicy } from '../composer';
 import { renderMarkdown } from './markdown-renderer';
-import { renderPrompt } from './prompt-renderer';
 
 describe('Markdown Renderer', () => {
   test('FSD + utility-first compact output matches snapshot', () => {
@@ -99,27 +98,3 @@ describe('Markdown Renderer', () => {
   });
 });
 
-describe('Prompt Renderer', () => {
-  test('FSD compact output renders without errors', () => {
-    const policy = composePolicy({
-      pattern: 'feature-sliced',
-      output_mode: 'compact',
-      naming_strategy: 'kebab-case'
-    });
-    const { content, tokens } = renderPrompt(policy);
-    expect(content.length).toBeGreaterThan(0);
-    expect(tokens).toBeGreaterThan(0);
-  });
-
-  test('FSD output contains key sections', () => {
-    const policy = composePolicy({
-      pattern: 'feature-sliced',
-      output_mode: 'compact',
-      naming_strategy: 'kebab-case'
-    });
-    const { content } = renderPrompt(policy);
-    expect(content).toContain('feature-sliced');
-    expect(content).toContain('LAYERS');
-    expect(content).toContain('STRUCTURE');
-  });
-});

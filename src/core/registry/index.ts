@@ -5,64 +5,42 @@ import { modularTemplate } from './templates/modular';
 import { atomicTemplate } from './templates/atomic';
 import { loadTemplateFromFile } from './loader';
 
-const TEMPLATES: Record<string, Policy> = Object.freeze({
+const BUILT_IN_TEMPLATES: Record<string, Policy> = {
   'feature-sliced': featureSlicedTemplate,
   'flat': flatTemplate,
   'modular': modularTemplate,
   'atomic': atomicTemplate,
+};
+
+const customTemplates: Record<string, Policy> = {};
+
+const getAllTemplates = (): Record<string, Policy> => ({
+  ...BUILT_IN_TEMPLATES,
+  ...customTemplates,
 });
 
-/**
- * Central registry for architectural templates.
- * Allows retrieving, listing, and dynamically registering templates.
- */
 export const TemplateRegistry = {
-  /**
-   * Retrieves a template by its ID.
-   * @throws Error if template is not found.
-   */
   getTemplate: (id: string): Policy => {
-    const template = TEMPLATES[id];
-    if (!template) {
-      throw new Error(`Template not found: ${id}`);
-    }
+    const template = getAllTemplates()[id];
+    if (!template) throw new Error(`Template not found: ${id}`);
     return template;
   },
 
-  /**
-   * Lists all currently registered template IDs.
-   */
-  listTemplates: (): string[] => {
-    return Object.keys(TEMPLATES);
-  },
+  listTemplates: (): string[] => Object.keys(getAllTemplates()),
 
-  /**
-   * Registers a new template.
-   * @throws Error if a template with the same ID already exists.
-   */
   registerTemplate: (id: string, template: Policy): void => {
-    if (TEMPLATES[id]) {
-      throw new Error(`Template already registered: ${id}`);
-    }
-    TEMPLATES[id] = template;
+    if (getAllTemplates()[id]) throw new Error(`Template already registered: ${id}`);
+    customTemplates[id] = template;
   },
 
-  /**
-   * Loads a template from a file and registers it.
-   */
   loadFromFile: (filePath: string): void => {
     const { id, template } = loadTemplateFromFile(filePath);
     TemplateRegistry.registerTemplate(id, template);
   },
 
-  /**
-   * Resets the registry to only include the built-in templates.
-   * Useful for cleaning up state between tests or dynamic reloads.
-   */
   reset: (): void => {
-    // Note: Since TEMPLATES is now frozen, this is a no-op
-    // The registry is now immutable by design
-    console.warn('Registry reset is deprecated - templates are now immutable');
+    for (const key of Object.keys(customTemplates)) {
+      delete customTemplates[key];
+    }
   },
 };
-
