@@ -3,13 +3,23 @@ import { PolicySchema, type Policy } from '../../schema/policy.schema';
 import { TemplateRegistry } from '../registry';
 import { resolveNamingPatterns, VALID_STRATEGIES } from './naming';
 import { STATE_BY_PATTERN } from '../shared/pattern-state';
+import { FRAMEWORK_OVERRIDES } from '../shared/framework-rules';
 
 export interface UserSelections {
   pattern: string;
   output_mode: 'compact';
   naming_strategy: typeof VALID_STRATEGIES[number];
   styling_strategy?: string;
+  framework?: 'react' | 'vue' | 'svelte';
+  component_lib?: string;
+  component_preference?: 'strict' | 'balanced' | 'relaxed';
 }
+
+const PREFERENCE_MAP = {
+  strict: 5,
+  balanced: 7,
+  relaxed: 10,
+};
 
 const VALID_STYLING = ['utility-first', 'scoped', 'css-in-js', 'any'] as const;
 
@@ -74,6 +84,8 @@ export const composePolicy = (selections: UserSelections): Policy => {
       pattern: selections.pattern,
       state_philosophy: state.philosophy,
       styling_strategy: stylingStrategy,
+      framework: selections.framework,
+      component_lib: selections.component_lib || undefined,
     },
     state_constraints: {
       global_state_scope: state.scope,
@@ -93,6 +105,14 @@ export const composePolicy = (selections: UserSelections): Policy => {
       merged.file_conventions.types,
       namingStrategy
     );
+  }
+
+  // Apply framework overrides
+  if (selections.framework) {
+    const frameworkOverride = FRAMEWORK_OVERRIDES[selections.framework];
+    if (frameworkOverride) {
+      merged = deepMerge(merged, frameworkOverride);
+    }
   }
 
   // 6. Pattern-specific overrides
@@ -128,6 +148,10 @@ export const composePolicy = (selections: UserSelections): Policy => {
   if (selections.styling_strategy === 'utility-first') {
     merged.ui_constraints.style_co_location = false;
     merged.ui_constraints.allowed_style_extensions = [];
+  }
+
+  if (selections.component_preference) {
+    merged.ui_constraints.component_max_props = PREFERENCE_MAP[selections.component_preference];
   }
 
   // 9. Validate the final object

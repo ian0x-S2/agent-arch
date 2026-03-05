@@ -6,13 +6,17 @@ import { writePolicyFiles } from '../core/writer';
 import { Header } from './components/Header';
 import { QuestionStep } from './components/QuestionStep';
 import { ConfirmScreen } from './components/ConfirmScreen';
+import { ComponentLibStep } from './components/ComponentLibStep';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Step =
   | 'welcome'
   | 'pattern'
+  | 'framework'
+  | 'component_lib'
   | 'styling'
+  | 'component_preference'
   | 'naming'
   | 'confirm'
   | 'generating'
@@ -67,6 +71,26 @@ const OPTIONS: Record<string, OptionWithMeta[]> = {
       impact: '⚡ Prompt: Enforces strict composition hierarchy (Atoms → Molecules → ...).',
     },
   ],
+  framework: [
+    {
+      label: '⚛️  React',
+      value: 'react',
+      description: 'Component-based UI library. Hooks for logic, JSX for templates.',
+      hint: 'Most common choice. Works with any arch pattern.',
+    },
+    {
+      label: '💚 Vue',
+      value: 'vue',
+      description: 'Progressive framework. Composables follow the use* convention.',
+      hint: 'Good fit for modular and flat patterns.',
+    },
+    {
+      label: '🔥 Svelte',
+      value: 'svelte',
+      description: 'Compiler-based framework. Reactive stores replace hooks.',
+      hint: 'Minimal boilerplate. State rules differ from React/Vue.',
+    },
+  ],
   styling: [
     {
       label: '🎨 Utility-First (Tailwind)',
@@ -88,6 +112,26 @@ const OPTIONS: Record<string, OptionWithMeta[]> = {
       description: 'Styles defined within the TypeScript code.',
       hint: 'Dynamic: High | Portability: Low.',
       impact: '⚡ Prompt: Agent defines styled components in the same file.',
+    },
+  ],
+  component_preference: [
+    {
+      label: '⚖️  Balanced',
+      value: 'balanced',
+      description: 'Standard props limit (7). Good for most projects.',
+      hint: 'Balanced reuse and complexity.',
+    },
+    {
+      label: '🛡️  Strict',
+      value: 'strict',
+      description: 'Aggressive prop limit (5). Enforces small, focused components.',
+      hint: 'High reuse, more small components.',
+    },
+    {
+      label: '🌊 Relaxed',
+      value: 'relaxed',
+      description: 'Higher prop limit (10). Allows larger components.',
+      hint: 'Less overhead, potentially higher complexity.',
     },
   ],
   naming: [
@@ -118,7 +162,8 @@ const OPTIONS: Record<string, OptionWithMeta[]> = {
   ],
 };
 
-const GUIDED_STEPS: Step[] = ['pattern', 'styling', 'naming', 'confirm'];
+const GUIDED_STEPS: Step[] = ['pattern', 'framework', 'component_lib', 'styling', 'component_preference', 'naming', 'confirm'];
+const MAIN_STEPS: Step[] = ['pattern', 'framework', 'styling', 'naming', 'confirm'];
 
 // ─── Main App ──────────────────────────────────────────────────────────────────
 
@@ -129,7 +174,8 @@ export const App = () => {
   const [error, setError] = useState<string | null>(null);
   const [generatedPrompt, setGeneratedPrompt] = useState<string>('');
 
-  const stepIndex = GUIDED_STEPS.indexOf(step);
+  const stepIndex = MAIN_STEPS.indexOf(step);
+  const totalSteps = MAIN_STEPS.length;
 
   const handleWelcomeSelect = () => {
     setStep('pattern');
@@ -139,6 +185,8 @@ export const App = () => {
     let mapping: Partial<UserSelections> = {};
     if (stepKey === 'styling') mapping = { styling_strategy: value };
     else if (stepKey === 'naming') mapping = { naming_strategy: value as UserSelections['naming_strategy'] };
+    else if (stepKey === 'framework') mapping = { framework: value as UserSelections['framework'] };
+    else if (stepKey === 'component_preference') mapping = { component_preference: value as UserSelections['component_preference'] };
     else mapping = { [stepKey]: value } as any;
 
     const next: Partial<UserSelections> = { ...selections, ...mapping, output_mode: 'compact' };
@@ -171,7 +219,7 @@ export const App = () => {
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Header step={step} stepIndex={stepIndex} totalSteps={step === 'welcome' ? 1 : GUIDED_STEPS.length} />
+      <Header step={step} stepIndex={stepIndex} totalSteps={step === 'welcome' ? 1 : totalSteps} />
 
       <Box marginTop={1}>
         {/* Welcome */}
@@ -184,16 +232,33 @@ export const App = () => {
         )}
 
         {/* Wizard steps */}
-        {(['pattern', 'styling', 'naming'] as const).map(
-          (s) =>
-            step === s && (
-              <QuestionStep 
-                key={s} 
-                stepKey={s} 
-                options={OPTIONS[s]} 
-                onSelect={(val) => handleSelect(s, val)} 
-              />
-            ),
+        {(['pattern', 'framework', 'styling', 'component_preference', 'naming'] as const).map(
+          (s) => {
+            const options = s === 'styling' 
+              ? OPTIONS.styling.filter(o => !(o.value === 'css-in-js' && (selections.framework === 'vue' || selections.framework === 'svelte')))
+              : OPTIONS[s];
+
+            return (
+              step === s && (
+                <QuestionStep 
+                  key={s} 
+                  stepKey={s} 
+                  options={options} 
+                  onSelect={(val) => handleSelect(s, val)} 
+                />
+              )
+            );
+          },
+        )}
+
+        {/* Component Lib Step */}
+        {step === 'component_lib' && (
+          <ComponentLibStep
+            onSubmit={(val) => {
+              setSelections(prev => ({ ...prev, component_lib: val, output_mode: 'compact' }));
+              setStep('styling');
+            }}
+          />
         )}
 
         {/* Confirm */}

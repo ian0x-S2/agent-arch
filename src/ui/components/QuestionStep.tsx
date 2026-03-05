@@ -6,7 +6,9 @@ import { OptionDescription, type OptionWithMeta } from './OptionDescription';
 const STEP_LABELS: Record<string, string> = {
   welcome: 'Start',
   pattern: 'Pattern',
+  framework: 'Framework',
   styling: 'Styling',
+  component_preference: 'Component Preference',
   naming: 'Naming',
 };
 

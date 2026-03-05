@@ -3,8 +3,8 @@ import { Box, Text } from 'ink';
 
 const STEP_LABELS: Record<string, string> = {
   welcome: 'Start',
-  import: 'Import',
   pattern: 'Pattern',
+  framework: 'Framework',
   styling: 'Styling',
   naming: 'Naming',
   confirm: 'Confirm',
@@ -12,7 +12,7 @@ const STEP_LABELS: Record<string, string> = {
   done: 'Done',
 };
 
-const GUIDED_STEPS: string[] = ['pattern', 'styling', 'naming', 'confirm'];
+const GUIDED_STEPS: string[] = ['pattern', 'framework', 'styling', 'naming', 'confirm'];
 
 export const Header = ({ step, stepIndex, totalSteps }: { step: string; stepIndex: number; totalSteps: number }) => (
   <Box flexDirection="column" marginBottom={1}>
@@ -22,14 +22,18 @@ export const Header = ({ step, stepIndex, totalSteps }: { step: string; stepInde
     </Box>
     {totalSteps > 1 && (
       <Box marginTop={1} paddingX={1}>
-        {GUIDED_STEPS.map((s, i) => (
-          <Text key={s}>
-            <Text color={i < stepIndex ? 'green' : i === stepIndex ? 'cyan' : 'gray'} bold={i === stepIndex}>
-              {i < stepIndex ? '✓' : i === stepIndex ? '▶' : '○'} {STEP_LABELS[s]}
+        {GUIDED_STEPS.map((s, i) => {
+          const isActive = i === stepIndex;
+          const isDone = stepIndex !== -1 && i < stepIndex;
+          return (
+            <Text key={s}>
+              <Text color={isDone ? 'green' : isActive ? 'cyan' : 'gray'} bold={isActive}>
+                {isDone ? '✓' : isActive ? '▶' : '○'} {STEP_LABELS[s]}
+              </Text>
+              {i < GUIDED_STEPS.length - 1 && <Text dimColor>  ──  </Text>}
             </Text>
-            {i < GUIDED_STEPS.length - 1 && <Text dimColor>  ──  </Text>}
-          </Text>
-        ))}
+          );
+        })}
       </Box>
     )}
   </Box>

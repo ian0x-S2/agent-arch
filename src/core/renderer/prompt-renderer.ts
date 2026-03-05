@@ -32,7 +32,7 @@ const renderCompact = (policy: Policy): string => {
     `LAYERS ${layerLines}`,
     `STRUCTURE ${renderCompactStructure(policy)}`,
     `RULES circular=FORBIDDEN cross_feature=${structural_constraints.cross_feature_imports} max_depth=${structural_constraints.max_component_depth} barrel=${structural_constraints.barrel_exports_required ? 'REQUIRED' : 'OPTIONAL'}`,
-    `UI max_lines=${ui_constraints.component_max_lines} max_props=${ui_constraints.component_max_props} prop_drilling=${ui_constraints.prop_drilling_max_depth} logic=${ui_constraints.logic_in_components ? 'ALLOWED' : 'FORBIDDEN'} style_coloc=${ui_constraints.style_co_location ? 'REQUIRED' : 'OPTIONAL'} preferred_extensions=${ui_constraints.allowed_style_extensions.join(',') || 'none'}`,
+    `UI max_props=${ui_constraints.component_max_props} prop_drilling=${ui_constraints.prop_drilling_max_depth} logic=${ui_constraints.logic_in_components ? 'ALLOWED' : 'FORBIDDEN'} style_coloc=${ui_constraints.style_co_location ? 'REQUIRED' : 'OPTIONAL'} preferred_extensions=${ui_constraints.allowed_style_extensions.join(',') || 'none'}`,
     `STATE scope=${state_constraints.global_state_scope} local=${state_constraints.local_state_allowed ? 'ALLOWED' : 'FORBIDDEN'} derived=${state_constraints.derived_state_strategy}`,
     `STATE_FORBIDDEN ${state_constraints.forbidden_patterns.join(',')}`,
     `SIDE_EFFECTS allowed=[${side_effect_boundaries.allowed_in_layers.join(',')}] forbidden=[${side_effect_boundaries.forbidden_in_layers.join(',')}] fetch=${side_effect_boundaries.data_fetching_scope}`,

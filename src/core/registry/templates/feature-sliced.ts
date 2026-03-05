@@ -11,6 +11,8 @@ export const featureSlicedTemplate: Policy = {
     "pattern": "feature-sliced",
     "state_philosophy": "feature-based",
     "styling_strategy": "utility-first",
+    "framework": undefined,
+    "component_lib": undefined
   },
   "fsd_config": {
     "segments": ["ui", "model", "api", "lib", "config"]
@@ -109,8 +111,7 @@ export const featureSlicedTemplate: Policy = {
     "cross_feature_imports": "via-public-api-only"
   },
   "ui_constraints": {
-    "component_max_lines": 150,
-    "component_max_props": 5,
+    "component_max_props": 7,
     "prop_drilling_max_depth": 2,
     "logic_in_components": false,
     "style_co_location": true,

@@ -11,6 +11,8 @@ export const flatTemplate: Policy = {
     "pattern": "flat",
     "state_philosophy": "flexible",
     "styling_strategy": "any",
+    "framework": undefined,
+    "component_lib": undefined
   },
   "layers": [
     { 
@@ -33,8 +35,7 @@ export const flatTemplate: Policy = {
     "cross_feature_imports": "allowed"
   },
   "ui_constraints": {
-    "component_max_lines": 300,
-    "component_max_props": 8,
+    "component_max_props": 7,
     "prop_drilling_max_depth": 3,
     "logic_in_components": true,
     "style_co_location": false,

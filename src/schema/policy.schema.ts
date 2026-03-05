@@ -66,7 +66,6 @@ export const SideEffectBoundariesSchema = v.object({
 });
 
 export const UIConstraintsSchema = v.object({
-  component_max_lines: v.number(),
   component_max_props: v.number(),
   prop_drilling_max_depth: v.number(),
   logic_in_components: v.boolean(),
@@ -128,6 +127,8 @@ export const PolicySchema = v.object({
     pattern: v.string(),
     state_philosophy: v.string(),
     styling_strategy: v.string(),
+    framework: v.optional(v.union([v.literal('react'), v.literal('vue'), v.literal('svelte')])),
+    component_lib: v.optional(v.string()),
   }),
   fsd_config: v.optional(v.object({
     segments: v.array(v.string()),

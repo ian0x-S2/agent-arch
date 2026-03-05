@@ -11,7 +11,8 @@ export const atomicTemplate: Policy = {
     pattern: 'atomic',
     state_philosophy: 'minimal',
     styling_strategy: 'utility-first',
-    routing_strategy: 'declarative',
+    framework: undefined,
+    component_lib: undefined,
   },
   layers: [
     { 
@@ -84,8 +85,7 @@ export const atomicTemplate: Policy = {
     cross_feature_imports: 'via-public-api-only',
   },
   ui_constraints: {
-    component_max_lines: 100,
-    component_max_props: 10,
+    component_max_props: 7,
     prop_drilling_max_depth: 3,
     logic_in_components: true,
     style_co_location: true,

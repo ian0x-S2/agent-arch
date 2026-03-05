@@ -11,6 +11,8 @@ export const modularTemplate: Policy = {
     "pattern": "modular",
     "state_philosophy": "module-based",
     "styling_strategy": "any",
+    "framework": undefined,
+    "component_lib": undefined
   },
   "layers": [
     { 
@@ -43,8 +45,7 @@ export const modularTemplate: Policy = {
     "cross_feature_imports": "via-public-api-only"
   },
   "ui_constraints": {
-    "component_max_lines": 200,
-    "component_max_props": 5,
+    "component_max_props": 7,
     "prop_drilling_max_depth": 2,
     "logic_in_components": false,
     "style_co_location": true,

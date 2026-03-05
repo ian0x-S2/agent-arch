@@ -114,7 +114,7 @@ const getSegmentRules = (segment: string, layerId: string, policy: Policy): stri
   }
   
   const rules: Record<string, string> = {
-    ui:     `components — max ${ui_constraints.component_max_lines} lines, ${ui_constraints.logic_in_components ? 'logic allowed' : 'no logic — extract to model'}`,
+    ui:     `components — extract if template > 2 logical sections, ${ui_constraints.logic_in_components ? 'logic allowed' : 'no logic — extract to model'}`,
     model:  `store, selectors, types — no side effects`,
     api:    `data fetching — ${side_effect_boundaries.async_pattern}, map errors to domain types`,
     lib:    `pure utils — stateless, no imports from ui or model`,
@@ -174,7 +174,7 @@ const renderModularStructure = (policy: Policy): string => {
     'src/',
     '├── modules/',
     '│   ├── <module-name>/        # one per business capability',
-    `│   │   ├── components/       # max ${ui_constraints.component_max_lines} lines each`,
+    '│   │   ├── components/       # extract if template > 2 logical sections',
     `│   │   │   └── ComponentName.tsx`,
     `│   │   │       # ${ui_constraints.logic_in_components ? 'logic allowed here' : 'no logic — use hooks/'}`,
     '│   │   ├── hooks/            # all logic lives here',
@@ -258,15 +258,37 @@ const renderExpectedStructure = (policy: Policy): string => {
   return `## Expected Directory Structure\n\n\`\`\`\n${renderer()}\n\`\`\``;
 };
 
+const renderStackSection = (policy: Policy): string => {
+  const { stack } = policy;
+  if (!stack.framework && !stack.component_lib) return '';
+
+  const lines: string[] = ['## Stack'];
+  if (stack.framework) lines.push(`- **Framework:** ${stack.framework}`);
+  if (stack.component_lib) {
+    lines.push(`- **Component Library:** ${stack.component_lib}`);
+  }
+  return lines.join('\n');
+};
+
+const getLogicExtractionTarget = (policy: Policy): string => {
+  const { framework } = policy.stack;
+  if (framework === 'svelte') return '`*.svelte.ts`';
+  if (framework === 'vue') return 'composables';
+  return 'hooks';
+};
+
 export const renderMarkdown = (policy: Policy): string => {
   const { stack, meta, structural_constraints, ui_constraints, state_constraints, file_conventions, side_effect_boundaries, domain_rules, naming_conventions } = policy;
+
+  const stackSection = renderStackSection(policy);
+  const logicTarget = getLogicExtractionTarget(policy);
 
   return `# Architecture Policy
 > Pattern: **${stack.pattern}** | State: **${stack.state_philosophy}** | Styling: **${stack.styling_strategy}**
 
 ---
 
-## Layer Rules
+${stackSection ? `${stackSection}\n\n---\n\n` : ''}## Layer Rules
 Imports are unidirectional. Each layer may only import from layers listed below it.
 Violations of import rules are **not permitted**.
 
@@ -287,7 +309,7 @@ ${domain_rules ? `## Domain Rules
 - **Entities location:** \`${domain_rules.entities_location}\`
 - **Value objects:** ${domain_rules.value_objects_allowed ? 'allowed' : 'forbidden'}
 - **Immutable entities:** ${domain_rules.entity_rules.must_be_immutable ? 'YES' : 'no'}
-- **Framework-agnostic domain:** ${domain_rules.entity_rules.no_framework_imports ? 'YES (no React/Axios/etc in entities)' : 'no'}
+- **Framework-agnostic domain:** ${domain_rules.entity_rules.no_framework_imports ? 'YES' : 'no'}
 - **Validation:** ${domain_rules.entity_rules.validation_location}
 - **Anemic model:** ${domain_rules.anemic_model_allowed ? 'allowed' : 'FORBIDDEN — business logic belongs in entities'}
 - **Ubiquitous Language:** ${domain_rules.ubiquitous_language.enforced ? 'enforced' : 'optional'}
@@ -316,17 +338,18 @@ ${file_conventions.forbidden_patterns.map(p => `- \`${p}\``).join('\n')}
 ---
 
 ## Component Composition Rules
-- **Max lines:** ${ui_constraints.component_max_lines}
+- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
+- **Logic signal:** extract to ${logicTarget} when script block exceeds ~20-25 lines
 - **Max props:** ${ui_constraints.component_max_props} — split into compound component if exceeded
 - **No prop drilling beyond depth ${ui_constraints.prop_drilling_max_depth}** — lift to store or context
-- **Logic in components:** ${ui_constraints.logic_in_components ? 'allowed' : 'FORBIDDEN — extract to hooks'}
+- **Logic in components:** ${ui_constraints.logic_in_components ? 'allowed' : `FORBIDDEN — extract to ${logicTarget}`}
 - **Presentational components** must not import from \`state\` or \`services\` layers
 - **Prefer composition over configuration:** ${ui_constraints.prefer_composition ? 'YES — pass children/slots, avoid boolean prop explosion' : 'optional'}
 
 ---
 
 ## Abstraction Rules
-- Extract to **hook** when: logic repeats across 2+ components OR exceeds 20 lines inside component
+- Extract to **${logicTarget}** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication

@@ -1,4 +1,4 @@
-// Bun Snapshot v1, https://goo.gl/fbAQLP
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
 exports[`Markdown Renderer FSD + utility-first compact output matches snapshot 1`] = `
 "# Architecture Policy
@@ -60,7 +60,7 @@ src/
 │   # must not: contain business logic directly
 │   ├── <slice>/          # business domain unit
 │   │   ├── ui/
-│   │   │   # components — max 150 lines, no logic — extract to model
+│   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
 │   │   ├── model/
 │   │   │   # store, selectors, types — no side effects
 │   │   ├── api/
@@ -75,7 +75,7 @@ src/
 │   # must not: import from other features
 │   ├── <slice>/          # business domain unit
 │   │   ├── ui/
-│   │   │   # components — max 150 lines, no logic — extract to model
+│   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
 │   │   ├── model/
 │   │   │   # feature state, selectors — only for this feature
 │   │   ├── api/
@@ -90,7 +90,7 @@ src/
 │   # must not: import from features or above
 │   ├── <slice>/          # business domain unit
 │   │   ├── ui/
-│   │   │   # components — max 150 lines, no logic — extract to model
+│   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
 │   │   ├── model/
 │   │   │   # entity state, selectors, types — pure business logic
 │   │   ├── api/
@@ -115,7 +115,7 @@ src/
 - **Entities location:** \`entities\`
 - **Value objects:** allowed
 - **Immutable entities:** YES
-- **Framework-agnostic domain:** YES (no React/Axios/etc in entities)
+- **Framework-agnostic domain:** YES
 - **Validation:** factory-function
 - **Anemic model:** FORBIDDEN — business logic belongs in entities
 - **Ubiquitous Language:** enforced
@@ -164,8 +164,9 @@ src/
 ---
 
 ## Component Composition Rules
-- **Max lines:** 150
-- **Max props:** 5 — split into compound component if exceeded
+- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
+- **Logic signal:** extract to hooks when script block exceeds ~20-25 lines
+- **Max props:** 7 — split into compound component if exceeded
 - **No prop drilling beyond depth 2** — lift to store or context
 - **Logic in components:** FORBIDDEN — extract to hooks
 - **Presentational components** must not import from \`state\` or \`services\` layers
@@ -174,7 +175,7 @@ src/
 ---
 
 ## Abstraction Rules
-- Extract to **hook** when: logic repeats across 2+ components OR exceeds 20 lines inside component
+- Extract to **hooks** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication
@@ -230,7 +231,7 @@ Violations of import rules are **not permitted**.
 src/
 ├── modules/
 │   ├── <module-name>/        # one per business capability
-│   │   ├── components/       # max 200 lines each
+│   │   ├── components/       # extract if template > 2 logical sections
 │   │   │   └── ComponentName.tsx
 │   │   │       # no logic — use hooks/
 │   │   ├── hooks/            # all logic lives here
@@ -287,8 +288,9 @@ src/
 ---
 
 ## Component Composition Rules
-- **Max lines:** 200
-- **Max props:** 5 — split into compound component if exceeded
+- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
+- **Logic signal:** extract to hooks when script block exceeds ~20-25 lines
+- **Max props:** 7 — split into compound component if exceeded
 - **No prop drilling beyond depth 2** — lift to store or context
 - **Logic in components:** FORBIDDEN — extract to hooks
 - **Presentational components** must not import from \`state\` or \`services\` layers
@@ -297,7 +299,7 @@ src/
 ---
 
 ## Abstraction Rules
-- Extract to **hook** when: logic repeats across 2+ components OR exceeds 20 lines inside component
+- Extract to **hooks** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication
@@ -408,8 +410,9 @@ src/
 ---
 
 ## Component Composition Rules
-- **Max lines:** 300
-- **Max props:** 8 — split into compound component if exceeded
+- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
+- **Logic signal:** extract to hooks when script block exceeds ~20-25 lines
+- **Max props:** 7 — split into compound component if exceeded
 - **No prop drilling beyond depth 3** — lift to store or context
 - **Logic in components:** allowed
 - **Presentational components** must not import from \`state\` or \`services\` layers
@@ -418,7 +421,7 @@ src/
 ---
 
 ## Abstraction Rules
-- Extract to **hook** when: logic repeats across 2+ components OR exceeds 20 lines inside component
+- Extract to **hooks** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication
@@ -533,8 +536,9 @@ src/
 ---
 
 ## Component Composition Rules
-- **Max lines:** 100
-- **Max props:** 10 — split into compound component if exceeded
+- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
+- **Logic signal:** extract to hooks when script block exceeds ~20-25 lines
+- **Max props:** 7 — split into compound component if exceeded
 - **No prop drilling beyond depth 3** — lift to store or context
 - **Logic in components:** allowed
 - **Presentational components** must not import from \`state\` or \`services\` layers
@@ -543,7 +547,7 @@ src/
 ---
 
 ## Abstraction Rules
-- Extract to **hook** when: logic repeats across 2+ components OR exceeds 20 lines inside component
+- Extract to **hooks** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication

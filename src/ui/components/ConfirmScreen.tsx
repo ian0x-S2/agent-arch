@@ -29,18 +29,23 @@ export const ConfirmScreen = ({
           <Text bold color="cyan" underline>Selected Configuration</Text>
         </Box>
         <Box flexDirection="column">
-          {(['pattern', 'styling_strategy', 'naming_strategy'] as const).map((key) => {
+          {(['pattern', 'framework', 'component_lib', 'styling_strategy', 'component_preference', 'naming_strategy'] as const).map((key) => {
              const labelMap: Record<string, string> = {
                pattern: 'Architecture Pattern',
+               framework: 'Framework',
+               component_lib: 'Component Library',
                styling_strategy: 'Styling Strategy',
+               component_preference: 'Component Preference',
                naming_strategy: 'Naming Convention',
              };
+             const val = (selections as any)[key];
+             if (!val) return null;
              return (
               <Box key={key} marginBottom={0}>
                 <Box width={25}>
                   <Text dimColor>{labelMap[key]}:</Text>
                 </Box>
-                <Text color="green" bold>{(selections as any)[key]}</Text>
+                <Text color="green" bold>{val}</Text>
               </Box>
              );
           })}
