@@ -2,10 +2,10 @@ import type { Policy } from '../../schema/policy.schema';
 
 const renderLayerTable = (policy: Policy): string => {
   const { layers, import_matrix, side_effect_boundaries } = policy;
-  
+
   let table = '| Layer | May Import | Responsibilities | Side Effects |\n';
   table += '|-------|------------|------------------|--------------|\n';
-  
+
   layers.forEach(layer => {
     const mayImport = import_matrix[layer.id]?.join(', ') || '—';
     const isAllowed = side_effect_boundaries.allowed_in_layers.includes(layer.id);
@@ -13,16 +13,16 @@ const renderLayerTable = (policy: Policy): string => {
     const res = layer.responsibilities ? `**Owns:** ${layer.responsibilities.owns.join(', ')}<br>**Not:** ${layer.responsibilities.must_not.join(', ')}` : '—';
     table += `| ${layer.id} | ${mayImport} | ${res} | ${sideEffect} |\n`;
   });
-  
+
   return table;
 };
 
 const renderNamingTable = (policy: Policy): string => {
   const { file_conventions, naming_conventions } = policy;
-  
+
   let table = '| Type | File Pattern | Export Name Convention |\n';
   table += '|------|--------------|------------------------|\n';
-  
+
   const keyMap: Record<string, string> = {
     types: 'type',
     constants: 'constant',
@@ -31,30 +31,31 @@ const renderNamingTable = (policy: Policy): string => {
     hook: 'hook',
     component: 'component',
   };
-  
+
   const getNamingConvention = (typeName: string): string => {
-    if (typeName === 'types')     return 'PascalCase (*Type | *Props suffix)';
+    if (typeName === 'types') return 'PascalCase (*Type | *Props suffix)';
     if (typeName === 'constants') return 'SCREAMING_SNAKE_CASE';
-    if (typeName === 'utils')     return 'camelCase';
-    
+    if (typeName === 'utils') return 'camelCase';
+
     const namingKey = keyMap[typeName] || typeName;
-    return naming_conventions[namingKey] || '—';
+    const convention = naming_conventions[namingKey];
+    return typeof convention === 'string' ? convention : '—';
   };
-  
+
   Object.entries(file_conventions.types).forEach(([typeName, def]) => {
     const symbolConv = getNamingConvention(typeName);
     table += `| ${typeName} | \`${def.pattern}\` | \`${symbolConv}\` |\n`;
   });
-  
+
   return table;
 };
 
 const renderCompanionsTable = (policy: Policy): string => {
   const { file_conventions } = policy;
-  
+
   let table = '| File Type | Required | Optional |\n';
   table += '|-----------|----------|----------|\n';
-  
+
   Object.entries(file_conventions.types).forEach(([typeName, def]) => {
     if (!def.companions || Object.keys(def.companions).length === 0) {
       table += `| ${typeName} | — | — |\n`;
@@ -67,15 +68,15 @@ const renderCompanionsTable = (policy: Policy): string => {
       .filter(([_, rule]) => rule.required)
       .map(([_, rule]) => `\`*${rule.extensions[0]}\``)
       .join(' + ') || '—';
-      
+
     const optional = companionEntries
       .filter(([_, rule]) => !rule.required)
       .map(([_, rule]) => `\`*${rule.extensions[0]}\``)
       .join(', ') || '—';
-      
+
     table += `| ${typeName} | ${required} | ${optional} |\n`;
   });
-  
+
   return table;
 };
 
@@ -96,7 +97,7 @@ const renderBoundariesTable = (policy: Policy): string => {
 
 const getSegmentRules = (segment: string, layerId: string, policy: Policy): string => {
   const { ui_constraints, side_effect_boundaries } = policy;
-  
+
   if (layerId === 'pages' && segment === 'ui') {
     return 'route components only — compose widgets, no business logic';
   }
@@ -112,22 +113,22 @@ const getSegmentRules = (segment: string, layerId: string, policy: Policy): stri
   if (layerId === 'features' && segment === 'model') {
     return 'feature state, selectors — only for this feature';
   }
-  
+
   const rules: Record<string, string> = {
-    ui:     `components — extract if template > 2 logical sections, ${ui_constraints.logic_in_components ? 'logic allowed' : 'no logic — extract to model'}`,
-    model:  `store, selectors, types — no side effects`,
-    api:    `data fetching — ${side_effect_boundaries.async_pattern}, map errors to domain types`,
-    lib:    `pure utils — stateless, no imports from ui or model`,
+    ui: `components — extract if template > 2 logical sections, ${ui_constraints.logic_in_components ? 'logic allowed' : 'no logic — extract to model'}`,
+    model: `store, selectors, types — no side effects`,
+    api: `data fetching — ${side_effect_boundaries.async_pattern}, map errors to domain types`,
+    lib: `pure utils — stateless, no imports from ui or model`,
     config: `constants, feature flags`,
   };
-  
+
   return rules[segment] ?? '';
 };
 
 const renderFSDStructure = (policy: Policy): string => {
   const { layers, import_matrix, ui_constraints, structural_constraints, file_conventions } = policy;
   const { fsd_config } = policy;
-  
+
   const lines: string[] = ['src/'];
 
   for (const layer of layers) {
@@ -136,21 +137,21 @@ const renderFSDStructure = (policy: Policy): string => {
 
     lines.push(`├── ${layer.id}/`);
     lines.push(`│   # imports: [${allowed.join(', ') || 'none'}]`);
-    
+
     if (res?.must_not?.length) {
       lines.push(`│   # must not: ${res.must_not[0]}`);
     }
 
     if (!['app', 'shared'].includes(layer.id)) {
       lines.push(`│   ├── <slice>/          # business domain unit`);
-      
+
       const segments = fsd_config?.segments ?? ['ui', 'model', 'api', 'lib'];
       for (const seg of segments) {
         const segRules = getSegmentRules(seg, layer.id, policy);
         lines.push(`│   │   ├── ${seg}/`);
         if (segRules) lines.push(`│   │   │   # ${segRules}`);
       }
-      
+
       if (structural_constraints.barrel_exports_required) {
         lines.push(`│   │   └── index.ts      # public api — only export what consumers need`);
       }
@@ -169,7 +170,7 @@ const renderFSDStructure = (policy: Policy): string => {
 
 const renderModularStructure = (policy: Policy): string => {
   const { ui_constraints, structural_constraints, file_conventions } = policy;
-  
+
   return [
     'src/',
     '├── modules/',
@@ -212,14 +213,14 @@ const renderAtomicStructure = (policy: Policy): string => {
   const { layers, stack } = policy;
   const totalLayers = layers.length;
   const hasStyleFile = !['utility-first', 'css-in-js'].includes(stack.styling_strategy ?? '');
-  
+
   const layerLines = layers.flatMap((layer, i) => {
     const isLast = i === totalLayers - 1;
     const prefix = isLast ? '└──' : '├──';
     const childPrefix = isLast ? '    ' : '│   ';
-    
+
     let lines = [`${prefix} ${layer.id}/`];
-    
+
     if (layer.id === 'pages') {
       lines.push(`${childPrefix}├── <route>/`);
       lines.push(`${childPrefix}│   └── PageName.tsx`);
@@ -234,7 +235,7 @@ const renderAtomicStructure = (policy: Policy): string => {
       lines.push(`${childPrefix}├── types/`);
       lines.push(`${childPrefix}└── theme/`);
     }
-    
+
     return lines;
   });
 
@@ -247,9 +248,9 @@ const renderExpectedStructure = (policy: Policy): string => {
 
   const renderers: Record<string, () => string> = {
     'feature-sliced': () => renderFSDStructure(policy),
-    'modular':        () => renderModularStructure(policy),
-    'flat':           () => renderFlatStructure(policy),
-    'atomic':         () => renderAtomicStructure(policy),
+    'modular': () => renderModularStructure(policy),
+    'flat': () => renderFlatStructure(policy),
+    'atomic': () => renderAtomicStructure(policy),
   };
 
   const renderer = renderers[pattern];

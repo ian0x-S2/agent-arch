@@ -7,7 +7,7 @@
 ## Stack
 
 - **Framework:** svelte
-- **Component Library:** shacn-svelte
+- **Component Library:** bitsui
 
 ---
 

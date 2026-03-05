@@ -4,11 +4,11 @@ import { TemplateRegistry } from '../registry';
 import { resolveNamingPatterns } from './naming';
 import { STATE_BY_PATTERN } from '../shared/pattern-state';
 import { FRAMEWORK_OVERRIDES } from '../shared/framework-rules';
-import { 
-  VALID_STYLING, 
-  STYLING_EXTENSIONS, 
+import {
+  VALID_STYLING,
+  STYLING_EXTENSIONS,
   PREFERENCE_MAP,
-  VALID_STRATEGIES 
+  VALID_STRATEGIES
 } from '../constants';
 import type { UserSelections } from '../../types';
 
@@ -57,7 +57,7 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
 
   // 1. Get base template (clone to avoid mutation)
   const template = deepClone(TemplateRegistry.getTemplate(selections.pattern));
-  
+
   // 2. Derive state from pattern
   const state = STATE_BY_PATTERN[selections.pattern] ?? {
     philosophy: template.stack.state_philosophy || 'flexible',

@@ -6,7 +6,7 @@ export const useWizard = () => {
   const [step, setStep] = useState<Step>('welcome');
   const [selections, setSelections] = useState<Partial<UserSelections>>({});
 
-  const nextStep = useCallback((currentStep: Step, value?: any) => {
+  const nextStep = useCallback((currentStep: Step, value?: string) => {
     if (currentStep === 'welcome') {
       setStep('pattern');
       return;
@@ -14,12 +14,6 @@ export const useWizard = () => {
 
     const idx = GUIDED_STEPS.indexOf(currentStep);
     let next: Step | undefined = GUIDED_STEPS[idx + 1];
-
-    // Logic for skipping steps
-    if (currentStep === 'framework' && value !== 'react') {
-        // If not react, we might want to skip component_lib or handle it differently
-        // but for now let's just follow GUIDED_STEPS
-    }
 
     if (next) {
       setStep(next);

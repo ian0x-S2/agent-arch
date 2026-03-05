@@ -21,11 +21,11 @@ export const App = () => {
 
   const handleSelect = (stepKey: Step, value: string) => {
     let mapping: Partial<UserSelections> = {};
-    if (stepKey === 'styling') mapping = { styling_strategy: value as any };
-    else if (stepKey === 'naming') mapping = { naming_strategy: value as any };
-    else if (stepKey === 'framework') mapping = { framework: value as any };
-    else if (stepKey === 'component_preference') mapping = { component_preference: value as any };
-    else mapping = { [stepKey]: value } as any;
+    if (stepKey === 'styling') mapping = { styling_strategy: value as UserSelections['styling_strategy'] };
+    else if (stepKey === 'naming') mapping = { naming_strategy: value as UserSelections['naming_strategy'] };
+    else if (stepKey === 'framework') mapping = { framework: value as UserSelections['framework'] };
+    else if (stepKey === 'component_preference') mapping = { component_preference: value as UserSelections['component_preference'] };
+    else mapping = { [stepKey]: value };
 
     updateSelections(mapping);
     nextStep(stepKey, value);
@@ -60,7 +60,7 @@ export const App = () => {
         {step === 'welcome' && (
           <QuestionStep 
             stepKey="welcome" 
-            options={OPTIONS.welcome} 
+            options={OPTIONS.welcome ?? []} 
             onSelect={() => nextStep('welcome')} 
           />
         )}
@@ -69,8 +69,8 @@ export const App = () => {
         {(['pattern', 'framework', 'styling', 'component_preference', 'naming'] as const).map(
           (s) => {
             const options = s === 'styling' 
-              ? OPTIONS.styling.filter(o => !(o.value === 'css-in-js' && (selections.framework === 'vue' || selections.framework === 'svelte')))
-              : OPTIONS[s];
+              ? OPTIONS.styling?.filter(o => !(o.value === 'css-in-js' && (selections.framework === 'vue' || selections.framework === 'svelte'))) ?? []
+              : OPTIONS[s] ?? [];
 
             return (
               step === s && (

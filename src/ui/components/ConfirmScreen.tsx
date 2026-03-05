@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
 import { STATE_BY_PATTERN } from '../../core/shared/pattern-state';
-import type { UserSelections } from '../../core/composer';
+import type { UserSelections } from '../../types';
 
 export const ConfirmScreen = ({
   selections,

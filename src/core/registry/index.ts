@@ -5,12 +5,12 @@ import { modularTemplate } from './templates/modular';
 import { atomicTemplate } from './templates/atomic';
 import { loadTemplateFromFile } from './loader';
 
-let TEMPLATES: Record<string, Policy> = {
+const TEMPLATES: Record<string, Policy> = Object.freeze({
   'feature-sliced': featureSlicedTemplate,
   'flat': flatTemplate,
   'modular': modularTemplate,
   'atomic': atomicTemplate,
-};
+});
 
 /**
  * Central registry for architectural templates.
@@ -60,13 +60,9 @@ export const TemplateRegistry = {
    * Useful for cleaning up state between tests or dynamic reloads.
    */
   reset: (): void => {
-    // Resets to built-in templates only. Useful for tests.
-    TEMPLATES = {
-      'feature-sliced': featureSlicedTemplate,
-      'flat': flatTemplate,
-      'modular': modularTemplate,
-      'atomic': atomicTemplate,
-    };
+    // Note: Since TEMPLATES is now frozen, this is a no-op
+    // The registry is now immutable by design
+    console.warn('Registry reset is deprecated - templates are now immutable');
   },
 };
 
