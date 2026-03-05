@@ -1,36 +1,29 @@
 import * as v from 'valibot';
 import { PolicySchema, type Policy } from '../../schema/policy.schema';
 import { TemplateRegistry } from '../registry';
-import { resolveNamingPatterns, VALID_STRATEGIES } from './naming';
+import { resolveNamingPatterns } from './naming';
 import { STATE_BY_PATTERN } from '../shared/pattern-state';
 import { FRAMEWORK_OVERRIDES } from '../shared/framework-rules';
+import { 
+  VALID_STYLING, 
+  STYLING_EXTENSIONS, 
+  PREFERENCE_MAP,
+  VALID_STRATEGIES 
+} from '../constants';
+import type { UserSelections } from '../../types';
 
-export interface UserSelections {
-  pattern: string;
-  output_mode: 'compact';
-  naming_strategy: typeof VALID_STRATEGIES[number];
-  styling_strategy?: string;
-  framework?: 'react' | 'vue' | 'svelte';
-  component_lib?: string;
-  component_preference?: 'strict' | 'balanced' | 'relaxed';
-}
-
-const PREFERENCE_MAP = {
-  strict: 5,
-  balanced: 7,
-  relaxed: 10,
-};
-
-const VALID_STYLING = ['utility-first', 'scoped', 'css-in-js', 'any'] as const;
-
-const STYLING_EXTENSIONS: Record<string, string[]> = {
-  'scoped':       ['.module.css', '.css'],
-  'css-in-js':    [],
-  'utility-first': [],
-};
+export const UserSelectionsSchema = v.object({
+  pattern: v.string(),
+  output_mode: v.union([v.literal('compact'), v.literal('balanced'), v.literal('verbose')]),
+  naming_strategy: v.picklist(VALID_STRATEGIES),
+  styling_strategy: v.optional(v.picklist(VALID_STYLING)),
+  framework: v.optional(v.union([v.literal('react'), v.literal('vue'), v.literal('svelte')])),
+  component_lib: v.optional(v.string()),
+  component_preference: v.optional(v.picklist(['strict', 'balanced', 'relaxed'] as const)),
+});
 
 function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
+  return structuredClone(obj);
 }
 
 function isObject(item: any): item is Record<string, any> {
@@ -38,8 +31,10 @@ function isObject(item: any): item is Record<string, any> {
 }
 
 /**
- * Deep merges two objects. Arrays are replaced entirely by source (no concat).
- * Scalar overrides and nested object merges work recursively.
+ * Deep merges two objects. 
+ * - Objects are merged recursively.
+ * - Arrays are replaced entirely by the source array (no concatenation).
+ * - Scalars are replaced by the source.
  */
 function deepMerge(target: any, source: any): any {
   if (!isObject(target) || !isObject(source)) return source;
@@ -56,16 +51,14 @@ function deepMerge(target: any, source: any): any {
   return output;
 }
 
-export const composePolicy = (selections: UserSelections): Policy => {
-  // Validate styling_strategy
-  if (selections.styling_strategy && !VALID_STYLING.includes(selections.styling_strategy as any)) {
-    throw new Error(`Invalid styling_strategy: "${selections.styling_strategy}". Valid: ${VALID_STYLING.join(', ')}`);
-  }
+export const composePolicy = (rawSelections: Partial<UserSelections>): Policy => {
+  // Validate UserSelections
+  const selections = v.parse(UserSelectionsSchema, rawSelections);
 
   // 1. Get base template (clone to avoid mutation)
   const template = deepClone(TemplateRegistry.getTemplate(selections.pattern));
   
-  // 2. Derivar state da arch — não do input do usuário
+  // 2. Derive state from pattern
   const state = STATE_BY_PATTERN[selections.pattern] ?? {
     philosophy: template.stack.state_philosophy || 'flexible',
     scope: template.state_constraints?.global_state_scope || 'any',
@@ -77,7 +70,7 @@ export const composePolicy = (selections: UserSelections): Policy => {
   // 3. Define overrides
   const overrides: any = {
     meta: {
-      output_mode: 'compact' as 'compact',
+      output_mode: selections.output_mode,
       generated_at: new Date().toISOString()
     },
     stack: {
@@ -157,3 +150,4 @@ export const composePolicy = (selections: UserSelections): Policy => {
   // 9. Validate the final object
   return v.parse(PolicySchema, merged);
 };
+

@@ -2,15 +2,16 @@ import fs from 'fs-extra';
 import path from 'path';
 import type { Policy } from '../../schema/policy.schema';
 import { renderMarkdown } from '../renderer/markdown-renderer';
-import { renderPrompt } from '../renderer/prompt-renderer';
+import { estimateTokens } from '../token';
 
 export const writePolicyFiles = async (policy: Policy, targetDir: string = '.ai') => {
   await fs.ensureDir(targetDir);
 
   const policyMdPath = path.join(targetDir, 'policy.md');
 
-  // We still need to calculate tokens for metadata, but we won't write the prompt file.
-  const { tokens } = renderPrompt(policy);
+  // Render MD first to estimate tokens from the final artifact
+  const mdContent = renderMarkdown(policy);
+  const tokens = estimateTokens(mdContent);
   
   const policyWithTokens: Policy = {
     ...policy,
@@ -20,8 +21,9 @@ export const writePolicyFiles = async (policy: Policy, targetDir: string = '.ai'
     }
   };
 
-  const mdContent = renderMarkdown(policyWithTokens);
-  await fs.writeFile(policyMdPath, mdContent);
+  // Re-render with updated token metadata if necessary, or just use the first render
+  // For now, simple rewrite with estimated tokens is fine
+  await fs.writeFile(policyMdPath, renderMarkdown(policyWithTokens));
 
   return {
     policyMdPath,
