@@ -193,6 +193,9 @@ const renderModularStructure = (policy: Policy): string => {
 };
 
 const renderFlatStructure = (policy: Policy): string => {
+  const { graduation_signals } = policy;
+  const signals = graduation_signals;
+
   return [
     'src/',
     '├── components/               # all components live here',
@@ -202,22 +205,25 @@ const renderFlatStructure = (policy: Policy): string => {
     '├── types/                    # shared types',
     '└── utils/                    # pure functions',
     '',
-    '# graduation signals — consider migrating pattern when:',
-    '#   > 20 components in /components',
-    '#   same data fetched in 3+ places',
-    '#   2+ devs regularly conflicting on same files',
+    signals
+      ? `# graduation signals — consider migrating to ${signals.suggested_next_pattern || 'modular'} when:
+#   > ${signals.component_count_threshold} components in /components
+#   same data fetched in ${signals.duplicated_fetch_threshold}+ places`
+      : '# graduation signals — consider migrating to modular when:',
   ].join('\n');
 };
 
 const renderAtomicStructure = (policy: Policy): string => {
-  const { layers, stack } = policy;
+  const { layers, stack, atomic_config } = policy;
   const totalLayers = layers.length;
   const hasStyleFile = !['utility-first', 'css-in-js'].includes(stack.styling_strategy ?? '');
+  const layerInternals = atomic_config?.layer_internals;
 
   const layerLines = layers.flatMap((layer, i) => {
     const isLast = i === totalLayers - 1;
     const prefix = isLast ? '└──' : '├──';
     const childPrefix = isLast ? '    ' : '│   ';
+    const internals = layerInternals?.[layer.id];
 
     let lines = [`${prefix} ${layer.id}/`];
 
@@ -227,8 +233,15 @@ const renderAtomicStructure = (policy: Policy): string => {
     } else if (!['shared'].includes(layer.id)) {
       lines.push(`${childPrefix}├── <component>/`);
       lines.push(`${childPrefix}│   ├── ComponentName.tsx`);
+      if (internals && internals.length > 0) {
+        internals.forEach((internal, idx) => {
+          const internalPrefix = idx === internals.length - 1 ? '└──' : '├──';
+          lines.push(`${childPrefix}│   ${internalPrefix} ${internal}/`);
+        });
+      }
       if (hasStyleFile) {
-        lines.push(`${childPrefix}│   └── ComponentName.module.css`);
+        const stylePrefix = internals && internals.length > 0 ? '    ' : `${childPrefix}│   `;
+        lines.push(`${stylePrefix}└── ComponentName.module.css`);
       }
     } else {
       lines.push(`${childPrefix}├── utils/`);
@@ -301,7 +314,7 @@ ${renderLayerTable(policy)}
 ${renderBoundariesTable(policy)}
 
 **Cross-feature imports:** ${structural_constraints.cross_feature_imports.replace(/-/g, ' ')}
-**Circular imports:** ${structural_constraints.circular_imports}
+**Circular imports:** ${structural_constraints.circular_imports}${policy.cross_module_communication ? `\n**Cross-module communication:** ${policy.cross_module_communication.replace(/-/g, ' ')}` : ''}
 
 ---
 

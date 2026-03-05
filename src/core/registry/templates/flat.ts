@@ -15,8 +15,8 @@ export const flatTemplate: Policy = {
     "component_lib": undefined
   },
   "layers": [
-    { 
-      "id": "src", 
+    {
+      "id": "src",
       "allowed_imports": ["src"],
       "responsibilities": {
         "owns": ["everything at this scale"],
@@ -33,6 +33,11 @@ export const flatTemplate: Policy = {
     "barrel_exports_required": false,
     "circular_imports": "FORBIDDEN",
     "cross_feature_imports": "allowed"
+  },
+  "graduation_signals": {
+    "component_count_threshold": 20,
+    "duplicated_fetch_threshold": 3,
+    "suggested_next_pattern": "modular"
   },
   "ui_constraints": {
     "component_max_props": 7,

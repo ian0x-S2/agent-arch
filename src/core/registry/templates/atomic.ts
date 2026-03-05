@@ -15,8 +15,8 @@ export const atomicTemplate: Policy = {
     component_lib: undefined,
   },
   layers: [
-    { 
-      id: 'pages', 
+    {
+      id: 'pages',
       allowed_imports: ['templates', 'organisms', 'molecules', 'atoms', 'shared'],
       responsibilities: {
         owns: ['Route components', 'Data fetching', 'Connecting templates to real data'],
@@ -24,8 +24,8 @@ export const atomicTemplate: Policy = {
         depends_on_abstractions: false
       }
     },
-    { 
-      id: 'templates', 
+    {
+      id: 'templates',
       allowed_imports: ['organisms', 'molecules', 'atoms', 'shared'],
       responsibilities: {
         owns: ['Page-level layout structures', 'Slot-based composition'],
@@ -33,8 +33,8 @@ export const atomicTemplate: Policy = {
         depends_on_abstractions: false
       }
     },
-    { 
-      id: 'organisms', 
+    {
+      id: 'organisms',
       allowed_imports: ['molecules', 'atoms', 'shared'],
       responsibilities: {
         owns: ['Complex, standalone UI sections', 'Local state for interaction logic'],
@@ -42,8 +42,8 @@ export const atomicTemplate: Policy = {
         depends_on_abstractions: true
       }
     },
-    { 
-      id: 'molecules', 
+    {
+      id: 'molecules',
       allowed_imports: ['atoms', 'shared'],
       responsibilities: {
         owns: ['Simple combinations of atoms', 'Purely presentational logic'],
@@ -51,8 +51,8 @@ export const atomicTemplate: Policy = {
         depends_on_abstractions: false
       }
     },
-    { 
-      id: 'atoms', 
+    {
+      id: 'atoms',
       allowed_imports: ['shared'],
       responsibilities: {
         owns: ['Single HTML element wrappers', 'Basic styling and primitive behavior'],
@@ -60,8 +60,8 @@ export const atomicTemplate: Policy = {
         depends_on_abstractions: false
       }
     },
-    { 
-      id: 'shared', 
+    {
+      id: 'shared',
       allowed_imports: [],
       responsibilities: {
         owns: ['Utils', 'Theme constants', 'Global types'],
@@ -83,6 +83,13 @@ export const atomicTemplate: Policy = {
     barrel_exports_required: true,
     circular_imports: 'FORBIDDEN',
     cross_feature_imports: 'via-public-api-only',
+  },
+  atomic_config: {
+    layer_internals: {
+      organisms: ['hooks', 'types'],
+      molecules: ['types'],
+      atoms: ['types'],
+    },
   },
   ui_constraints: {
     component_max_props: 7,

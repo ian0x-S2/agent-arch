@@ -36,7 +36,7 @@ export const FileConventionsSchema = v.object({
   // ex: { component: { pattern: "*.component.tsx", companions: { test: {...}, style: {...} } } }
 
   colocation: v.union([v.literal('strict'), v.literal('loose'), v.literal('none')]),
-  
+
   public_api: v.object({
     required: v.boolean(),
     filename: v.optional(v.string()),       // default: "index"
@@ -148,6 +148,20 @@ export const PolicySchema = v.object({
       v.literal('allowed'),
     ]),
   }),
+  cross_module_communication: v.optional(v.union([
+    v.literal('via-shared-only'),
+    v.literal('via-event-bus'),
+    v.literal('via-context'),
+    v.literal('any'),
+  ])),
+  atomic_config: v.optional(v.object({
+    layer_internals: v.record(v.string(), v.array(v.string()))
+  })),
+  graduation_signals: v.optional(v.object({
+    component_count_threshold: v.number(),
+    duplicated_fetch_threshold: v.number(),
+    suggested_next_pattern: v.optional(v.string()),
+  })),
   ui_constraints: UIConstraintsSchema,
   state_constraints: v.object({
     global_state_scope: v.string(),

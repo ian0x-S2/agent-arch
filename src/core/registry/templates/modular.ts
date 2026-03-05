@@ -15,8 +15,8 @@ export const modularTemplate: Policy = {
     "component_lib": undefined
   },
   "layers": [
-    { 
-      "id": "modules", 
+    {
+      "id": "modules",
       "allowed_imports": ["shared"],
       "responsibilities": {
         "owns": ["business logic", "components", "hooks", "services"],
@@ -24,8 +24,8 @@ export const modularTemplate: Policy = {
         "depends_on_abstractions": true
       }
     },
-    { 
-      "id": "shared",  
+    {
+      "id": "shared",
       "allowed_imports": [],
       "responsibilities": {
         "owns": ["design system", "utils", "global types", "api client"],
@@ -36,7 +36,7 @@ export const modularTemplate: Policy = {
   ],
   "import_matrix": {
     "modules": ["shared"],
-    "shared":  []
+    "shared": []
   },
   "structural_constraints": {
     "max_component_depth": 4,
@@ -44,6 +44,7 @@ export const modularTemplate: Policy = {
     "circular_imports": "FORBIDDEN",
     "cross_feature_imports": "via-public-api-only"
   },
+  "cross_module_communication": "via-shared-only",
   "ui_constraints": {
     "component_max_props": 7,
     "prop_drilling_max_depth": 2,
@@ -79,7 +80,7 @@ export const modularTemplate: Policy = {
         "pattern": "*.tsx",
         "companions": {
           "style": { "required": false, "extensions": [".css", ".module.css"] },
-          "test":  { "required": true,  "extensions": [".test.tsx"] }
+          "test": { "required": true, "extensions": [".test.tsx"] }
         }
       },
       "hook": {

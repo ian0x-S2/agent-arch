@@ -35,7 +35,7 @@ program
   .action((options) => {
     generateAction({
       pattern: options.pattern,
-      output_mode: 'balanced', // Fixed for Markdown
+      output_mode: 'compact', // Fixed for Markdown
       naming_strategy: options.naming,
       styling_strategy: options.styling,
       framework: options.framework,

@@ -222,6 +222,7 @@ Violations of import rules are **not permitted**.
 
 **Cross-feature imports:** via public api only
 **Circular imports:** FORBIDDEN
+**Cross-module communication:** via shared only
 
 ---
 
@@ -359,10 +360,9 @@ src/
 ├── types/                    # shared types
 └── utils/                    # pure functions
 
-# graduation signals — consider migrating pattern when:
+# graduation signals — consider migrating to modular when:
 #   > 20 components in /components
 #   same data fetched in 3+ places
-#   2+ devs regularly conflicting on same files
 \`\`\`
 
 ---
@@ -488,12 +488,16 @@ src/
 ├── organisms/
 │   ├── <component>/
 │   │   ├── ComponentName.tsx
+│   │   ├── hooks/
+│   │   └── types/
 ├── molecules/
 │   ├── <component>/
 │   │   ├── ComponentName.tsx
+│   │   └── types/
 ├── atoms/
 │   ├── <component>/
 │   │   ├── ComponentName.tsx
+│   │   └── types/
 └── shared/
     ├── utils/
     ├── types/

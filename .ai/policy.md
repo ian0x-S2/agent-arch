@@ -1,13 +1,13 @@
 # Architecture Policy
 
-> Pattern: **modular** | State: **module-based** | Styling: **css-in-js**
+> Pattern: **flat** | State: **flexible** | Styling: **scoped**
 
 ---
 
 ## Stack
 
-- **Framework:** react
-- **Component Library:** mui
+- **Framework:** svelte
+- **Component Library:** shadcn
 
 ---
 
@@ -16,12 +16,11 @@
 Imports are unidirectional. Each layer may only import from layers listed below it.
 Violations of import rules are **not permitted**.
 
-| Layer   | May Import | Responsibilities                                                                                                 | Side Effects |
-| ------- | ---------- | ---------------------------------------------------------------------------------------------------------------- | ------------ |
-| modules | shared     | **Owns:** business logic, components, hooks, services<br>**Not:** import directly from other modules             | ✓ allowed    |
-| shared  | —          | **Owns:** design system, utils, global types, api client<br>**Not:** contain business logic, import from modules | ✓ allowed    |
+| Layer | May Import | Responsibilities                                                                                                | Side Effects |
+| ----- | ---------- | --------------------------------------------------------------------------------------------------------------- | ------------ |
+| src   | src        | **Owns:** everything at this scale<br>**Not:** nothing forbidden at this scale - this is intentional simplicity | ✓ allowed    |
 
-**Cross-feature imports:** via public api only
+**Cross-feature imports:** allowed
 **Circular imports:** FORBIDDEN
 
 ---
@@ -30,20 +29,16 @@ Violations of import rules are **not permitted**.
 
 ```
 src/
-├── modules/
-│   ├── <module-name>/        # one per business capability
-│   │   ├── components/       # extract if template > 2 logical sections
-│   │   │   └── ComponentName.tsx
-│   │   │       # no logic — use hooks/
-│   │   ├── hooks/            # all logic lives here
-│   │   ├── services/         # external I/O only — API, storage
-│   │   ├── types/            # module-scoped types
-│   │   └── index.ts          # public api — never import internals directly
-│   │   # cross-module imports: FORBIDDEN — use shared/
-├── shared/
-│   ├── ui/                   # design system, generic components
-│   ├── utils/                # pure functions — min 2 consumers to justify
-│   └── types/                # global contracts only
+├── components/               # all components live here
+│   └── ComponentName.tsx     # logic colocated — ok at this scale
+├── hooks/                    # extract when logic repeats 2+ times
+├── services/                 # extract when touching external I/O
+├── types/                    # shared types
+└── utils/                    # pure functions
+
+# graduation signals — consider migrating to modular when:
+#   > 20 components in /components
+#   same data fetched in 3+ places
 ```
 
 ---
@@ -52,58 +47,60 @@ src/
 
 ### Naming
 
-> Files: `snake_case` globally · Symbols: per-type rules below
+> Files: `camelCase` globally · Symbols: per-type rules below
 
-| Type      | File Pattern      | Export Name Convention    |
-| --------- | ----------------- | ------------------------- | ---------------- |
-| component | `*_component.tsx` | `PascalCase`              |
-| hook      | `use*.ts`         | `camelCase (use* prefix)` |
-| store     | `*_store.ts`      | `camelCase`               |
-| service   | `*_service.ts`    | `camelCase`               |
-| types     | `*_types.ts`      | `PascalCase (\*Type       | \*Props suffix)` |
-| constants | `*_constants.ts`  | `SCREAMING_SNAKE_CASE`    |
+| Type      | File Pattern     | Export Name Convention              |
+| --------- | ---------------- | ----------------------------------- | ---------------- |
+| component | `*.svelte`       | `PascalCase`                        |
+| hook      | `*.svelte.ts`    | `camelCase (runes/logic functions)` |
+| store     | `*.svelte.ts`    | `camelCase (reactive runes)`        |
+| service   | `*.service.ts`   | `camelCase`                         |
+| types     | `*.types.ts`     | `PascalCase (\*Type                 | \*Props suffix)` |
+| constants | `*.constants.ts` | `SCREAMING_SNAKE_CASE`              |
+| utils     | `*.ts`           | `camelCase`                         |
 
 ### Required Companions
 
-| File Type | Required     | Optional    |
-| --------- | ------------ | ----------- |
-| component | `*.test.tsx` | —           |
-| hook      | `*.test.ts`  | —           |
-| store     | `*.test.ts`  | —           |
-| service   | —            | `*.test.ts` |
-| types     | —            | —           |
-| constants | —            | —           |
+| File Type | Required    | Optional |
+| --------- | ----------- | -------- |
+| component | `*.test.ts` | —        |
+| hook      | —           | —        |
+| store     | —           | —        |
+| service   | —           | —        |
+| types     | —           | —        |
+| constants | —           | —        |
+| utils     | —           | —        |
 
 ### Structure Rules
 
-- **Co-location:** strict — companions must live beside source file
+- **Co-location:** none — companions must live beside source file
 - **Test placement:** colocated
-- **Public API:** every feature root requires `index.ts` — internal files must not be imported directly
+- **Public API:** optional
 - **Max directory depth:** N/A
-- **Barrel exports:** required at feature roots only
+- **Barrel exports:** optional
 
 ### Forbidden Patterns
 
-- `default-export-on-utility`
-- `barrel-in-non-feature-root`
+- `deep-nesting`
+- `huge-component-file`
 
 ---
 
 ## Component Composition Rules
 
 - **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to hooks when script block exceeds ~20-25 lines
+- **Logic signal:** extract to `*.svelte.ts` when script block exceeds ~20-25 lines
 - **Max props:** 10 — split into compound component if exceeded
-- **No prop drilling beyond depth 2** — lift to store or context
-- **Logic in components:** FORBIDDEN — extract to hooks
+- **No prop drilling beyond depth 3** — lift to store or context
+- **Logic in components:** allowed
 - **Presentational components** must not import from `state` or `services` layers
-- **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
+- **Prefer composition over configuration:** optional
 
 ---
 
 ## Abstraction Rules
 
-- Extract to **hooks** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **`*.svelte.ts`** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication
@@ -112,9 +109,9 @@ src/
 
 ## State & Async Rules
 
-- **Scope:** module-based
-- **Derived state:** selectors
-- **Data fetching:** modules, consumed via hooks
+- **Scope:** any
+- **Derived state:** any
+- **Data fetching:** any, consumed via hooks
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state
