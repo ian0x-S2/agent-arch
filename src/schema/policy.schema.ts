@@ -115,6 +115,28 @@ export const DomainRulesSchema = v.object({
   }),
 });
 
+export const CompoundPatternSchema = v.object({
+  enforced: v.boolean(),
+  root_suffix: v.string(),
+  export_style: v.union([
+    v.literal('namespace'),
+    v.literal('named'),
+  ]),
+});
+
+export const PublishConfigSchema = v.object({
+  package_exports_required: v.boolean(),
+  barrel_per_component: v.boolean(),
+  types_exported: v.boolean(),
+  peer_dependencies: v.array(v.string()),
+});
+
+export const UiLibConfigSchema = v.optional(v.object({
+  token_categories: v.array(v.string()),
+  compound_pattern: CompoundPatternSchema,
+  publish: PublishConfigSchema,
+}));
+
 export const PolicySchema = v.object({
   meta: v.object({
     version: v.string(),
@@ -138,6 +160,7 @@ export const PolicySchema = v.object({
   abstraction_boundaries: v.optional(v.array(AbstractionBoundarySchema)),
   error_handling_strategy: v.optional(v.array(ErrorHandlingSchema)),
   domain_rules: v.optional(DomainRulesSchema),
+  ui_lib_config: UiLibConfigSchema,
   structural_constraints: v.object({
     max_component_depth: v.number(),
     barrel_exports_required: v.boolean(),

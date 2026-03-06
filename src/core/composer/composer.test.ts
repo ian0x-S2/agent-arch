@@ -47,6 +47,38 @@ describe("Composer", () => {
     expect(policy.state_constraints.global_state_scope).toBe("minimal");
   });
 
+  test("ui-lib derives state as minimal automatically", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+    });
+    expect(policy.stack.state_philosophy).toBe("minimal");
+    expect(policy.ui_lib_config?.compound_pattern.enforced).toBe(true);
+    expect(policy.ui_lib_config?.publish.package_exports_required).toBe(true);
+  });
+
+  test("ui-lib + utility-first changes forbidden pattern to arbitrary-values", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+      styling_strategy: "utility-first",
+    });
+    expect(policy.file_conventions.forbidden_patterns).toContain("arbitrary-values-in-utils");
+    expect(policy.file_conventions.forbidden_patterns).not.toContain("hardcoded-color-without-token");
+  });
+
+  test("ui-lib + scoped keeps hardcoded-color-without-token rule", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+      styling_strategy: "scoped",
+    });
+    expect(policy.file_conventions.forbidden_patterns).toContain("hardcoded-color-without-token");
+  });
+
   test("utility-first styling removes style companions", () => {
     const policy = composePolicy({
       pattern: "feature-sliced",

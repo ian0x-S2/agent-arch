@@ -55,6 +55,34 @@ describe('Markdown Renderer', () => {
     expect(output).toContain('.module.css');
   });
 
+  test('ui-lib + utility-first hides tokens folder in structure', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      styling_strategy: 'utility-first',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('## Expected Directory Structure');
+    expect(output).not.toContain('tokens/');
+    expect(output).toContain('## UI Library Rules');
+    expect(output).toContain('Design Tokens (Utility-First Mode)');
+  });
+
+  test('ui-lib + scoped shows tokens folder in structure', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      styling_strategy: 'scoped',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('## Expected Directory Structure');
+    expect(output).toContain('tokens/');
+    expect(output).toContain('## UI Library Rules');
+    expect(output).toContain('CSS Variables:');
+  });
+
   test('FSD + React + shadcn output contains Stack section', () => {
     const policy = composePolicy({
       pattern: 'feature-sliced',

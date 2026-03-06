@@ -255,6 +255,111 @@ const renderAtomicStructure = (policy: Policy): string => {
   return ['src/', ...layerLines].join('\n');
 };
 
+const renderUiLibStructure = (policy: Policy): string => {
+  const cfg = policy.ui_lib_config;
+  const ns = cfg?.compound_pattern.export_style === 'namespace';
+  const isUtilityFirst = policy.stack.styling_strategy === 'utility-first';
+
+  const tokensSection = isUtilityFirst
+    ? ''
+    : `├── tokens/
+│   ├── color.tokens.ts
+│   ├── spacing.tokens.ts
+│   ├── typography.tokens.ts
+│   └── index.ts            # re-exports all tokens
+`;
+
+  return [
+    'src/',
+    tokensSection + "├── primitives/",
+    "│   ├── Box/",
+    "│   │   ├── Box.tsx         # unstyled, polymorphic",
+    "│   │   ├── Box.types.ts",
+    "│   │   └── index.ts",
+    "│   └── Text/",
+    "├── components/",
+    "│   ├── Button/",
+    ns
+      ? "│   │   ├── Button.tsx          # namespace: Button.Root, Button.Icon"
+      : "│   │   ├── ButtonRoot.tsx      # named exports",
+    "│   │   ├── Button.types.ts",
+    "│   │   ├── Button.test.tsx",
+    "│   │   └── index.ts        # exports Button namespace",
+    "├── patterns/",
+    "│   ├── Form/",
+    "│   │   ├── Form.tsx        # composes components",
+    "│   │   └── index.ts",
+    "└── index.ts                # package root — public API only",
+  ].join('\n');
+};
+
+const renderUiLibConfig = (policy: Policy): string => {
+  const cfg = policy.ui_lib_config;
+  if (!cfg) return '';
+
+  const isUtilityFirst = policy.stack.styling_strategy === 'utility-first';
+
+  if (isUtilityFirst) {
+    return `## UI Library Rules
+
+### Design Tokens (Utility-First Mode)
+- **Primary Source:** Tailwind/UnoCSS Config
+- **Rule:** Use strictly Tailwind utility classes. Do NOT use arbitrary values.
+- **Customization:** If a specific brand color is needed, add it to the config, not hardcoded in components.
+- **Forbidden:** \`arbitrary-values-in-utils\` (e.g., \`text-[14px]\` → use \`text-sm\` instead)
+
+### Compound Component Pattern
+- **Enforced:** ${cfg.compound_pattern.enforced ? 'YES' : 'no'}
+- **Export style:** \`${cfg.compound_pattern.export_style}\`
+${cfg.compound_pattern.export_style === 'namespace'
+        ? '- Exports as \`Button.Root\`, \`Button.Trigger\`, \`Button.Icon\`\n- Root component is the namespace object — never export parts standalone'
+        : '- Exports as \`ButtonRoot\`, \`ButtonTrigger\` — each part is a named export'}
+
+### Publish Contract
+- **package.json exports map:** required — every component gets its 
+  own export path (\`"./button": "./src/components/Button/index.ts"\`)
+- **Types exported:** YES — ship \`.d.ts\` alongside every component
+- **Peer dependencies:** ${cfg.publish.peer_dependencies.join(', ')}
+- **Never bundle peer deps** — consumers provide them
+
+---
+`;
+  }
+
+  // For scoped/css-in-js modes
+  const tokenLocation = policy.stack.styling_strategy === 'scoped'
+    ? '- **CSS Variables:** Expose tokens as `:root { --color-primary: #... }`'
+    : policy.stack.styling_strategy === 'css-in-js'
+      ? '- **Direct Import:** Import token objects directly in style files'
+      : '';
+
+  return `## UI Library Rules
+
+### Design Tokens
+- **Categories:** ${cfg.token_categories.join(', ')}
+- **Rule:** every visual value (color, spacing, radius) must reference 
+  a token — no hardcoded values
+- **Location:** \`tokens/\` layer — no framework imports allowed here
+${tokenLocation}
+
+### Compound Component Pattern
+- **Enforced:** ${cfg.compound_pattern.enforced ? 'YES' : 'no'}
+- **Export style:** \`${cfg.compound_pattern.export_style}\`
+${cfg.compound_pattern.export_style === 'namespace'
+      ? '- Exports as \`Button.Root\`, \`Button.Trigger\`, \`Button.Icon\`\n- Root component is the namespace object — never export parts standalone'
+      : '- Exports as \`ButtonRoot\`, \`ButtonTrigger\` — each part is a named export'}
+
+### Publish Contract
+- **package.json exports map:** required — every component gets its 
+  own export path (\`"./button": "./src/components/Button/index.ts"\`)
+- **Types exported:** YES — ship \`.d.ts\` alongside every component
+- **Peer dependencies:** ${cfg.publish.peer_dependencies.join(', ')}
+- **Never bundle peer deps** — consumers provide them
+
+---
+`;
+};
+
 const renderExpectedStructure = (policy: Policy): string => {
   const { stack } = policy;
   const pattern = stack.pattern;
@@ -264,6 +369,7 @@ const renderExpectedStructure = (policy: Policy): string => {
     'modular': () => renderModularStructure(policy),
     'flat': () => renderFlatStructure(policy),
     'atomic': () => renderAtomicStructure(policy),
+    'ui-lib': () => renderUiLibStructure(policy),
   };
 
   const renderer = renderers[pattern];
@@ -322,7 +428,7 @@ ${renderExpectedStructure(policy)}
 
 ---
 
-${domain_rules ? `## Domain Rules
+${policy.ui_lib_config ? renderUiLibConfig(policy) : ''}${domain_rules ? `## Domain Rules
 - **Entities location:** \`${domain_rules.entities_location}\`
 - **Value objects:** ${domain_rules.value_objects_allowed ? 'allowed' : 'forbidden'}
 - **Immutable entities:** ${domain_rules.entity_rules.must_be_immutable ? 'YES' : 'no'}

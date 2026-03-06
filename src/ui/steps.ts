@@ -38,6 +38,13 @@ export const OPTIONS: Record<string, OptionWithMeta[]> = {
       hint: 'Scaling: Medium | Complexity: Medium | Best for design systems.',
       impact: '⚡ Prompt: Enforces strict composition hierarchy (Atoms → Molecules → ...).',
     },
+    {
+      label: '🧩 UI Library (Radix-style)',
+      value: 'ui-lib',
+      description: 'Layered structure for publishable component libraries. Tokens → Primitives → Components → Patterns.',
+      hint: 'Scaling: Medium | Use for design systems and shared UI packages.',
+      impact: '⚡ Prompt: Enforces token usage, compound components, and clean npm export contracts.',
+    },
   ],
   framework: [
     {

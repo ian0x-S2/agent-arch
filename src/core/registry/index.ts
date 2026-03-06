@@ -3,6 +3,7 @@ import { featureSlicedTemplate } from './templates/feature-sliced';
 import { flatTemplate } from './templates/flat';
 import { modularTemplate } from './templates/modular';
 import { atomicTemplate } from './templates/atomic';
+import { uiLibTemplate } from './templates/ui-lib';
 import { loadTemplateFromFile } from './loader';
 
 const BUILT_IN_TEMPLATES: Record<string, Policy> = {
@@ -10,6 +11,7 @@ const BUILT_IN_TEMPLATES: Record<string, Policy> = {
   'flat': flatTemplate,
   'modular': modularTemplate,
   'atomic': atomicTemplate,
+  'ui-lib': uiLibTemplate,
 };
 
 const customTemplates: Record<string, Policy> = {};

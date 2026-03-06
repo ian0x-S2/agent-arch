@@ -143,6 +143,26 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
     merged.ui_constraints.allowed_style_extensions = [];
   }
 
+  // 8b. UI-Lib pattern-specific overrides based on styling strategy
+  if (selections.pattern === 'ui-lib') {
+    const forbiddenPatterns = merged.file_conventions.forbidden_patterns;
+
+    if (selections.styling_strategy === 'utility-first') {
+      // Utility-first: Tailwind classes are the token source
+      // Replace hardcoded-color rule with arbitrary-values rule
+      const idx = forbiddenPatterns.indexOf('hardcoded-color-without-token');
+      if (idx > -1) {
+        forbiddenPatterns[idx] = 'arbitrary-values-in-utils'; // e.g., text-[14px] -> text-sm
+      }
+      // Also remove style-without-token-reference as it's not applicable
+      const styleIdx = forbiddenPatterns.indexOf('style-without-token-reference');
+      if (styleIdx > -1) {
+        forbiddenPatterns.splice(styleIdx, 1);
+      }
+    }
+    // For scoped and css-in-js: keep default token rules (hardcoded-color-without-token)
+  }
+
   if (selections.component_preference) {
     merged.ui_constraints.component_max_props = PREFERENCE_MAP[selections.component_preference];
   }
