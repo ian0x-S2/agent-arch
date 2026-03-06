@@ -69,6 +69,51 @@ describe("Composer", () => {
     expect(policy.file_conventions.forbidden_patterns).not.toContain("hardcoded-color-without-token");
   });
 
+  test("ui-lib + utility-first removes tokens layer and related config", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+      styling_strategy: "utility-first",
+    });
+
+    // policy.layers should not contain a layer with id === 'tokens'
+    expect(policy.layers.find((l: any) => l.id === 'tokens')).toBeUndefined();
+
+    // policy.import_matrix should have no tokens key
+    expect((policy.import_matrix as any).tokens).toBeUndefined();
+
+    // policy.file_conventions.types should have no tokens key
+    expect((policy.file_conventions.types as any).tokens).toBeUndefined();
+
+    // policy.state_constraints.forbidden_patterns should not contain 'styles-hardcoded-without-token'
+    expect(policy.state_constraints.forbidden_patterns).not.toContain('styles-hardcoded-without-token');
+
+    // Every layer in policy.layers must have allowed_imports that does not contain 'tokens'
+    for (const layer of policy.layers) {
+      expect(layer.allowed_imports).not.toContain('tokens');
+    }
+
+    // import_matrix values must not reference 'tokens'
+    for (const imports of Object.values(policy.import_matrix)) {
+      expect(imports).not.toContain('tokens');
+    }
+
+    // side_effect_boundaries must not reference the removed tokens layer
+    expect(policy.side_effect_boundaries.forbidden_in_layers).not.toContain('tokens');
+    expect(policy.side_effect_boundaries.allowed_in_layers).not.toContain('tokens');
+  });
+
+  test("ui-lib + svelte sets correct peer dependencies", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+      framework: "svelte",
+    });
+    expect(policy.ui_lib_config?.publish.peer_dependencies).toEqual(['svelte']);
+  });
+
   test("ui-lib + scoped keeps hardcoded-color-without-token rule", () => {
     const policy = composePolicy({
       pattern: "ui-lib",

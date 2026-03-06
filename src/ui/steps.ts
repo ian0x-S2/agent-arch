@@ -39,7 +39,7 @@ export const OPTIONS: Record<string, OptionWithMeta[]> = {
       impact: '⚡ Prompt: Enforces strict composition hierarchy (Atoms → Molecules → ...).',
     },
     {
-      label: '🧩 UI Library (Radix-style)',
+      label: '🧩 Composable UI Primitives',
       value: 'ui-lib',
       description: 'Layered structure for publishable component libraries. Tokens → Primitives → Components → Patterns.',
       hint: 'Scaling: Medium | Use for design systems and shared UI packages.',

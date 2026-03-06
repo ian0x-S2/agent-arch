@@ -108,6 +108,18 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
     }
   }
 
+  // Framework-specific peer dependencies for ui-lib pattern
+  const FRAMEWORK_PEER_DEPS: Record<string, string[]> = {
+    react: ['react', 'react-dom'],
+    vue: ['vue'],
+    svelte: ['svelte'],
+  };
+
+  if (selections.framework && merged.ui_lib_config) {
+    merged.ui_lib_config.publish.peer_dependencies =
+      FRAMEWORK_PEER_DEPS[selections.framework] ?? merged.ui_lib_config.publish.peer_dependencies;
+  }
+
   // 6. Pattern-specific overrides
   if (selections.pattern === 'flat') {
     merged.structural_constraints.barrel_exports_required = false;
@@ -165,6 +177,56 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
 
   if (selections.component_preference) {
     merged.ui_constraints.component_max_props = PREFERENCE_MAP[selections.component_preference];
+  }
+
+  // ui-lib + utility-first: remove tokens layer and related config
+  if (selections.pattern === 'ui-lib' && stylingStrategy === 'utility-first') {
+    // 1. Remove tokens layer from policy.layers
+    merged.layers = merged.layers.filter((layer: any) => layer.id !== 'tokens');
+
+    // 2. Remove tokens from import_matrix entirely
+    delete merged.import_matrix.tokens;
+
+    // Also strip 'tokens' from the arrays of all remaining keys in import_matrix
+    for (const key of Object.keys(merged.import_matrix)) {
+      merged.import_matrix[key] = merged.import_matrix[key].filter(
+        (id: string) => id !== 'tokens'
+      );
+    }
+
+    // 3. Remove 'tokens' from allowed_imports arrays in primitives, components, and patterns
+    merged.layers = merged.layers.map((layer: any) => ({
+      ...layer,
+      allowed_imports: layer.allowed_imports.filter((id: string) => id !== 'tokens'),
+    }));
+
+    // 4. Set ui_lib_config.token_categories to empty array (Tailwind config is the source of truth)
+    if (merged.ui_lib_config) {
+      merged.ui_lib_config.token_categories = [];
+    }
+
+    // 5. Remove token-related forbidden patterns
+    if (merged.state_constraints?.forbidden_patterns) {
+      merged.state_constraints.forbidden_patterns = merged.state_constraints.forbidden_patterns.filter(
+        (pattern: string) => 
+          pattern !== 'styles-hardcoded-without-token' && 
+          pattern !== 'side-effects-in-tokens'
+      );
+    }
+
+    // 6. Remove tokens file type from file_conventions.types
+    delete merged.file_conventions.types.tokens;
+
+    // 7. Remove 'tokens' from side_effect_boundaries layer lists
+    merged.side_effect_boundaries.forbidden_in_layers =
+      merged.side_effect_boundaries.forbidden_in_layers.filter(
+        (id: string) => id !== 'tokens'
+      );
+
+    merged.side_effect_boundaries.allowed_in_layers =
+      merged.side_effect_boundaries.allowed_in_layers.filter(
+        (id: string) => id !== 'tokens'
+      );
   }
 
   // 9. Validate the final object

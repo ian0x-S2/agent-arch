@@ -106,6 +106,44 @@ describe('E2E: generate command', () => {
                     (c) => expect(c).toContain('runes/logic functions'),
                 ],
             },
+            {
+                label: 'UI-Lib + utility-first removes tokens layer',
+                input: {
+                    pattern: 'ui-lib',
+                    output_mode: 'compact',
+                    naming_strategy: 'PascalCase',
+                    styling_strategy: 'utility-first',
+                },
+                assertions: [
+                    (c) => expect(c).toContain('Pattern: **ui-lib**'),
+                    (c) => expect(c).toContain('Styling: **utility-first**'),
+                    (c) => expect(c).not.toContain('tokens/'),
+                    (c) => expect(c).not.toContain('*.tokens.ts'),
+                    (c) => expect(c).not.toContain('| tokens |'), // Layer table should not have tokens layer
+                    (c) => expect(c).not.toContain('| primitives | tokens |'), // primitives should not import tokens
+                    (c) => expect(c).not.toContain('| components | primitives, tokens |'), // components should not import tokens
+                    (c) => expect(c).not.toContain('| patterns | components, primitives, tokens |'), // patterns should not import tokens
+                    (c) => expect(c).not.toContain('styles-hardcoded-without-token'),
+                    (c) => expect(c).not.toContain('side-effects-in-tokens'),
+                    (c) => expect(c).toContain('arbitrary-values-in-utils'),
+                ],
+            },
+            {
+                label: 'UI-Lib + React + scoped: peer dependencies',
+                input: {
+                    pattern: 'ui-lib',
+                    output_mode: 'compact',
+                    naming_strategy: 'PascalCase',
+                    styling_strategy: 'scoped',
+                    framework: 'react',
+                },
+                assertions: [
+                    (c) => expect(c).toContain('Pattern: **ui-lib**'),
+                    (c) => expect(c).toContain('Framework:** react'),
+                    (c) => expect(c).toContain('Peer dependencies:** react, react-dom'),
+                    (c) => expect(c).toContain('tokens/'), // tokens should exist in scoped mode
+                ],
+            },
         ];
 
     for (const { label, input, assertions } of cases) {
