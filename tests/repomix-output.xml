@@ -1,0 +1,316 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+e2e/
+  generate.e2e.test.ts
+integration/
+  business-rules.test.ts
+  policy-contract.test.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="e2e/generate.e2e.test.ts">
+import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
+import fs from 'fs-extra';
+import path from 'path';
+import { generateAction } from '../../src/commands/generate';
+
+const OUTPUT_DIR = './test-output-e2e';
+
+describe('E2E: generate command', () => {
+    beforeEach(() => fs.ensureDir(OUTPUT_DIR));
+    afterEach(() => fs.remove(OUTPUT_DIR));
+
+    const cases: Array<{
+        label: string;
+        input: Parameters<typeof generateAction>[0];
+        assertions: Array<(content: string) => void>;
+    }> = [
+            {
+                label: 'FSD + utility-first + kebab-case',
+                input: {
+                    pattern: 'feature-sliced',
+                    output_mode: 'compact',
+                    naming_strategy: 'kebab-case',
+                    styling_strategy: 'utility-first',
+                },
+                assertions: [
+                    (c) => expect(c).toContain('# Architecture Policy'),
+                    (c) => expect(c).toContain('Pattern: **feature-sliced**'),
+                    (c) => expect(c).toContain('Styling: **utility-first**'),
+                    (c) => expect(c).not.toContain('.module.css'),
+                    (c) => expect(c).toContain('*.svelte'),
+                    (c) => expect(c).toContain('*.svelte.ts'),
+                    (c) => expect(c).toContain('feature-based'),
+                ],
+            },
+            {
+                label: 'Flat + camelCase',
+                input: {
+                    pattern: 'flat',
+                    output_mode: 'compact',
+                    naming_strategy: 'camelCase',
+                },
+                assertions: [
+                    (c) => expect(c).toContain('Pattern: **flat**'),
+                    (c) => expect(c).toContain('flexible'),
+                    (c) => expect(c).toContain('*.svelte'),
+                    (c) => expect(c).toContain('Barrel exports:** optional'),
+                ],
+            },
+            {
+                label: 'Atomic + scoped + snake_case',
+                input: {
+                    pattern: 'atomic',
+                    output_mode: 'compact',
+                    naming_strategy: 'snake_case',
+                    styling_strategy: 'scoped',
+                },
+                assertions: [
+                    (c) => expect(c).toContain('Pattern: **atomic**'),
+                    (c) => expect(c).toContain('minimal'),
+                    (c) => expect(c).toContain('.module.css'),
+                    (c) => expect(c).toContain('*.svelte'),
+                ],
+            },
+            {
+                label: 'UI-Lib + utility-first: naming override and tokens removal',
+                input: {
+                    pattern: 'ui-lib',
+                    output_mode: 'compact',
+                    naming_strategy: 'kebab-case', // Should be overridden to PascalCase
+                    styling_strategy: 'utility-first',
+                },
+                assertions: [
+                    (c) => expect(c).toContain('Pattern: **ui-lib**'),
+                    (c) => expect(c).toContain('Styling: **utility-first**'),
+                    (c) => expect(c).toContain('Component files:** `PascalCase`'),
+                    (c) => expect(c).not.toContain('tokens/'),
+                    (c) => expect(c).not.toContain('*.tokens.ts'),
+                    (c) => expect(c).not.toContain('| tokens |'),
+                    (c) => expect(c).not.toContain('styles-hardcoded-without-token'),
+                    (c) => expect(c).toContain('arbitrary-values-in-utils'),
+                    (c) => expect(c).toContain('## State & Async Rules'),
+                    (c) => expect(c).toContain('UI-only state'),
+                    (c) => expect(c).toContain('`$state` rune'),
+                    (c) => expect(c).toContain('Svelte stores at module level'),
+                ],
+            },
+        ];
+
+    for (const { label, input, assertions } of cases) {
+        test(label, async () => {
+            await generateAction(input, OUTPUT_DIR);
+            const content = await fs.readFile(path.join(OUTPUT_DIR, 'policy.md'), 'utf8');
+            for (const assert of assertions) {
+                assert(content);
+            }
+        });
+    }
+});
+</file>
+
+<file path="integration/business-rules.test.ts">
+import { describe, test, expect } from 'bun:test';
+import { composePolicy } from '../../src/core/composer';
+import { renderMarkdown } from '../../src/core/renderer/markdown-renderer';
+
+describe('Regras de negócio: styling_strategy', () => {
+    test('utility-first: sem .module.css ou .css no output', () => {
+        const output = renderMarkdown(composePolicy({
+            pattern: 'feature-sliced',
+            output_mode: 'compact',
+            naming_strategy: 'kebab-case',
+            styling_strategy: 'utility-first',
+        }));
+        expect(output).not.toContain('.module.css');
+        expect(output).not.toContain('.css');
+    });
+
+    test('scoped: .module.css aparece nos companions e na estrutura', () => {
+        const output = renderMarkdown(composePolicy({
+            pattern: 'atomic',
+            output_mode: 'compact',
+            naming_strategy: 'kebab-case',
+            styling_strategy: 'scoped',
+        }));
+        expect(output).toContain('.module.css');
+    });
+});
+
+describe('Regras de negócio: component_preference', () => {
+    test('strict: max_props = 5 e aparece no markdown', () => {
+        const policy = composePolicy({
+            pattern: 'flat',
+            output_mode: 'compact',
+            naming_strategy: 'kebab-case',
+            component_preference: 'strict',
+        });
+        expect(policy.ui_constraints.component_max_props).toBe(5);
+        expect(renderMarkdown(policy)).toContain('Max props:** 5');
+    });
+
+    test('balanced: max_props = 10', () => {
+        const policy = composePolicy({
+            pattern: 'flat',
+            output_mode: 'compact',
+            naming_strategy: 'kebab-case',
+            component_preference: 'balanced',
+        });
+        expect(policy.ui_constraints.component_max_props).toBe(10);
+    });
+
+    test('relaxed: max_props = 15', () => {
+        const policy = composePolicy({
+            pattern: 'flat',
+            output_mode: 'compact',
+            naming_strategy: 'kebab-case',
+            component_preference: 'relaxed',
+        });
+        expect(policy.ui_constraints.component_max_props).toBe(15);
+    });
+});
+
+describe('Regras de negócio: naming_strategy no markdown final', () => {
+    const cases = [
+        { strategy: 'kebab-case', expected: '*.svelte' },
+        { strategy: 'PascalCase', expected: '*.svelte' },
+        { strategy: 'snake_case', expected: '*.svelte' },
+        { strategy: 'camelCase', expected: '*.svelte' },
+    ] as const;
+
+    for (const { strategy, expected } of cases) {
+        test(`${strategy} → padrão "${expected}" presente no markdown`, () => {
+            const output = renderMarkdown(composePolicy({
+                pattern: 'feature-sliced',
+                output_mode: 'compact',
+                naming_strategy: strategy,
+            }));
+            expect(output).toContain(expected);
+        });
+    }
+});
+
+describe('Regras de negócio: state derivado por pattern', () => {
+    const cases = [
+        { pattern: 'feature-sliced', expectedScope: 'feature-based' },
+        { pattern: 'modular', expectedScope: 'module-based' },
+        { pattern: 'flat', expectedScope: 'any' },
+        { pattern: 'atomic', expectedScope: 'minimal' },
+    ] as const;
+
+    for (const { pattern, expectedScope } of cases) {
+        test(`${pattern} → state scope "${expectedScope}" no markdown`, () => {
+            const output = renderMarkdown(composePolicy({
+                pattern,
+                output_mode: 'compact',
+                naming_strategy: 'kebab-case',
+            }));
+            expect(output).toContain(expectedScope);
+        });
+    }
+});
+
+describe('Regras de negócio: flat pattern', () => {
+    test('barrel_exports_required = false independente do template default', () => {
+        const policy = composePolicy({
+            pattern: 'flat',
+            output_mode: 'compact',
+            naming_strategy: 'kebab-case',
+        });
+        expect(policy.structural_constraints.barrel_exports_required).toBe(false);
+        expect(renderMarkdown(policy)).toContain('Barrel exports:** optional');
+    });
+});
+</file>
+
+<file path="integration/policy-contract.test.ts">
+import { describe, test, expect } from 'bun:test';
+import { composePolicy } from '../../src/core/composer';
+import { renderMarkdown } from '../../src/core/renderer/markdown-renderer';
+
+const PATTERNS = ['feature-sliced', 'modular', 'flat', 'atomic'] as const;
+const NAMINGS = ['kebab-case', 'PascalCase', 'camelCase', 'snake_case'] as const;
+const STYLINGS = ['utility-first', 'scoped', 'any'] as const;
+
+const INVARIANTS: Array<{ label: string; check: (output: string) => boolean }> = [
+    { label: 'tem cabeçalho', check: (c) => c.startsWith('# Architecture Policy') },
+    { label: 'tem seção de layers', check: (c) => c.includes('## Layer Rules') },
+    { label: 'tem seção de file conventions', check: (c) => c.includes('## File Conventions') },
+    { label: 'tem seção de state', check: (c) => c.includes('## State & Async Rules') },
+    { label: 'não tem undefined literal', check: (c) => !c.includes('undefined') },
+    { label: 'não tem [object Object]', check: (c) => !c.includes('[object Object]') },
+    { label: 'sempre mostra svelte no stack', check: (c) => c.includes('svelte') },
+];
+
+describe('Policy contract: todas as combinações válidas', () => {
+    for (const pattern of PATTERNS) {
+        for (const naming of NAMINGS) {
+            for (const styling of STYLINGS) {
+                const label = `${pattern} + ${naming} + ${styling}`;
+
+                test(label, () => {
+                    const policy = composePolicy({
+                        pattern,
+                        output_mode: 'compact',
+                        naming_strategy: naming,
+                        styling_strategy: styling,
+                    });
+
+                    const output = renderMarkdown(policy);
+
+                    for (const invariant of INVARIANTS) {
+                        expect(
+                            invariant.check(output),
+                            `Falhou invariante "${invariant.label}" para: ${label}`,
+                        ).toBe(true);
+                    }
+                });
+            }
+        }
+    }
+});
+</file>
+
+</files>

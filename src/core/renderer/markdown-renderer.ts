@@ -102,10 +102,10 @@ const getSegmentRules = (segment: string, layerId: string, policy: Policy): stri
     return 'route components only — compose widgets, no business logic';
   }
   if (layerId === 'entities' && segment === 'api') {
-    return 'data access for this entity — maps to domain types, no raw responses';
+    return 'server data access — follow SvelteKit conventions (+page.server.ts / remote functions), map to domain types';
   }
   if (layerId === 'features' && segment === 'api') {
-    return 'feature-specific mutations — calls entity api, never raw fetch';
+    return 'server mutations — follow SvelteKit conventions (actions / remote functions), never fetch() in component';
   }
   if (layerId === 'entities' && segment === 'model') {
     return 'entity state (runes in .svelte.ts), types — pure business logic';
@@ -117,7 +117,7 @@ const getSegmentRules = (segment: string, layerId: string, policy: Policy): stri
   const rules: Record<string, string> = {
     ui: `components — extract if template > 2 logical sections, ${ui_constraints.logic_in_components ? 'logic allowed' : 'no logic — extract to model'}`,
     model: `reactive state (runes in .svelte.ts), types — no side effects`,
-    api: `data fetching — ${side_effect_boundaries.async_pattern}, map errors to domain types`,
+    api: `follow SvelteKit conventions — +page.server.ts, +server.ts or remote functions`,
     lib: `pure utils — stateless, no imports from ui or model`,
     config: `constants, feature flags`,
   };
@@ -449,7 +449,7 @@ const renderStateSection = (policy: Policy): string => {
   return `## State & Async Rules
 - **Scope:** ${state_constraints.global_state_scope}
 - **Derived state:** ${state_constraints.derived_state_strategy}
-- **Data fetching:** ${side_effect_boundaries.data_fetching_scope}, consumed via hooks
+- **Data fetching:** ${side_effect_boundaries.data_fetching_scope} — follow SvelteKit conventions, never fetch() directly in components
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state`;

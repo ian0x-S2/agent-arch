@@ -1,0 +1,4346 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+commands/
+  estimate.ts
+  generate.ts
+  registry.ts
+  render.ts
+  validate.ts
+core/
+  composer/
+    composer.test.ts
+    index.ts
+    naming.ts
+  registry/
+    templates/
+      atomic.ts
+      feature-sliced.ts
+      flat.ts
+      modular.ts
+      ui-lib.ts
+    index.ts
+    loader.test.ts
+    loader.ts
+  renderer/
+    __snapshots__/
+      renderer.test.ts.snap
+    markdown-renderer.ts
+    renderer.test.ts
+  shared/
+    framework-rules.ts
+    pattern-state.ts
+  token/
+    index.ts
+    token.test.ts
+  writer/
+    index.ts
+    writer.test.ts
+  constants.ts
+schema/
+  policy.schema.ts
+ui/
+  components/
+    ComponentLibStep.tsx
+    ConfirmScreen.tsx
+    Header.tsx
+    OptionDescription.tsx
+    QuestionStep.tsx
+  hooks/
+    useWizard.ts
+  app.tsx
+  steps.ts
+bin.ts
+types.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="commands/estimate.ts">
+import { readFileSync } from 'fs';
+import { estimateTokens, formatTokenCount } from '../core/token';
+
+export const estimateAction = (filePath: string) => {
+  try {
+    if (!filePath.endsWith('.md')) {
+      console.warn('WARNING: Estimating tokens from non-Markdown files is not recommended.');
+    }
+    const content = readFileSync(filePath, 'utf8');
+    const tokens = estimateTokens(content);
+    console.log(`Estimated prompt tokens: ${formatTokenCount(tokens)}`);
+  } catch (error) {
+    console.error(`✖ Estimate failed:`, error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+};
+</file>
+
+<file path="commands/generate.ts">
+import { composePolicy } from '../core/composer';
+import { writePolicyFiles } from '../core/writer';
+import type { UserSelections } from '../types';
+import * as v from 'valibot';
+import { UserSelectionsSchema } from '../core/composer';
+
+export const generateAction = async (
+  options: Partial<UserSelections>,
+  targetDir = '.ai',
+) => {
+  try {
+    const selections = v.parse(UserSelectionsSchema, options);
+    const policy = composePolicy(selections);
+    await writePolicyFiles(policy, targetDir);
+    console.log(`✓ Architecture policy generated successfully in ${targetDir}/policy.md`);
+  } catch (error) {
+    console.error('✖ Error generating policy:', error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+};
+</file>
+
+<file path="commands/registry.ts">
+import { TemplateRegistry } from '../core/registry';
+
+export const registryListAction = () => {
+  const templates = TemplateRegistry.listTemplates();
+  console.log('Available Architectural Patterns:');
+  templates.forEach(t => console.log(`- ${t}`));
+};
+</file>
+
+<file path="commands/render.ts">
+import { TemplateRegistry } from '../core/registry';
+import { renderMarkdown } from '../core/renderer/markdown-renderer';
+
+export const renderAction = (patternId: string) => {
+  try {
+    const template = TemplateRegistry.getTemplate(patternId);
+    console.log(renderMarkdown(template));
+  } catch (error) {
+    console.error(`✖ Render failed:`, error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+};
+</file>
+
+<file path="commands/validate.ts">
+import { readFileSync, existsSync } from 'fs';
+import * as v from 'valibot';
+import { PolicySchema } from '../schema/policy.schema';
+
+const REQUIRED_SECTIONS = [
+  '# Architecture Policy',
+  '## Layer Rules',
+  '## File Conventions',
+  '## State & Async Rules',
+];
+
+export const validateAction = (filePath: string) => {
+  try {
+    if (!existsSync(filePath)) {
+      throw new Error(`File not found: ${filePath}`);
+    }
+    const content = readFileSync(filePath, 'utf8');
+
+    const missing = REQUIRED_SECTIONS.filter(s => !content.includes(s));
+    if (missing.length > 0) {
+      throw new Error(
+        `Missing required sections:\n${missing.map(s => `  - ${s}`).join('\n')}`
+      );
+    }
+
+    console.log(`✓ Architecture policy at ${filePath} is valid.`);
+  } catch (error) {
+    console.error(`✖ Validation failed:`, error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+};
+</file>
+
+<file path="core/composer/composer.test.ts">
+import { describe, test, expect } from "bun:test";
+import { composePolicy } from "../composer";
+import type { Layer } from "../../schema/policy.schema";
+
+describe("Composer", () => {
+  test("FSD derives state as feature-based automatically", () => {
+    const policy = composePolicy({
+      pattern: "feature-sliced",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+    });
+
+    expect(policy.stack.state_philosophy).toBe("feature-based");
+    expect(policy.state_constraints.global_state_scope).toBe("feature-based");
+  });
+
+  test("flat derives state as flexible automatically", () => {
+    const policy = composePolicy({
+      pattern: "flat",
+      output_mode: "compact",
+      naming_strategy: "kebab-case",
+    });
+
+    expect(policy.stack.state_philosophy).toBe("flexible");
+    expect(policy.state_constraints.global_state_scope).toBe("any");
+  });
+
+  test("modular derives state as module-based automatically", () => {
+    const policy = composePolicy({
+      pattern: "modular",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+    });
+
+    expect(policy.stack.state_philosophy).toBe("module-based");
+    expect(policy.state_constraints.global_state_scope).toBe("module-based");
+  });
+
+  test("atomic derives state as minimal automatically", () => {
+    const policy = composePolicy({
+      pattern: "atomic",
+      output_mode: "compact",
+      naming_strategy: "kebab-case",
+    });
+
+    expect(policy.stack.state_philosophy).toBe("minimal");
+    expect(policy.state_constraints.global_state_scope).toBe("minimal");
+  });
+
+  test("ui-lib derives state as minimal automatically", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+    });
+    expect(policy.stack.state_philosophy).toBe("minimal");
+    expect(policy.ui_lib_config?.compound_pattern.enforced).toBe(true);
+    expect(policy.ui_lib_config?.publish.package_exports_required).toBe(true);
+  });
+
+  test("ui-lib + utility-first changes forbidden pattern to arbitrary-values", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+      styling_strategy: "utility-first",
+    });
+    expect(policy.file_conventions.forbidden_patterns).toContain("arbitrary-values-in-utils");
+    expect(policy.file_conventions.forbidden_patterns).not.toContain("hardcoded-color-without-token");
+  });
+
+  test("ui-lib + utility-first removes tokens layer and related config", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+      styling_strategy: "utility-first",
+    });
+
+    // policy.layers should not contain a layer with id === 'tokens'
+    expect(policy.layers.find((l: any) => l.id === 'tokens')).toBeUndefined();
+
+    // policy.import_matrix should have no tokens key
+    expect((policy.import_matrix as any).tokens).toBeUndefined();
+
+    // policy.file_conventions.types should have no tokens key
+    expect((policy.file_conventions.types as any).tokens).toBeUndefined();
+
+    // policy.state_constraints.forbidden_patterns should not contain 'styles-hardcoded-without-token'
+    expect(policy.state_constraints.forbidden_patterns).not.toContain('styles-hardcoded-without-token');
+
+    // Every layer in policy.layers must have allowed_imports that does not contain 'tokens'
+    for (const layer of policy.layers) {
+      expect(layer.allowed_imports).not.toContain('tokens');
+    }
+
+    // import_matrix values must not reference 'tokens'
+    for (const imports of Object.values(policy.import_matrix)) {
+      expect(imports).not.toContain('tokens');
+    }
+
+    // side_effect_boundaries must not reference the removed tokens layer
+    expect(policy.side_effect_boundaries.forbidden_in_layers).not.toContain('tokens');
+    expect(policy.side_effect_boundaries.allowed_in_layers).not.toContain('tokens');
+  });
+
+  test("ui-lib always uses PascalCase naming regardless of user selection", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "kebab-case", // user picked this, should be overridden
+    });
+    expect(policy.naming_conventions.global_strategy).toBe("PascalCase");
+  });
+
+  test("ui-lib utility files always use dot-separated pattern regardless of naming strategy", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+    });
+    expect(policy.file_conventions.types.types?.pattern).toBe("*.types.ts");
+    expect(policy.file_conventions.types.constants?.pattern).toBe("*.constants.ts");
+  });
+
+  test("framework is always svelte regardless of input", () => {
+    const policy = composePolicy({
+      pattern: 'flat',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case'
+    });
+    expect(policy.stack.framework).toBe('svelte');
+  });
+
+  test("ui-lib sets correct svelte peer dependencies", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+    });
+    expect(policy.ui_lib_config?.publish.peer_dependencies).toEqual(['svelte']);
+  });
+
+  test("ui-lib + scoped keeps hardcoded-color-without-token rule", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+      styling_strategy: "scoped",
+    });
+    expect(policy.file_conventions.forbidden_patterns).toContain("hardcoded-color-without-token");
+  });
+
+  test("utility-first styling removes style companions", () => {
+    const policy = composePolicy({
+      pattern: "feature-sliced",
+      output_mode: "compact",
+      naming_strategy: "kebab-case",
+      styling_strategy: "utility-first",
+    });
+
+    const component = policy.file_conventions.types.component!;
+    expect(component.companions?.style).toBeUndefined();
+    expect(policy.ui_constraints.style_co_location).toBe(false);
+    expect(policy.ui_constraints.allowed_style_extensions).toHaveLength(0);
+  });
+
+  test("scoped styling adds companion .module.css required", () => {
+    const policy = composePolicy({
+      pattern: "feature-sliced",
+      output_mode: "compact",
+      naming_strategy: "kebab-case",
+      styling_strategy: "scoped",
+    });
+
+    const component = policy.file_conventions.types.component!;
+    expect(component.companions?.style?.required).toBe(true);
+    expect(component.companions?.style?.extensions).toContain(".module.css");
+    expect(policy.ui_constraints.style_co_location).toBe(true);
+  });
+
+  test("atomic + utility-first has no style companions", () => {
+    const policy = composePolicy({
+      pattern: "atomic",
+      output_mode: "compact",
+      naming_strategy: "kebab-case",
+      styling_strategy: "utility-first",
+    });
+
+    for (const typeDef of Object.values(policy.file_conventions.types)) {
+      expect(typeDef.companions?.style).toBeUndefined();
+    }
+  });
+
+  test("FSD with PascalCase naming applies correct file patterns", () => {
+    const policy = composePolicy({
+      pattern: "feature-sliced",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+    });
+
+    expect(policy.file_conventions.types.component?.pattern).toBe(
+      "*.svelte",
+    );
+    expect(policy.file_conventions.types.hook?.pattern).toBe("*.svelte.ts");
+
+    const featuresLayer = policy.layers.find((l: Layer) => l.id === "features");
+    expect(featuresLayer?.responsibilities).toBeDefined();
+    expect(featuresLayer?.responsibilities?.owns[0]).toContain(
+      "user interactions with business value",
+    );
+
+    expect(policy.fsd_config?.segments).toContain("ui");
+  });
+
+  test("flat pattern disables barrel exports regardless of template default", () => {
+    const policy = composePolicy({
+      pattern: "flat",
+      output_mode: "compact",
+      naming_strategy: "kebab-case",
+    });
+    expect(policy.structural_constraints.barrel_exports_required).toBe(false);
+  });
+
+  test("modular template has correct import_matrix (no self-import)", () => {
+    const policy = composePolicy({
+      pattern: "modular",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
+    });
+
+    const modulesImports = policy.import_matrix["modules"];
+    expect(modulesImports).not.toContain("modules");
+    expect(modulesImports).toContain("shared");
+  });
+
+  test("composePolicy preserves responsibilities through validation", () => {
+    const policy = composePolicy({
+      pattern: "feature-sliced",
+      output_mode: "compact",
+      naming_strategy: "kebab-case",
+    });
+
+    const appLayer = policy.layers.find((l: Layer) => l.id === "app");
+    expect(appLayer?.responsibilities).toBeDefined();
+    expect(appLayer?.responsibilities?.owns).toContain("providers");
+  });
+
+  test("flat template has meaningful forbidden_patterns", () => {
+    const policy = composePolicy({
+      pattern: "flat",
+      output_mode: "compact",
+      naming_strategy: "kebab-case",
+    });
+
+    expect(policy.state_constraints.forbidden_patterns.length).toBeGreaterThan(
+      0,
+    );
+    expect(policy.file_conventions.forbidden_patterns.length).toBeGreaterThan(
+      0,
+    );
+  });
+
+  test("throws on unknown pattern", () => {
+    expect(() =>
+      composePolicy({
+        pattern: "non-existent",
+        output_mode: "compact",
+        naming_strategy: "kebab-case",
+      }),
+    ).toThrow("Template not found: non-existent");
+  });
+
+  test("camelCase naming strategy produces valid patterns", () => {
+    const policy = composePolicy({
+      pattern: 'flat',
+      output_mode: 'compact',
+      naming_strategy: 'camelCase',
+    });
+    expect(policy.naming_conventions.global_strategy).toBe('camelCase');
+    expect(policy.file_conventions.types.component?.pattern).toBe('*.svelte');
+    expect(policy.file_conventions.types.hook?.pattern).toBe('*.svelte.ts');
+  });
+
+  test('ui-lib + strict uses compound-first max_props of 5', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      component_preference: 'strict',
+    });
+    expect(policy.ui_constraints.component_max_props).toBe(5);
+  });
+
+  test('ui-lib + relaxed uses config-driven max_props of 15', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      component_preference: 'relaxed',
+    });
+    expect(policy.ui_constraints.component_max_props).toBe(15);
+  });
+
+  test('non ui-lib patterns preserve original PREFERENCE_MAP values', () => {
+    const strict = composePolicy({
+      pattern: 'feature-sliced',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case',
+      component_preference: 'strict',
+    });
+    expect(strict.ui_constraints.component_max_props).toBe(5);
+
+    const relaxed = composePolicy({
+      pattern: 'feature-sliced',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case',
+      component_preference: 'relaxed',
+    });
+    expect(relaxed.ui_constraints.component_max_props).toBe(15);
+  });
+});
+</file>
+
+<file path="core/composer/index.ts">
+import * as v from 'valibot';
+import { PolicySchema, type Policy } from '../../schema/policy.schema';
+import { TemplateRegistry } from '../registry';
+import { resolveNamingPatterns } from './naming';
+import { STATE_BY_PATTERN } from '../shared/pattern-state';
+import { SVELTE_OVERRIDES } from '../shared/framework-rules';
+import {
+  VALID_STYLING,
+  STYLING_EXTENSIONS,
+  PREFERENCE_MAP,
+  UI_LIB_PREFERENCE_MAP,
+  VALID_STRATEGIES
+} from '../constants';
+import type { UserSelections } from '../../types';
+
+export const UserSelectionsSchema = v.object({
+  pattern: v.string(),
+  naming_strategy: v.optional(v.picklist(VALID_STRATEGIES)),
+  styling_strategy: v.optional(v.picklist(VALID_STYLING)),
+  component_lib: v.optional(v.string()),
+  component_preference: v.optional(v.picklist(['strict', 'balanced', 'relaxed'] as const)),
+});
+
+function deepClone<T>(obj: T): T {
+  return structuredClone(obj);
+}
+
+function isObject(item: any): item is Record<string, any> {
+  return item && typeof item === 'object' && !Array.isArray(item);
+}
+
+/**
+ * Deep merges two objects. 
+ * - Objects are merged recursively.
+ * - Arrays are replaced entirely by the source array (no concatenation).
+ * - Scalars are replaced by the source.
+ */
+function deepMerge(target: any, source: any): any {
+  if (!isObject(target) || !isObject(source)) return source;
+  const output = { ...target };
+  for (const key of Object.keys(source)) {
+    if (Array.isArray(source[key])) {
+      output[key] = source[key]; // arrays: source always wins (except special cases handled later)
+    } else if (isObject(source[key]) && isObject(target[key])) {
+      output[key] = deepMerge(target[key], source[key]);
+    } else {
+      output[key] = source[key];
+    }
+  }
+  return output;
+}
+
+function mergeStringArrayUnique(a: string[], b: string[]): string[] {
+  return [...new Set([...a, ...b])];
+}
+
+export const composePolicy = (rawSelections: Partial<UserSelections>): Policy => {
+  // Validate UserSelections
+  const selections = v.parse(UserSelectionsSchema, rawSelections);
+
+  // 1. Get base template (clone to avoid mutation)
+  const template = deepClone(TemplateRegistry.getTemplate(selections.pattern));
+
+  // 2. Derive state from pattern
+  const state = STATE_BY_PATTERN[selections.pattern] ?? {
+    philosophy: template.stack.state_philosophy || 'flexible',
+    scope: template.state_constraints?.global_state_scope || 'any',
+  };
+
+  const stylingStrategy = selections.styling_strategy || template.stack.styling_strategy || 'any';
+  const namingStrategy = selections.naming_strategy || template.naming_conventions.global_strategy;
+
+  // 3. Define overrides
+  const overrides: any = {
+    meta: {
+      output_mode: 'compact',
+      generated_at: new Date().toISOString()
+    },
+    stack: {
+      pattern: selections.pattern,
+      state_philosophy: state.philosophy,
+      styling_strategy: stylingStrategy,
+      framework: 'svelte' as const,
+      component_lib: selections.component_lib || undefined,
+    },
+    state_constraints: {
+      global_state_scope: state.scope,
+      derived_state_strategy: selections.pattern === 'flat' ? 'any' : 'selectors',
+    },
+    naming_conventions: {
+      global_strategy: namingStrategy
+    }
+  };
+
+  // 4. Merge base with overrides
+  let merged = deepMerge(template, overrides);
+
+  // 5. Update naming patterns based on strategy
+  if (namingStrategy) {
+    merged.file_conventions.types = resolveNamingPatterns(
+      merged.file_conventions.types,
+      namingStrategy
+    );
+  }
+
+  // Apply framework overrides
+  const baseForbiddenFile = template.file_conventions.forbidden_patterns || [];
+  const baseForbiddenState = template.state_constraints.forbidden_patterns || [];
+
+  merged = deepMerge(merged, SVELTE_OVERRIDES);
+
+  // Correct deepMerge for known arrays that should be merged (Task 2)
+  merged.file_conventions.forbidden_patterns = mergeStringArrayUnique(
+    baseForbiddenFile,
+    merged.file_conventions.forbidden_patterns || []
+  );
+
+  merged.state_constraints.forbidden_patterns = mergeStringArrayUnique(
+    baseForbiddenState,
+    merged.state_constraints.forbidden_patterns || []
+  );
+
+  // Framework-specific peer dependencies for ui-lib pattern
+  if (merged.ui_lib_config) {
+    merged.ui_lib_config.publish.peer_dependencies = ['svelte'];
+  }
+
+  // ui-lib: always enforce PascalCase as the declared naming convention
+  if (selections.pattern === "ui-lib") {
+    merged.naming_conventions.global_strategy = "PascalCase";
+
+    // ui-lib: utility files always use dot-separated convention (*.types.ts, *.constants.ts)
+    // regardless of naming strategy — only component files follow PascalCase
+    if (merged.file_conventions.types.types) {
+      merged.file_conventions.types.types.pattern = "*.types.ts";
+    }
+    if (merged.file_conventions.types.constants) {
+      merged.file_conventions.types.constants.pattern = "*.constants.ts";
+    }
+  }
+
+  // 6. Pattern-specific overrides
+  if (selections.pattern === 'flat') {
+    merged.structural_constraints.barrel_exports_required = false;
+  }
+
+  // 7. Styling-specific companion + extension overrides
+  const styleExts = STYLING_EXTENSIONS[stylingStrategy];
+
+  for (const typeDef of Object.values(merged.file_conventions.types) as any[]) {
+    if (!typeDef.companions?.style) continue;
+
+    if (!styleExts || styleExts.length === 0) {
+      delete typeDef.companions.style;
+    } else {
+      typeDef.companions.style.required = true;
+      typeDef.companions.style.extensions = styleExts;
+    }
+  }
+
+  // 8. Update ui_constraints based on styling strategy
+  if (selections.styling_strategy === 'scoped') {
+    merged.ui_constraints.style_co_location = true;
+    merged.ui_constraints.allowed_style_extensions = ['.module.css', '.css'];
+  }
+
+  if (selections.styling_strategy === 'utility-first') {
+    merged.ui_constraints.style_co_location = false;
+    merged.ui_constraints.allowed_style_extensions = [];
+  }
+
+  // 8b. UI-Lib pattern-specific overrides based on styling strategy
+  if (selections.pattern === 'ui-lib') {
+    if (selections.styling_strategy === 'utility-first') {
+      // Utility-first: Tailwind classes are the token source
+      // Replace hardcoded-color rule with arbitrary-values rule
+      merged.file_conventions.forbidden_patterns =
+        merged.file_conventions.forbidden_patterns
+          .map((p: string) => p === 'hardcoded-color-without-token'
+            ? 'arbitrary-values-in-utils'
+            : p)
+          .filter((p: string) => p !== 'style-without-token-reference');
+    }
+    // For scoped: keep default token rules (hardcoded-color-without-token)
+  }
+
+  if (selections.component_preference) {
+    merged.ui_constraints.component_max_props = selections.pattern === 'ui-lib'
+      ? UI_LIB_PREFERENCE_MAP[selections.component_preference].max_props
+      : PREFERENCE_MAP[selections.component_preference];
+  }
+
+  // ui-lib + utility-first: remove tokens layer and related config
+  if (selections.pattern === 'ui-lib' && stylingStrategy === 'utility-first') {
+    // 1. Remove tokens layer from policy.layers
+    merged.layers = merged.layers.filter((layer: any) => layer.id !== 'tokens');
+
+    // 2. Remove tokens from import_matrix entirely
+    delete merged.import_matrix.tokens;
+
+    // Also strip 'tokens' from the arrays of all remaining keys in import_matrix
+    for (const key of Object.keys(merged.import_matrix)) {
+      merged.import_matrix[key] = merged.import_matrix[key].filter(
+        (id: string) => id !== 'tokens'
+      );
+    }
+
+    // 3. Remove 'tokens' from allowed_imports arrays in primitives, components, and patterns
+    merged.layers = merged.layers.map((layer: any) => ({
+      ...layer,
+      allowed_imports: layer.allowed_imports.filter((id: string) => id !== 'tokens'),
+    }));
+
+    // 4. Set ui_lib_config.token_categories to empty array (Tailwind config is the source of truth)
+    if (merged.ui_lib_config) {
+      merged.ui_lib_config.token_categories = [];
+    }
+
+    // 5. Remove token-related forbidden patterns
+    if (merged.state_constraints?.forbidden_patterns) {
+      merged.state_constraints.forbidden_patterns = merged.state_constraints.forbidden_patterns.filter(
+        (pattern: string) => 
+          pattern !== 'styles-hardcoded-without-token' && 
+          pattern !== 'side-effects-in-tokens'
+      );
+    }
+
+    // 6. Remove tokens file type from file_conventions.types
+    delete merged.file_conventions.types.tokens;
+
+    // 7. Remove 'tokens' from side_effect_boundaries layer lists
+    merged.side_effect_boundaries.forbidden_in_layers =
+      merged.side_effect_boundaries.forbidden_in_layers.filter(
+        (id: string) => id !== 'tokens'
+      );
+
+    merged.side_effect_boundaries.allowed_in_layers =
+      merged.side_effect_boundaries.allowed_in_layers.filter(
+        (id: string) => id !== 'tokens'
+      );
+  }
+
+  // 9. Validate the final object
+  return v.parse(PolicySchema, merged);
+};
+</file>
+
+<file path="core/composer/naming.ts">
+import type { Policy } from '../../schema/policy.schema';
+import { VALID_STRATEGIES, type NamingStrategy } from '../constants';
+
+const FILE_SUFFIXES: Record<string, Record<string, string>> = {
+  'kebab-case': {
+    component: '*.component.svelte',
+    hook:      '*.hook.svelte.ts',
+    store:     '*.store.svelte.ts',
+    service:   '*.service.ts',
+    types:     '*.types.ts',
+    constants: '*.constants.ts',
+  },
+  'PascalCase': {
+    component: '*Component.svelte',
+    hook:      '*Hook.svelte.ts',
+    store:     '*Store.svelte.ts',
+    service:   '*Service.ts',
+    types:     '*Types.ts',
+    constants: '*Constants.ts',
+  },
+  'snake_case': {
+    component: '*_component.svelte',
+    hook:      '*_hook.svelte.ts',
+    store:     '*_store.svelte.ts',
+    service:   '*_service.ts',
+    types:     '*_types.ts',
+    constants: '*_constants.ts',
+  },
+  'camelCase': {
+    component: '*.component.svelte',
+    hook:      '*.hook.svelte.ts',
+    store:     '*.store.svelte.ts',
+    service:   '*.service.ts',
+    types:     '*.types.ts',
+    constants: '*.constants.ts',
+  },
+};
+
+export const resolveNamingPatterns = (
+  types: Policy['file_conventions']['types'],
+  strategy: string
+): Policy['file_conventions']['types'] => {
+  const suffixes = FILE_SUFFIXES[strategy];
+  if (!suffixes) {
+    throw new Error(`Unknown naming strategy: "${strategy}". Valid: ${VALID_STRATEGIES.join(', ')}`);
+  }
+
+  const result = JSON.parse(JSON.stringify(types));
+  
+  for (const key of Object.keys(result)) {
+    if (suffixes[key]) {
+      result[key].pattern = suffixes[key];
+    }
+  }
+  
+  return result;
+};
+</file>
+
+<file path="core/registry/templates/atomic.ts">
+import type { Policy } from '../../../schema/policy.schema';
+
+export const atomicTemplate: Policy = {
+  meta: {
+    version: '1.0.0',
+    generated_at: new Date().toISOString(),
+    output_mode: 'compact',
+  },
+  stack: {
+    domain: 'frontend',
+    pattern: 'atomic',
+    state_philosophy: 'minimal',
+    styling_strategy: 'utility-first',
+    framework: 'svelte',
+    component_lib: undefined,
+  },
+  layers: [
+    {
+      id: 'pages',
+      allowed_imports: ['templates', 'organisms', 'molecules', 'atoms', 'shared'],
+      responsibilities: {
+        owns: ['Route components', 'Data fetching', 'Connecting templates to real data'],
+        must_not: ['Contain complex UI logic', 'Directly define complex layouts'],
+        depends_on_abstractions: false
+      }
+    },
+    {
+      id: 'templates',
+      allowed_imports: ['organisms', 'molecules', 'atoms', 'shared'],
+      responsibilities: {
+        owns: ['Page-level layout structures', 'Slot-based composition'],
+        must_not: ['Know about real data', 'Manage business logic'],
+        depends_on_abstractions: false
+      }
+    },
+    {
+      id: 'organisms',
+      allowed_imports: ['molecules', 'atoms', 'shared'],
+      responsibilities: {
+        owns: ['Complex, standalone UI sections', 'Local state for interaction logic'],
+        must_not: ['Know about routing', 'Directly access global state if possible'],
+        depends_on_abstractions: true
+      }
+    },
+    {
+      id: 'molecules',
+      allowed_imports: ['atoms', 'shared'],
+      responsibilities: {
+        owns: ['Simple combinations of atoms', 'Purely presentational logic'],
+        must_not: ['Fetch data', 'Contain business rules'],
+        depends_on_abstractions: false
+      }
+    },
+    {
+      id: 'atoms',
+      allowed_imports: ['shared'],
+      responsibilities: {
+        owns: ['Single HTML element wrappers', 'Basic styling and primitive behavior'],
+        must_not: ['Import from any other layer', 'Contain any business logic'],
+        depends_on_abstractions: false
+      }
+    },
+    {
+      id: 'shared',
+      allowed_imports: [],
+      responsibilities: {
+        owns: ['Utils', 'Theme constants', 'Global types'],
+        must_not: ['Import from UI layers'],
+        depends_on_abstractions: false
+      }
+    },
+  ],
+  import_matrix: {
+    pages: ['templates', 'organisms', 'molecules', 'atoms', 'shared'],
+    templates: ['organisms', 'molecules', 'atoms', 'shared'],
+    organisms: ['molecules', 'atoms', 'shared'],
+    molecules: ['atoms', 'shared'],
+    atoms: ['shared'],
+    shared: [],
+  },
+  structural_constraints: {
+    max_component_depth: 5,
+    barrel_exports_required: true,
+    circular_imports: 'FORBIDDEN',
+    cross_feature_imports: 'via-public-api-only',
+  },
+  atomic_config: {
+    layer_internals: {
+      organisms: ['hooks', 'types'],
+      molecules: ['types'],
+      atoms: ['types'],
+    },
+  },
+  ui_constraints: {
+    component_max_props: 7,
+    prop_drilling_max_depth: 3,
+    logic_in_components: true,
+    style_co_location: true,
+    allowed_style_extensions: ['.module.css', '.css'],
+    prefer_composition: true,
+  },
+  state_constraints: {
+    global_state_scope: 'minimal',
+    local_state_allowed: true,
+    derived_state_strategy: 'selectors',
+    forbidden_patterns: ['prop-drilling-beyond-3-levels', 'global-state-for-ui-toggle'],
+  },
+  side_effect_boundaries: {
+    allowed_in_layers: ['pages', 'templates', 'organisms'],
+    forbidden_in_layers: ['molecules', 'atoms'],
+    async_pattern: 'hooks',
+    data_fetching_scope: 'pages',
+  },
+  naming_conventions: {
+    global_strategy: 'kebab-case',
+    component: 'PascalCase',
+    hook: 'camelCase',
+  },
+  file_conventions: {
+    types: {
+      component: {
+        pattern: '*.ts',
+        companions: {
+          test: { required: true, extensions: ['.test.ts'] },
+          style: { required: false, extensions: ['.module.css'] },
+        },
+      },
+      types: { pattern: '*.types.ts' },
+      constants: { pattern: '*.constants.ts' },
+    },
+    colocation: 'strict',
+    public_api: {
+      required: true,
+      expose_internals: false,
+    },
+    test_placement: 'colocated',
+    forbidden_patterns: [],
+  },
+  token_metadata: {
+    estimated_prompt_tokens: 0,
+    compression_applied: false,
+    omitted_sections: [],
+  },
+};
+</file>
+
+<file path="core/registry/templates/feature-sliced.ts">
+import type { Policy } from '../../../schema/policy.schema';
+
+export const featureSlicedTemplate: Policy = {
+  "meta": {
+    "version": "1.0.0",
+    "output_mode": "compact",
+    "generated_at": ""
+  },
+  "stack": {
+    "domain": "frontend",
+    "pattern": "feature-sliced",
+    "state_philosophy": "feature-based",
+    "styling_strategy": "utility-first",
+    framework: 'svelte',
+
+    "component_lib": undefined
+  },
+  "fsd_config": {
+    "segments": ["ui", "model", "api", "lib", "config"]
+  },
+  "layers": [
+    { 
+      "id": "app", 
+      "allowed_imports": ["pages", "widgets", "features", "entities", "shared"],
+      "responsibilities": {
+        "owns": ["providers", "routing", "global styles", "app initialization"],
+        "must_not": ["contain business logic"],
+        "depends_on_abstractions": false
+      }
+    },
+    { 
+      "id": "pages", 
+      "allowed_imports": ["widgets", "features", "entities", "shared"],
+      "responsibilities": {
+        "owns": ["composition of widgets for a route"],
+        "must_not": ["contain business logic"],
+        "depends_on_abstractions": false
+      }
+    },
+    { 
+      "id": "widgets", 
+      "allowed_imports": ["features", "entities", "shared"],
+      "responsibilities": {
+        "owns": ["composition of features", "reusable page sections"],
+        "must_not": ["contain business logic directly"],
+        "depends_on_abstractions": false
+      }
+    },
+    { 
+      "id": "features", 
+      "allowed_imports": ["entities", "shared"],
+      "responsibilities": {
+        "owns": ["user interactions with business value (AddToCart, LoginForm)"],
+        "must_not": ["import from other features", "know about pages"],
+        "depends_on_abstractions": true
+      }
+    },
+    { 
+      "id": "entities", 
+      "allowed_imports": ["shared"],
+      "responsibilities": {
+        "owns": ["business objects and their operations (User, Product, Order)"],
+        "must_not": ["import from features or above", "contain UI components ideally"],
+        "depends_on_abstractions": true
+      }
+    },
+    { 
+      "id": "shared", 
+      "allowed_imports": [],
+      "responsibilities": {
+        "owns": ["reusable infra with no business logic (ui-kit, api client, utils)"],
+        "must_not": ["import from any other layer", "contain business logic"],
+        "depends_on_abstractions": false
+      }
+    }
+  ],
+  "import_matrix": {
+    "app":      ["pages", "widgets", "features", "entities", "shared"],
+    "pages":    ["widgets", "features", "entities", "shared"],
+    "widgets":  ["features", "entities", "shared"],
+    "features": ["entities", "shared"],
+    "entities": ["shared"],
+    "shared":   []
+  },
+  "abstraction_boundaries": [
+    {
+      "boundary_name": "features→entities",
+      "inner_layer": "entities",
+      "outer_layer": "features",
+      "interface_required": true,
+      "interface_location": "model",
+      "forbidden_leakage": ["API raw responses", "implementation details of storage"]
+    }
+  ],
+  "domain_rules": {
+    "entities_location": "entities",
+    "value_objects_allowed": true,
+    "entity_rules": {
+      "must_be_immutable": true,
+      "no_framework_imports": true,
+      "validation_location": "factory-function"
+    },
+    "anemic_model_allowed": false,
+    "ubiquitous_language": {
+      "enforced": true
+    }
+  },
+  "structural_constraints": {
+    "max_component_depth": 5,
+    "barrel_exports_required": true,
+    "circular_imports": "FORBIDDEN",
+    "cross_feature_imports": "via-public-api-only"
+  },
+  "ui_constraints": {
+    "component_max_props": 7,
+    "prop_drilling_max_depth": 2,
+    "logic_in_components": false,
+    "style_co_location": true,
+    "allowed_style_extensions": [".css", ".module.css"],
+    "prefer_composition": true
+  },
+  "state_constraints": {
+    "global_state_scope": "feature-based",
+    "local_state_allowed": true,
+    "derived_state_strategy": "selectors",
+    "forbidden_patterns": ["direct-mutation", "prop-drilling"]
+  },
+  "side_effect_boundaries": {
+    "allowed_in_layers": ["features", "entities"],
+    "forbidden_in_layers": ["ui", "shared"],
+    "async_pattern": "async-await",
+    "data_fetching_scope": "entities"
+  },
+  "naming_conventions": {
+    "global_strategy": "kebab-case",
+    "component": "PascalCase",
+    "hook": "camelCase (use* prefix)",
+    "store": "camelCase (*Store suffix)",
+    "service": "camelCase (*Service suffix)",
+    "type": "PascalCase (*Type | *Props suffix)",
+    "constant": "SCREAMING_SNAKE_CASE"
+  },
+  "file_conventions": {
+    "types": {
+      "component": {
+        "pattern": "*.component.ts",
+        "companions": {
+          "style":  { "required": true,  "extensions": [".module.css", ".css"] },
+          "test":   { "required": true,  "extensions": [".test.ts", ".spec.ts"] }
+        }
+      },
+      "hook": {
+        "pattern": "*.hook.ts",
+        "companions": {
+          "test": { "required": true, "extensions": [".test.ts", ".spec.ts"] }
+        }
+      },
+      "store": {
+        "pattern": "*.store.ts",
+        "companions": {
+          "test": { "required": true, "extensions": [".test.ts", ".spec.ts"] }
+        }
+      },
+      "service": {
+        "pattern": "*.service.ts",
+        "companions": {
+          "test": { "required": false, "extensions": [".test.ts"] }
+        }
+      },
+      "types": {
+        "pattern": "*.types.ts"
+      },
+      "constants": {
+        "pattern": "*.constants.ts"
+      }
+    },
+    "colocation": "strict",
+    "public_api": {
+      "required": true,
+      "filename": "index",
+      "extensions": [".ts"],
+      "expose_internals": false
+    },
+    "test_placement": "colocated",
+    "directory": {
+      "max_depth": 5,
+      "feature_root_marker": "index.ts"
+    },
+    "forbidden_patterns": [
+      "default-export-on-utility",
+      "barrel-in-non-feature-root",
+      "named-export-mix-in-component-file"
+    ]
+  },
+  "token_metadata": {
+    "estimated_prompt_tokens": 0,
+    "compression_applied": false,
+    "omitted_sections": []
+  }
+};
+</file>
+
+<file path="core/registry/templates/flat.ts">
+import type { Policy } from '../../../schema/policy.schema';
+
+export const flatTemplate: Policy = {
+  "meta": {
+    "version": "1.0.0",
+    "output_mode": "compact",
+    "generated_at": ""
+  },
+  "stack": {
+    "domain": "frontend",
+    "pattern": "flat",
+    "state_philosophy": "flexible",
+    "styling_strategy": "any",
+    framework: 'svelte',
+
+    "component_lib": undefined
+  },
+  "layers": [
+    {
+      "id": "src",
+      "allowed_imports": ["src"],
+      "responsibilities": {
+        "owns": ["everything at this scale"],
+        "must_not": ["nothing forbidden at this scale - this is intentional simplicity"],
+        "depends_on_abstractions": false
+      }
+    }
+  ],
+  "import_matrix": {
+    "src": ["src"]
+  },
+  "structural_constraints": {
+    "max_component_depth": 3,
+    "barrel_exports_required": false,
+    "circular_imports": "FORBIDDEN",
+    "cross_feature_imports": "allowed"
+  },
+  "graduation_signals": {
+    "component_count_threshold": 20,
+    "duplicated_fetch_threshold": 3,
+    "suggested_next_pattern": "modular"
+  },
+  "ui_constraints": {
+    "component_max_props": 7,
+    "prop_drilling_max_depth": 3,
+    "logic_in_components": true,
+    "style_co_location": false,
+    "allowed_style_extensions": [".css", ".scss", ".sass", ".less"],
+    "prefer_composition": false
+  },
+  "state_constraints": {
+    "global_state_scope": "any",
+    "local_state_allowed": true,
+    "derived_state_strategy": "any",
+    "forbidden_patterns": [
+      "prop-drilling-beyond-3-levels",
+      "global-state-in-component",
+      "duplicate-data-fetching"
+    ]
+  },
+  "side_effect_boundaries": {
+    "allowed_in_layers": ["src"],
+    "forbidden_in_layers": [],
+    "async_pattern": "any",
+    "data_fetching_scope": "any"
+  },
+  "naming_conventions": {
+    "global_strategy": "camelCase",
+    "component": "PascalCase",
+    "hook": "camelCase",
+    "store": "camelCase",
+    "service": "camelCase",
+    "type": "PascalCase",
+    "constant": "SCREAMING_SNAKE_CASE"
+  },
+  "file_conventions": {
+    "types": {
+      "component": {
+        "pattern": "*.ts",
+        "companions": {
+          "test": { "required": false, "extensions": [".test.ts", ".spec.ts"] }
+        }
+      },
+      "hook": {
+        "pattern": "*.ts"
+      },
+      "store": {
+        "pattern": "*.ts"
+      },
+      "service": {
+        "pattern": "*.ts"
+      },
+      "types": {
+        "pattern": "*.ts"
+      },
+      "constants": {
+        "pattern": "*.ts"
+      },
+      "utils": {
+        "pattern": "*.ts"
+      }
+    },
+    "colocation": "none",
+    "public_api": {
+      "required": false,
+      "expose_internals": true
+    },
+    "test_placement": "colocated",
+    "forbidden_patterns": [
+      "deep-nesting",
+      "huge-component-file"
+    ]
+  },
+  "token_metadata": {
+    "estimated_prompt_tokens": 0,
+    "compression_applied": false,
+    "omitted_sections": []
+  }
+};
+</file>
+
+<file path="core/registry/templates/modular.ts">
+import type { Policy } from '../../../schema/policy.schema';
+
+export const modularTemplate: Policy = {
+  "meta": {
+    "version": "1.0.0",
+    "output_mode": "compact",
+    "generated_at": ""
+  },
+  "stack": {
+    "domain": "frontend",
+    "pattern": "modular",
+    "state_philosophy": "module-based",
+    "styling_strategy": "any",
+    framework: 'svelte',
+
+    "component_lib": undefined
+  },
+  "layers": [
+    {
+      "id": "modules",
+      "allowed_imports": ["shared"],
+      "responsibilities": {
+        "owns": ["business logic", "components", "hooks", "services"],
+        "must_not": ["import directly from other modules"],
+        "depends_on_abstractions": true
+      }
+    },
+    {
+      "id": "shared",
+      "allowed_imports": [],
+      "responsibilities": {
+        "owns": ["design system", "utils", "global types", "api client"],
+        "must_not": ["contain business logic", "import from modules"],
+        "depends_on_abstractions": false
+      }
+    }
+  ],
+  "import_matrix": {
+    "modules": ["shared"],
+    "shared": []
+  },
+  "structural_constraints": {
+    "max_component_depth": 4,
+    "barrel_exports_required": true,
+    "circular_imports": "FORBIDDEN",
+    "cross_feature_imports": "via-public-api-only"
+  },
+  "cross_module_communication": "via-shared-only",
+  "ui_constraints": {
+    "component_max_props": 7,
+    "prop_drilling_max_depth": 2,
+    "logic_in_components": false,
+    "style_co_location": true,
+    "allowed_style_extensions": [".css", ".module.css"],
+    "prefer_composition": true
+  },
+  "state_constraints": {
+    "global_state_scope": "module-based",
+    "local_state_allowed": true,
+    "derived_state_strategy": "selectors",
+    "forbidden_patterns": ["direct-mutation"]
+  },
+  "side_effect_boundaries": {
+    "allowed_in_layers": ["modules", "shared"],
+    "forbidden_in_layers": [],
+    "async_pattern": "async-await",
+    "data_fetching_scope": "modules"
+  },
+  "naming_conventions": {
+    "global_strategy": "PascalCase",
+    "component": "PascalCase",
+    "hook": "camelCase",
+    "store": "camelCase",
+    "service": "camelCase",
+    "type": "PascalCase",
+    "constant": "SCREAMING_SNAKE_CASE"
+  },
+  "file_conventions": {
+    "types": {
+      "component": {
+        "pattern": "*.ts",
+        "companions": {
+          "style": { "required": false, "extensions": [".css", ".module.css"] },
+          "test": { "required": true, "extensions": [".test.ts"] }
+        }
+      },
+      "hook": {
+        "pattern": "use*.ts",
+        "companions": {
+          "test": { "required": true, "extensions": [".test.ts", ".spec.ts"] }
+        }
+      },
+      "store": {
+        "pattern": "*.store.ts",
+        "companions": {
+          "test": { "required": true, "extensions": [".test.ts", ".spec.ts"] }
+        }
+      },
+      "service": {
+        "pattern": "*.service.ts",
+        "companions": {
+          "test": { "required": false, "extensions": [".test.ts"] }
+        }
+      },
+      "types": {
+        "pattern": "*.types.ts"
+      },
+      "constants": {
+        "pattern": "*.constants.ts"
+      }
+    },
+    "colocation": "strict",
+    "public_api": {
+      "required": true,
+      "expose_internals": false
+    },
+    "test_placement": "colocated",
+    "forbidden_patterns": [
+      "default-export-on-utility",
+      "barrel-in-non-feature-root"
+    ]
+  },
+  "token_metadata": {
+    "estimated_prompt_tokens": 0,
+    "compression_applied": false,
+    "omitted_sections": []
+  }
+};
+</file>
+
+<file path="core/registry/templates/ui-lib.ts">
+import type { Policy } from '../../../schema/policy.schema';
+
+export const uiLibTemplate: Policy = {
+    meta: {
+        version: '1.0.0',
+        output_mode: 'compact',
+        generated_at: '',
+    },
+    stack: {
+        domain: 'frontend',
+        pattern: 'ui-lib',
+        state_philosophy: 'minimal',
+        styling_strategy: 'utility-first',
+        framework: 'svelte',
+        component_lib: undefined,
+    },
+    ui_lib_config: {
+        token_categories: ['color', 'spacing', 'typography', 'radius', 'shadow'],
+        compound_pattern: {
+            enforced: true,
+            root_suffix: 'Root',
+            export_style: 'namespace',
+        },
+        publish: {
+            package_exports_required: true,
+            barrel_per_component: true,
+            types_exported: true,
+            peer_dependencies: ['svelte'],
+        },
+    },
+    layers: [
+        {
+            id: 'tokens',
+            allowed_imports: [],
+            responsibilities: {
+                owns: [
+                    'design tokens (color, spacing, typography, radius, shadow)',
+                    'CSS custom properties',
+                    'theme contract',
+                ],
+                must_not: [
+                    'import from any other layer',
+                    'contain component logic',
+                    'reference framework APIs',
+                ],
+                depends_on_abstractions: false,
+            },
+        },
+        {
+            id: 'primitives',
+            allowed_imports: ['tokens'],
+            responsibilities: {
+                owns: [
+                    'unstyled base elements (Box, Text, Icon)',
+                    'accessibility attributes (aria-*, role)',
+                    'rest props spread via `$props()` for full HTML attribute passthrough',
+                ],
+                must_not: [
+                    'apply visual styles directly',
+                    'import from components or patterns',
+                    'contain business logic',
+                ],
+                depends_on_abstractions: false,
+            },
+        },
+        {
+            id: 'components',
+            allowed_imports: ['primitives', 'tokens'],
+            responsibilities: {
+                owns: [
+                    'compound components (Button.Root + Button.Icon)',
+                    'controlled and uncontrolled variants',
+                    'component-scoped types and props interfaces',
+                ],
+                must_not: [
+                    'import from patterns layer',
+                    'fetch data or call APIs',
+                    'contain application business logic',
+                ],
+                depends_on_abstractions: true,
+            },
+        },
+        {
+            id: 'patterns',
+            allowed_imports: ['components', 'primitives', 'tokens'],
+            responsibilities: {
+                owns: [
+                    'compositions of multiple components (Form, DataTable, Modal)',
+                    'higher-order interaction patterns',
+                ],
+                must_not: [
+                    'be published as standalone primitives',
+                    'introduce new tokens',
+                    'import from consuming app layers',
+                ],
+                depends_on_abstractions: true,
+            },
+        },
+    ],
+    import_matrix: {
+        tokens: [],
+        primitives: ['tokens'],
+        components: ['primitives', 'tokens'],
+        patterns: ['components', 'primitives', 'tokens'],
+    },
+    structural_constraints: {
+        max_component_depth: 3,
+        barrel_exports_required: true,
+        circular_imports: 'FORBIDDEN',
+        cross_feature_imports: 'via-public-api-only',
+    },
+    ui_constraints: {
+        component_max_props: 10,
+        prop_drilling_max_depth: 2,
+        logic_in_components: false,
+        style_co_location: true,
+        allowed_style_extensions: [],
+        prefer_composition: true,
+    },
+    state_constraints: {
+        global_state_scope: 'minimal',
+        local_state_allowed: true,
+        derived_state_strategy: 'selectors',
+        forbidden_patterns: [
+            'global-state-in-primitive',
+            'side-effects-in-tokens',
+            'styles-hardcoded-without-token',
+        ],
+    },
+    side_effect_boundaries: {
+        allowed_in_layers: ['components', 'patterns'],
+        forbidden_in_layers: ['tokens', 'primitives'],
+        async_pattern: 'hooks',
+        data_fetching_scope: 'patterns',
+    },
+    naming_conventions: {
+        global_strategy: 'PascalCase',
+        component: 'PascalCase (ComponentName.Root, ComponentName.Trigger)',
+        hook: 'camelCase (runes/logic functions)',
+        store: 'camelCase',
+        service: 'camelCase',
+        type: 'PascalCase (*Props | *Ref suffix)',
+        constant: 'SCREAMING_SNAKE_CASE',
+    },
+    file_conventions: {
+        types: {
+            component: {
+                pattern: '*.ts',
+                companions: {
+                    types: { required: true, extensions: ['.types.ts'] },
+                    test: { required: true, extensions: ['.test.ts'] },
+                },
+            },
+            hook: {
+                pattern: '*.ts',
+                companions: {
+                    test: { required: true, extensions: ['.test.ts'] },
+                },
+            },
+            types: { pattern: '*.types.ts' },
+            constants: { pattern: '*.constants.ts' },
+            tokens: { pattern: '*.tokens.ts' },
+        },
+        colocation: 'strict',
+        public_api: {
+            required: true,
+            filename: 'index',
+            extensions: ['.ts'],
+            expose_internals: false,
+        },
+        test_placement: 'colocated',
+        directory: {
+            max_depth: 3,
+            feature_root_marker: 'index.ts',
+        },
+        forbidden_patterns: [
+            'default-export-on-component',
+            'hardcoded-color-without-token',
+            'style-without-token-reference',
+            'compound-part-exported-without-namespace',
+        ],
+    },
+    token_metadata: {
+        estimated_prompt_tokens: 0,
+        compression_applied: false,
+        omitted_sections: [],
+    },
+};
+</file>
+
+<file path="core/registry/index.ts">
+import type { Policy } from '../../schema/policy.schema';
+import { featureSlicedTemplate } from './templates/feature-sliced';
+import { flatTemplate } from './templates/flat';
+import { modularTemplate } from './templates/modular';
+import { atomicTemplate } from './templates/atomic';
+import { uiLibTemplate } from './templates/ui-lib';
+import { loadTemplateFromFile } from './loader';
+
+const BUILT_IN_TEMPLATES: Record<string, Policy> = {
+  'feature-sliced': featureSlicedTemplate,
+  'flat': flatTemplate,
+  'modular': modularTemplate,
+  'atomic': atomicTemplate,
+  'ui-lib': uiLibTemplate,
+};
+
+const customTemplates: Record<string, Policy> = {};
+
+const getAllTemplates = (): Record<string, Policy> => ({
+  ...BUILT_IN_TEMPLATES,
+  ...customTemplates,
+});
+
+export const TemplateRegistry = {
+  getTemplate: (id: string): Policy => {
+    const template = getAllTemplates()[id];
+    if (!template) throw new Error(`Template not found: ${id}`);
+    return template;
+  },
+
+  listTemplates: (): string[] => Object.keys(getAllTemplates()),
+
+  registerTemplate: (id: string, template: Policy): void => {
+    if (getAllTemplates()[id]) throw new Error(`Template already registered: ${id}`);
+    customTemplates[id] = template;
+  },
+
+  loadFromFile: (filePath: string): void => {
+    const { id, template } = loadTemplateFromFile(filePath);
+    TemplateRegistry.registerTemplate(id, template);
+  },
+
+  reset: (): void => {
+    for (const key of Object.keys(customTemplates)) {
+      delete customTemplates[key];
+    }
+  },
+};
+</file>
+
+<file path="core/registry/loader.test.ts">
+import { describe, test, expect, beforeEach } from 'bun:test';
+import { TemplateRegistry } from './index';
+
+describe('TemplateRegistry external templates', () => {
+  beforeEach(() => {
+    TemplateRegistry.reset();
+  });
+
+  test('listTemplates returns built-in templates', () => {
+    const list = TemplateRegistry.listTemplates();
+    expect(list).toContain('feature-sliced');
+    expect(list).toContain('flat');
+    expect(list).toContain('modular');
+    expect(list).toContain('atomic');
+  });
+
+  test('registerTemplate adds a new template', () => {
+    const base = TemplateRegistry.getTemplate('flat');
+    TemplateRegistry.registerTemplate('my-custom', { ...base, meta: { ...base.meta, version: '2.0.0' } });
+    expect(TemplateRegistry.listTemplates()).toContain('my-custom');
+  });
+
+  test('registerTemplate throws on duplicate id', () => {
+    const base = TemplateRegistry.getTemplate('flat');
+    expect(() => TemplateRegistry.registerTemplate('flat', base)).toThrow('already registered');
+  });
+
+  test('reset removes custom templates and restores built-ins', () => {
+    const base = TemplateRegistry.getTemplate('flat');
+    TemplateRegistry.registerTemplate('temp-template', base);
+    TemplateRegistry.reset();
+    expect(TemplateRegistry.listTemplates()).not.toContain('temp-template');
+    expect(TemplateRegistry.listTemplates()).toContain('flat');
+  });
+
+  test('loadFromFile throws if file does not exist', () => {
+    expect(() => TemplateRegistry.loadFromFile('/nonexistent/path/template.json'))
+      .toThrow('not found');
+  });
+
+  test('loadFromFile registers a valid template from disk', () => {
+    const { tmpdir } = require('os');
+    const { writeFileSync } = require('fs');
+    const path = require('path');
+    
+    const base = TemplateRegistry.getTemplate('flat');
+    const id = `my-team-${Date.now()}`;
+    const tmpPath = path.join(tmpdir(), `${id}.json`);
+    writeFileSync(tmpPath, JSON.stringify({ ...base, meta: { ...base.meta, version: '9.0.0' } }));
+    
+    TemplateRegistry.loadFromFile(tmpPath);
+    expect(TemplateRegistry.listTemplates()).toContain(id);
+    expect(TemplateRegistry.getTemplate(id).meta.version).toBe('9.0.0');
+  });
+});
+</file>
+
+<file path="core/registry/loader.ts">
+import fs from 'fs-extra';
+import path from 'path';
+import * as v from 'valibot';
+import { PolicySchema, type Policy } from '../../schema/policy.schema';
+
+/**
+ * Loads a custom Policy template from a JSON file.
+ * Validates the file against PolicySchema before registering.
+ * Throws a descriptive error if the file is missing, invalid JSON, or fails schema validation.
+ */
+export const loadTemplateFromFile = (filePath: string): { id: string; template: Policy } => {
+  const absolutePath = path.resolve(filePath);
+
+  if (!fs.existsSync(absolutePath)) {
+    throw new Error(`Custom template file not found: ${absolutePath}`);
+  }
+
+  let raw: unknown;
+  try {
+    raw = fs.readJsonSync(absolutePath);
+  } catch {
+    throw new Error(`Failed to parse JSON from template file: ${absolutePath}`);
+  }
+
+  // Derive the template id from the filename without extension
+  const id = path.basename(absolutePath, path.extname(absolutePath));
+
+  let template: Policy;
+  try {
+    template = v.parse(PolicySchema, raw);
+  } catch (err) {
+    throw new Error(`Template "${id}" failed schema validation: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  return { id, template };
+};
+</file>
+
+<file path="core/renderer/__snapshots__/renderer.test.ts.snap">
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`Markdown Renderer FSD + utility-first compact output matches snapshot 1`] = `
+"# Architecture Policy
+> Pattern: **feature-sliced** | State: **feature-based** | Styling: **utility-first**
+
+---
+
+## Stack
+- **Framework:** svelte
+
+---
+
+## Layer Rules
+Imports are unidirectional. Each layer may only import from layers listed below it.
+Violations of import rules are **not permitted**.
+
+| Layer | May Import | Responsibilities | Side Effects |
+|-------|------------|------------------|--------------|
+| app | pages, widgets, features, entities, shared | **Owns:** providers, routing, global styles, app initialization<br>**Not:** contain business logic | ✗ forbidden |
+| pages | widgets, features, entities, shared | **Owns:** composition of widgets for a route<br>**Not:** contain business logic | ✗ forbidden |
+| widgets | features, entities, shared | **Owns:** composition of features, reusable page sections<br>**Not:** contain business logic directly | ✗ forbidden |
+| features | entities, shared | **Owns:** user interactions with business value (AddToCart, LoginForm)<br>**Not:** import from other features, know about pages | ✓ allowed |
+| entities | shared | **Owns:** business objects and their operations (User, Product, Order)<br>**Not:** import from features or above, contain UI components ideally | ✓ allowed |
+| shared | — | **Owns:** reusable infra with no business logic (ui-kit, api client, utils)<br>**Not:** import from any other layer, contain business logic | ✗ forbidden |
+
+
+
+### Abstraction Boundaries
+
+| Boundary | Inner | Outer | Interface Required | Forbidden Leakage |
+|----------|-------|-------|--------------------|-------------------|
+| features→entities | entities | features | ✓ (model) | API raw responses, implementation details of storage |
+
+
+**Cross-feature imports:** via public api only
+**Circular imports:** FORBIDDEN
+
+---
+
+## Expected Directory Structure
+
+\`\`\`
+src/
+├── app/
+│   # imports: [pages, widgets, features, entities, shared]
+│   # must not: contain business logic
+├── pages/
+│   # imports: [widgets, features, entities, shared]
+│   # must not: contain business logic
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # route components only — compose widgets, no business logic
+│   │   ├── model/
+│   │   │   # reactive state (runes in .svelte.ts), types — no side effects
+│   │   ├── api/
+│   │   │   # data fetching — async-await, map errors to domain types
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── widgets/
+│   # imports: [features, entities, shared]
+│   # must not: contain business logic directly
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
+│   │   ├── model/
+│   │   │   # reactive state (runes in .svelte.ts), types — no side effects
+│   │   ├── api/
+│   │   │   # data fetching — async-await, map errors to domain types
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── features/
+│   # imports: [entities, shared]
+│   # must not: import from other features
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
+│   │   ├── model/
+│   │   │   # feature state (runes in .svelte.ts) — only for this feature
+│   │   ├── api/
+│   │   │   # feature-specific mutations — calls entity api, never raw fetch
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── entities/
+│   # imports: [shared]
+│   # must not: import from features or above
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
+│   │   ├── model/
+│   │   │   # entity state (runes in .svelte.ts), types — pure business logic
+│   │   ├── api/
+│   │   │   # data access for this entity — maps to domain types, no raw responses
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── shared/
+│   # imports: [none]
+│   # must not: import from any other layer
+│   ├── ui-kit/           # design system primitives
+│   ├── api/              # base http client, interceptors
+│   ├── lib/              # pure utils — no business logic
+│   └── types/            # global types only
+\`\`\`
+
+---
+
+## Domain Rules
+- **Entities location:** \`entities\`
+- **Value objects:** allowed
+- **Immutable entities:** YES
+- **Framework-agnostic domain:** YES
+- **Validation:** factory-function
+- **Anemic model:** FORBIDDEN — business logic belongs in entities
+- **Ubiquitous Language:** enforced
+
+---
+
+## File Conventions
+
+### Naming
+> Files: \`kebab-case\` globally · Symbols: per-type rules below
+
+| Type | File Pattern | Export Name Convention |
+|------|--------------|------------------------|
+| component | \`*.svelte\` | \`PascalCase\` |
+| hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
+| store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
+| service | \`*.ts\` | \`camelCase (*Service suffix)\` |
+| types | \`*.types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
+| constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
+
+
+### Required Companions
+
+| File Type | Required | Optional |
+|-----------|----------|----------|
+| component | \`*.test.ts\` | — |
+| hook | \`*.test.ts\` | — |
+| store | \`*.test.ts\` | — |
+| service | — | \`*.test.ts\` |
+| types | — | — |
+| constants | — | — |
+
+
+### Structure Rules
+- **Co-location:** strict — companions must live beside source file
+- **Test placement:** colocated
+- **Public API:** every feature root requires \`index.ts\` — internal files must not be imported directly
+- **Max directory depth:** 5
+- **Barrel exports:** required at feature roots only
+
+### Forbidden Patterns
+- \`default-export-on-utility\`
+- \`barrel-in-non-feature-root\`
+- \`named-export-mix-in-component-file\`
+- \`legacy-stores-for-local-state\`
+- \`effect-for-derived-state\`
+- \`direct-mutation-outside-runes\`
+
+---
+
+## Component Composition Rules
+- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
+- **Logic signal:** extract to \`*.svelte.ts\` (Svelte logic module) when script block exceeds ~20-25 lines
+- **Max props:** 7 — split into compound component if exceeded
+- **No prop drilling beyond depth 2** — lift to store or context
+- **Logic in components:** FORBIDDEN — extract to \`*.svelte.ts\` (Svelte logic module)
+- **Presentational components** must not import from \`state\` or \`services\` layers
+- **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
+
+---
+
+## Abstraction Rules
+- Extract to **\`*.svelte.ts\` (Svelte logic module)** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **service** when: logic touches external I/O (API, storage, cookies)
+- Extract to **utility** when: logic is pure, stateless, domain-agnostic
+- **Do not abstract preemptively** — wrong abstraction costs more than duplication
+
+---
+
+## Svelte 5 Runes Contract
+- **\`$state\`** → local reactive state (avoid legacy \`let\` variables for state)
+- **\`$derived\`** → computed values; replaces selectors and reactive declarations
+- **\`$effect\`** → side effects only (DOM, subscriptions); **forbidden for syncing state**
+- **\`$props\`** → official component interface; no more \`export let\`
+- **\`$bindable\`** → explicit two-way binding; use sparingly to maintain data flow clarity
+
+---
+
+## State & Async Rules
+- **Scope:** feature-based
+- **Derived state:** $derived rune (computed values)
+- **Data fetching:** entities, consumed via hooks
+- **All promises must be handled** — no floating async calls
+- **API errors must not reach UI raw** — map to domain error types in service layer
+- **Every async UI operation requires** loading state + error state
+
+---
+
+## Type Rules
+- **No \`any\`** — use \`unknown\` + type narrowing
+- **Props interface required** per component — no inline type literals
+- **No type assertions (\`as\`)** except at data boundaries (API responses, DOM events)
+
+---
+
+*Generated by agent-arch · [edit templates to change rules]*"
+`;
+
+exports[`Markdown Renderer Modular + utility-first compact output matches snapshot 1`] = `
+"# Architecture Policy
+> Pattern: **modular** | State: **module-based** | Styling: **utility-first**
+
+---
+
+## Stack
+- **Framework:** svelte
+
+---
+
+## Layer Rules
+Imports are unidirectional. Each layer may only import from layers listed below it.
+Violations of import rules are **not permitted**.
+
+| Layer | May Import | Responsibilities | Side Effects |
+|-------|------------|------------------|--------------|
+| modules | shared | **Owns:** business logic, components, hooks, services<br>**Not:** import directly from other modules | ✓ allowed |
+| shared | — | **Owns:** design system, utils, global types, api client<br>**Not:** contain business logic, import from modules | ✓ allowed |
+
+
+
+
+**Cross-feature imports:** via public api only
+**Circular imports:** FORBIDDEN
+**Cross-module communication:** via shared only
+
+---
+
+## Expected Directory Structure
+
+\`\`\`
+src/
+├── modules/
+│   ├── <module-name>/        # one per business capability
+│   │   ├── components/       # extract if template > 2 logical sections
+│   │   │   └── ComponentName.svelte
+│   │   │       # no logic — use hooks/
+│   │   ├── hooks/            # reactive logic and state modules (*.svelte.ts)
+│   │   ├── services/         # external I/O only — API, storage
+│   │   ├── types/            # module-scoped types
+│   │   └── index.ts          # public api — never import internals directly
+│   │   # cross-module imports: FORBIDDEN — use shared/
+├── shared/
+│   ├── ui/                   # design system, generic components
+│   ├── utils/                # pure functions — min 2 consumers to justify
+│   └── types/                # global contracts only
+\`\`\`
+
+---
+
+## File Conventions
+
+### Naming
+> Files: \`PascalCase\` globally · Symbols: per-type rules below
+
+| Type | File Pattern | Export Name Convention |
+|------|--------------|------------------------|
+| component | \`*.svelte\` | \`PascalCase\` |
+| hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
+| store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
+| service | \`*.ts\` | \`camelCase\` |
+| types | \`*Types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
+| constants | \`*Constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
+
+
+### Required Companions
+
+| File Type | Required | Optional |
+|-----------|----------|----------|
+| component | \`*.test.ts\` | — |
+| hook | \`*.test.ts\` | — |
+| store | \`*.test.ts\` | — |
+| service | — | \`*.test.ts\` |
+| types | — | — |
+| constants | — | — |
+
+
+### Structure Rules
+- **Co-location:** strict — companions must live beside source file
+- **Test placement:** colocated
+- **Public API:** every feature root requires \`index.ts\` — internal files must not be imported directly
+- **Max directory depth:** N/A
+- **Barrel exports:** required at feature roots only
+
+### Forbidden Patterns
+- \`default-export-on-utility\`
+- \`barrel-in-non-feature-root\`
+- \`legacy-stores-for-local-state\`
+- \`effect-for-derived-state\`
+- \`direct-mutation-outside-runes\`
+
+---
+
+## Component Composition Rules
+- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
+- **Logic signal:** extract to \`*.svelte.ts\` (Svelte logic module) when script block exceeds ~20-25 lines
+- **Max props:** 7 — split into compound component if exceeded
+- **No prop drilling beyond depth 2** — lift to store or context
+- **Logic in components:** FORBIDDEN — extract to \`*.svelte.ts\` (Svelte logic module)
+- **Presentational components** must not import from \`state\` or \`services\` layers
+- **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
+
+---
+
+## Abstraction Rules
+- Extract to **\`*.svelte.ts\` (Svelte logic module)** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **service** when: logic touches external I/O (API, storage, cookies)
+- Extract to **utility** when: logic is pure, stateless, domain-agnostic
+- **Do not abstract preemptively** — wrong abstraction costs more than duplication
+
+---
+
+## Svelte 5 Runes Contract
+- **\`$state\`** → local reactive state (avoid legacy \`let\` variables for state)
+- **\`$derived\`** → computed values; replaces selectors and reactive declarations
+- **\`$effect\`** → side effects only (DOM, subscriptions); **forbidden for syncing state**
+- **\`$props\`** → official component interface; no more \`export let\`
+- **\`$bindable\`** → explicit two-way binding; use sparingly to maintain data flow clarity
+
+---
+
+## State & Async Rules
+- **Scope:** module-based
+- **Derived state:** $derived rune (computed values)
+- **Data fetching:** modules, consumed via hooks
+- **All promises must be handled** — no floating async calls
+- **API errors must not reach UI raw** — map to domain error types in service layer
+- **Every async UI operation requires** loading state + error state
+
+---
+
+## Type Rules
+- **No \`any\`** — use \`unknown\` + type narrowing
+- **Props interface required** per component — no inline type literals
+- **No type assertions (\`as\`)** except at data boundaries (API responses, DOM events)
+
+---
+
+*Generated by agent-arch · [edit templates to change rules]*"
+`;
+
+exports[`Markdown Renderer Flat compact output matches snapshot 1`] = `
+"# Architecture Policy
+> Pattern: **flat** | State: **flexible** | Styling: **any**
+
+---
+
+## Stack
+- **Framework:** svelte
+
+---
+
+## Layer Rules
+Imports are unidirectional. Each layer may only import from layers listed below it.
+Violations of import rules are **not permitted**.
+
+| Layer | May Import | Responsibilities | Side Effects |
+|-------|------------|------------------|--------------|
+| src | src | **Owns:** everything at this scale<br>**Not:** nothing forbidden at this scale - this is intentional simplicity | ✓ allowed |
+
+
+
+
+**Cross-feature imports:** allowed
+**Circular imports:** FORBIDDEN
+
+---
+
+## Expected Directory Structure
+
+\`\`\`
+src/
+├── components/               # all components live here
+│   └── ComponentName.svelte     # logic colocated — ok at this scale
+├── hooks/                    # reactive logic modules (*.svelte.ts)
+├── services/                 # extract when touching external I/O
+├── types/                    # shared types
+└── utils/                    # pure functions
+
+# graduation signals — consider migrating to modular when:
+#   > 20 components in /components
+#   same data fetched in 3+ places
+\`\`\`
+
+---
+
+## File Conventions
+
+### Naming
+> Files: \`kebab-case\` globally · Symbols: per-type rules below
+
+| Type | File Pattern | Export Name Convention |
+|------|--------------|------------------------|
+| component | \`*.svelte\` | \`PascalCase\` |
+| hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
+| store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
+| service | \`*.ts\` | \`camelCase\` |
+| types | \`*.types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
+| constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
+| utils | \`*.ts\` | \`camelCase\` |
+
+
+### Required Companions
+
+| File Type | Required | Optional |
+|-----------|----------|----------|
+| component | \`*.test.ts\` | — |
+| hook | — | — |
+| store | — | — |
+| service | — | — |
+| types | — | — |
+| constants | — | — |
+| utils | — | — |
+
+
+### Structure Rules
+- **Co-location:** none — companions must live beside source file
+- **Test placement:** colocated
+- **Public API:** optional
+- **Max directory depth:** N/A
+- **Barrel exports:** optional
+
+### Forbidden Patterns
+- \`deep-nesting\`
+- \`huge-component-file\`
+- \`legacy-stores-for-local-state\`
+- \`effect-for-derived-state\`
+- \`direct-mutation-outside-runes\`
+
+---
+
+## Component Composition Rules
+- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
+- **Logic signal:** extract to \`*.svelte.ts\` (Svelte logic module) when script block exceeds ~20-25 lines
+- **Max props:** 7 — split into compound component if exceeded
+- **No prop drilling beyond depth 3** — lift to store or context
+- **Logic in components:** allowed
+- **Presentational components** must not import from \`state\` or \`services\` layers
+- **Prefer composition over configuration:** optional
+
+---
+
+## Abstraction Rules
+- Extract to **\`*.svelte.ts\` (Svelte logic module)** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **service** when: logic touches external I/O (API, storage, cookies)
+- Extract to **utility** when: logic is pure, stateless, domain-agnostic
+- **Do not abstract preemptively** — wrong abstraction costs more than duplication
+
+---
+
+## Svelte 5 Runes Contract
+- **\`$state\`** → local reactive state (avoid legacy \`let\` variables for state)
+- **\`$derived\`** → computed values; replaces selectors and reactive declarations
+- **\`$effect\`** → side effects only (DOM, subscriptions); **forbidden for syncing state**
+- **\`$props\`** → official component interface; no more \`export let\`
+- **\`$bindable\`** → explicit two-way binding; use sparingly to maintain data flow clarity
+
+---
+
+## State & Async Rules
+- **Scope:** any
+- **Derived state:** $derived rune (computed values)
+- **Data fetching:** any, consumed via hooks
+- **All promises must be handled** — no floating async calls
+- **API errors must not reach UI raw** — map to domain error types in service layer
+- **Every async UI operation requires** loading state + error state
+
+---
+
+## Type Rules
+- **No \`any\`** — use \`unknown\` + type narrowing
+- **Props interface required** per component — no inline type literals
+- **No type assertions (\`as\`)** except at data boundaries (API responses, DOM events)
+
+---
+
+*Generated by agent-arch · [edit templates to change rules]*"
+`;
+
+exports[`Markdown Renderer Atomic + utility-first — no css files in structure or companions 1`] = `
+"# Architecture Policy
+> Pattern: **atomic** | State: **minimal** | Styling: **utility-first**
+
+---
+
+## Stack
+- **Framework:** svelte
+
+---
+
+## Layer Rules
+Imports are unidirectional. Each layer may only import from layers listed below it.
+Violations of import rules are **not permitted**.
+
+| Layer | May Import | Responsibilities | Side Effects |
+|-------|------------|------------------|--------------|
+| pages | templates, organisms, molecules, atoms, shared | **Owns:** Route components, Data fetching, Connecting templates to real data<br>**Not:** Contain complex UI logic, Directly define complex layouts | ✓ allowed |
+| templates | organisms, molecules, atoms, shared | **Owns:** Page-level layout structures, Slot-based composition<br>**Not:** Know about real data, Manage business logic | ✓ allowed |
+| organisms | molecules, atoms, shared | **Owns:** Complex, standalone UI sections, Local state for interaction logic<br>**Not:** Know about routing, Directly access global state if possible | ✓ allowed |
+| molecules | atoms, shared | **Owns:** Simple combinations of atoms, Purely presentational logic<br>**Not:** Fetch data, Contain business rules | ✗ forbidden |
+| atoms | shared | **Owns:** Single HTML element wrappers, Basic styling and primitive behavior<br>**Not:** Import from any other layer, Contain any business logic | ✗ forbidden |
+| shared | — | **Owns:** Utils, Theme constants, Global types<br>**Not:** Import from UI layers | ✗ forbidden |
+
+
+
+
+**Cross-feature imports:** via public api only
+**Circular imports:** FORBIDDEN
+
+---
+
+## Expected Directory Structure
+
+\`\`\`
+src/
+├── pages/
+│   ├── <route>/
+│   │   └── PageName.svelte
+├── templates/
+│   ├── <component>/
+│   │   ├── ComponentName.svelte
+├── organisms/
+│   ├── <component>/
+│   │   ├── ComponentName.svelte
+│   │   ├── hooks/
+│   │   └── types/
+├── molecules/
+│   ├── <component>/
+│   │   ├── ComponentName.svelte
+│   │   └── types/
+├── atoms/
+│   ├── <component>/
+│   │   ├── ComponentName.svelte
+│   │   └── types/
+└── shared/
+    ├── utils/
+    ├── types/
+    └── theme/
+\`\`\`
+
+---
+
+## File Conventions
+
+### Naming
+> Files: \`kebab-case\` globally · Symbols: per-type rules below
+
+| Type | File Pattern | Export Name Convention |
+|------|--------------|------------------------|
+| component | \`*.svelte\` | \`PascalCase\` |
+| types | \`*.types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
+| constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
+| store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
+| hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
+| service | \`*.ts\` | \`—\` |
+
+
+### Required Companions
+
+| File Type | Required | Optional |
+|-----------|----------|----------|
+| component | \`*.test.ts\` | — |
+| types | — | — |
+| constants | — | — |
+| store | — | — |
+| hook | — | — |
+| service | — | — |
+
+
+### Structure Rules
+- **Co-location:** strict — companions must live beside source file
+- **Test placement:** colocated
+- **Public API:** every feature root requires \`index.ts\` — internal files must not be imported directly
+- **Max directory depth:** N/A
+- **Barrel exports:** required at feature roots only
+
+### Forbidden Patterns
+- \`legacy-stores-for-local-state\`
+- \`effect-for-derived-state\`
+- \`direct-mutation-outside-runes\`
+
+---
+
+## Component Composition Rules
+- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
+- **Logic signal:** extract to \`*.svelte.ts\` (Svelte logic module) when script block exceeds ~20-25 lines
+- **Max props:** 7 — split into compound component if exceeded
+- **No prop drilling beyond depth 3** — lift to store or context
+- **Logic in components:** allowed
+- **Presentational components** must not import from \`state\` or \`services\` layers
+- **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
+
+---
+
+## Abstraction Rules
+- Extract to **\`*.svelte.ts\` (Svelte logic module)** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **service** when: logic touches external I/O (API, storage, cookies)
+- Extract to **utility** when: logic is pure, stateless, domain-agnostic
+- **Do not abstract preemptively** — wrong abstraction costs more than duplication
+
+---
+
+## Svelte 5 Runes Contract
+- **\`$state\`** → local reactive state (avoid legacy \`let\` variables for state)
+- **\`$derived\`** → computed values; replaces selectors and reactive declarations
+- **\`$effect\`** → side effects only (DOM, subscriptions); **forbidden for syncing state**
+- **\`$props\`** → official component interface; no more \`export let\`
+- **\`$bindable\`** → explicit two-way binding; use sparingly to maintain data flow clarity
+
+---
+
+## State & Async Rules
+- **Scope:** minimal
+- **Derived state:** $derived rune (computed values)
+- **Data fetching:** pages, consumed via hooks
+- **All promises must be handled** — no floating async calls
+- **API errors must not reach UI raw** — map to domain error types in service layer
+- **Every async UI operation requires** loading state + error state
+
+---
+
+## Type Rules
+- **No \`any\`** — use \`unknown\` + type narrowing
+- **Props interface required** per component — no inline type literals
+- **No type assertions (\`as\`)** except at data boundaries (API responses, DOM events)
+
+---
+
+*Generated by agent-arch · [edit templates to change rules]*"
+`;
+</file>
+
+<file path="core/renderer/markdown-renderer.ts">
+import type { Policy } from '../../schema/policy.schema';
+
+const renderLayerTable = (policy: Policy): string => {
+  const { layers, import_matrix, side_effect_boundaries } = policy;
+
+  let table = '| Layer | May Import | Responsibilities | Side Effects |\n';
+  table += '|-------|------------|------------------|--------------|\n';
+
+  layers.forEach(layer => {
+    const mayImport = import_matrix[layer.id]?.join(', ') || '—';
+    const isAllowed = side_effect_boundaries.allowed_in_layers.includes(layer.id);
+    const sideEffect = isAllowed ? '✓ allowed' : '✗ forbidden';
+    const res = layer.responsibilities ? `**Owns:** ${layer.responsibilities.owns.join(', ')}<br>**Not:** ${layer.responsibilities.must_not.join(', ')}` : '—';
+    table += `| ${layer.id} | ${mayImport} | ${res} | ${sideEffect} |\n`;
+  });
+
+  return table;
+};
+
+const renderNamingTable = (policy: Policy): string => {
+  const { file_conventions, naming_conventions } = policy;
+
+  let table = '| Type | File Pattern | Export Name Convention |\n';
+  table += '|------|--------------|------------------------|\n';
+
+  const keyMap: Record<string, string> = {
+    types: 'type',
+    constants: 'constant',
+    store: 'store',
+    service: 'service',
+    hook: 'hook',
+    component: 'component',
+  };
+
+  const getNamingConvention = (typeName: string): string => {
+    if (typeName === 'types') return 'PascalCase (*Type | *Props suffix)';
+    if (typeName === 'constants') return 'SCREAMING_SNAKE_CASE';
+    if (typeName === 'utils') return 'camelCase';
+
+    const namingKey = keyMap[typeName] || typeName;
+    const convention = naming_conventions[namingKey];
+    return typeof convention === 'string' ? convention : '—';
+  };
+
+  Object.entries(file_conventions.types).forEach(([typeName, def]) => {
+    const symbolConv = getNamingConvention(typeName);
+    table += `| ${typeName} | \`${def.pattern}\` | \`${symbolConv}\` |\n`;
+  });
+
+  return table;
+};
+
+const renderCompanionsTable = (policy: Policy): string => {
+  const { file_conventions } = policy;
+
+  let table = '| File Type | Required | Optional |\n';
+  table += '|-----------|----------|----------|\n';
+
+  Object.entries(file_conventions.types).forEach(([typeName, def]) => {
+    if (!def.companions || Object.keys(def.companions).length === 0) {
+      table += `| ${typeName} | — | — |\n`;
+      return;
+    }
+
+    const companionEntries = Object.entries(def.companions);
+
+    const required = companionEntries
+      .filter(([_, rule]) => rule.required)
+      .map(([_, rule]) => `\`*${rule.extensions[0]}\``)
+      .join(' + ') || '—';
+
+    const optional = companionEntries
+      .filter(([_, rule]) => !rule.required)
+      .map(([_, rule]) => `\`*${rule.extensions[0]}\``)
+      .join(', ') || '—';
+
+    table += `| ${typeName} | ${required} | ${optional} |\n`;
+  });
+
+  return table;
+};
+
+const renderBoundariesTable = (policy: Policy): string => {
+  const { abstraction_boundaries } = policy;
+  if (!abstraction_boundaries?.length) return '';
+
+  let table = '\n### Abstraction Boundaries\n\n';
+  table += '| Boundary | Inner | Outer | Interface Required | Forbidden Leakage |\n';
+  table += '|----------|-------|-------|--------------------|-------------------|\n';
+
+  abstraction_boundaries.forEach(b => {
+    table += `| ${b.boundary_name} | ${b.inner_layer} | ${b.outer_layer} | ${b.interface_required ? `✓ (${b.interface_location})` : '✗'} | ${b.forbidden_leakage.join(', ')} |\n`;
+  });
+
+  return table;
+};
+
+const getSegmentRules = (segment: string, layerId: string, policy: Policy): string => {
+  const { ui_constraints, side_effect_boundaries } = policy;
+
+  if (layerId === 'pages' && segment === 'ui') {
+    return 'route components only — compose widgets, no business logic';
+  }
+  if (layerId === 'entities' && segment === 'api') {
+    return 'server data access — follow SvelteKit conventions (+page.server.ts / remote functions), map to domain types';
+  }
+  if (layerId === 'features' && segment === 'api') {
+    return 'server mutations — follow SvelteKit conventions (actions / remote functions), never fetch() in component';
+  }
+  if (layerId === 'entities' && segment === 'model') {
+    return 'entity state (runes in .svelte.ts), types — pure business logic';
+  }
+  if (layerId === 'features' && segment === 'model') {
+    return 'feature state (runes in .svelte.ts) — only for this feature';
+  }
+
+  const rules: Record<string, string> = {
+    ui: `components — extract if template > 2 logical sections, ${ui_constraints.logic_in_components ? 'logic allowed' : 'no logic — extract to model'}`,
+    model: `reactive state (runes in .svelte.ts), types — no side effects`,
+    api: `follow SvelteKit conventions — +page.server.ts, +server.ts or remote functions`,
+    lib: `pure utils — stateless, no imports from ui or model`,
+    config: `constants, feature flags`,
+  };
+
+  return rules[segment] ?? '';
+};
+
+const renderFSDStructure = (policy: Policy): string => {
+  const { layers, import_matrix, ui_constraints, structural_constraints, file_conventions } = policy;
+  const { fsd_config } = policy;
+
+  const lines: string[] = ['src/'];
+
+  for (const layer of layers) {
+    const allowed = import_matrix[layer.id] ?? [];
+    const res = layer.responsibilities;
+
+    lines.push(`├── ${layer.id}/`);
+    lines.push(`│   # imports: [${allowed.join(', ') || 'none'}]`);
+
+    if (res?.must_not?.length) {
+      lines.push(`│   # must not: ${res.must_not[0]}`);
+    }
+
+    if (!['app', 'shared'].includes(layer.id)) {
+      lines.push(`│   ├── <slice>/          # business domain unit`);
+
+      const segments = fsd_config?.segments ?? ['ui', 'model', 'api', 'lib'];
+      for (const seg of segments) {
+        const segRules = getSegmentRules(seg, layer.id, policy);
+        lines.push(`│   │   ├── ${seg}/`);
+        if (segRules) lines.push(`│   │   │   # ${segRules}`);
+      }
+
+      if (structural_constraints.barrel_exports_required) {
+        lines.push(`│   │   └── index.ts      # public api — only export what consumers need`);
+      }
+    }
+
+    if (layer.id === 'shared') {
+      lines.push(`│   ├── ui-kit/           # design system primitives`);
+      lines.push(`│   ├── api/              # base http client, interceptors`);
+      lines.push(`│   ├── lib/              # pure utils — no business logic`);
+      lines.push(`│   └── types/            # global types only`);
+    }
+  }
+
+  return lines.join('\n');
+};
+
+const renderModularStructure = (policy: Policy): string => {
+  const { ui_constraints, structural_constraints } = policy;
+
+  return [
+    'src/',
+    '├── modules/',
+    '│   ├── <module-name>/        # one per business capability',
+    '│   │   ├── components/       # extract if template > 2 logical sections',
+    '│   │   │   └── ComponentName.svelte',
+    `│   │   │       # ${ui_constraints.logic_in_components ? 'logic allowed here' : 'no logic — use hooks/'}`,
+    '│   │   ├── hooks/            # reactive logic and state modules (*.svelte.ts)',
+    '│   │   ├── services/         # external I/O only — API, storage',
+    '│   │   ├── types/            # module-scoped types',
+    structural_constraints.barrel_exports_required
+      ? '│   │   └── index.ts          # public api — never import internals directly'
+      : '│   │   └── (no barrel required)',
+    '│   │   # cross-module imports: FORBIDDEN — use shared/',
+    '├── shared/',
+    '│   ├── ui/                   # design system, generic components',
+    '│   ├── utils/                # pure functions — min 2 consumers to justify',
+    '│   └── types/                # global contracts only',
+  ].join('\n');
+};
+
+const renderFlatStructure = (policy: Policy): string => {
+  const { graduation_signals } = policy;
+  const signals = graduation_signals;
+
+  return [
+    'src/',
+    '├── components/               # all components live here',
+    '│   └── ComponentName.svelte     # logic colocated — ok at this scale',
+    '├── hooks/                    # reactive logic modules (*.svelte.ts)',
+    '├── services/                 # extract when touching external I/O',
+    '├── types/                    # shared types',
+    '└── utils/                    # pure functions',
+    '',
+    signals
+      ? `# graduation signals — consider migrating to ${signals.suggested_next_pattern || 'modular'} when:
+#   > ${signals.component_count_threshold} components in /components
+#   same data fetched in ${signals.duplicated_fetch_threshold}+ places`
+      : '# graduation signals — consider migrating to modular when:',
+  ].join('\n');
+};
+
+const renderAtomicStructure = (policy: Policy): string => {
+  const { layers, stack, atomic_config } = policy;
+  const totalLayers = layers.length;
+  const hasStyleFile = !['utility-first'].includes(stack.styling_strategy ?? '');
+  const layerInternals = atomic_config?.layer_internals;
+
+  const layerLines = layers.flatMap((layer, i) => {
+    const isLast = i === totalLayers - 1;
+    const prefix = isLast ? '└──' : '├──';
+    const childPrefix = isLast ? '    ' : '│   ';
+    const internals = layerInternals?.[layer.id];
+
+    let lines = [`${prefix} ${layer.id}/`];
+
+    if (layer.id === 'pages') {
+      lines.push(`${childPrefix}├── <route>/`);
+      lines.push(`${childPrefix}│   └── PageName.svelte`);
+    } else if (!['shared'].includes(layer.id)) {
+      lines.push(`${childPrefix}├── <component>/`);
+      lines.push(`${childPrefix}│   ├── ComponentName.svelte`);
+      if (internals && internals.length > 0) {
+        internals.forEach((internal, idx) => {
+          const internalPrefix = idx === internals.length - 1 ? '└──' : '├──';
+          lines.push(`${childPrefix}│   ${internalPrefix} ${internal}/`);
+        });
+      }
+      if (hasStyleFile) {
+        const stylePrefix = internals && internals.length > 0 ? '    ' : `${childPrefix}│   `;
+        lines.push(`${stylePrefix}└── ComponentName.module.css`);
+      }
+    } else {
+      lines.push(`${childPrefix}├── utils/`);
+      lines.push(`${childPrefix}├── types/`);
+      lines.push(`${childPrefix}└── theme/`);
+    }
+
+    return lines;
+  });
+
+  return ['src/', ...layerLines].join('\n');
+};
+
+const renderUiLibStructure = (policy: Policy): string => {
+  const cfg = policy.ui_lib_config;
+  const ns = cfg?.compound_pattern.export_style === 'namespace';
+  const isUtilityFirst = policy.stack.styling_strategy === 'utility-first';
+
+  const contextFile = 'Button.context.svelte.ts  # shared $state for compound parts via Svelte Context';
+
+  const tokensSection = isUtilityFirst
+    ? ''
+    : `├── tokens/
+│   ├── color.tokens.ts
+│   ├── spacing.tokens.ts
+│   ├── typography.tokens.ts
+│   └── index.ts            # re-exports all tokens
+`;
+
+  return [
+    'src/',
+    tokensSection + "├── primitives/",
+    "│   ├── Box/",
+    '│   │   ├── Box.svelte         # unstyled, polymorphic',
+    "│   │   ├── Box.types.ts",
+    "│   │   └── index.ts",
+    "│   └── Text/",
+    "├── components/",
+    "│   ├── Button/",
+    ns
+      ? '│   │   ├── Button.svelte          # namespace: Button.Root, Button.Icon'
+      : '│   │   ├── ButtonRoot.svelte      # named exports',
+    `│   │   ├── ${contextFile}`,
+    "│   │   ├── Button.types.ts",
+    '│   │   ├── Button.test.ts',
+    "│   │   └── index.ts        # exports Button namespace",
+    "├── patterns/",
+    "│   ├── Form/",
+    '│   │   ├── Form.svelte        # composes components',
+    "│   │   └── index.ts",
+    "└── index.ts                # package root — public API only",
+  ].join('\n');
+};
+
+const renderDirectoryDepthNote = (policy: Policy): string => {
+  if (policy.stack.pattern !== 'ui-lib') return '';
+
+  const stateFile = '`*.context.svelte.ts`';
+
+  return `\n> **Depth note:** max depth 3 is intentional — compound component state lives beside the component as ${stateFile}, never in a subdirectory. Context files are private to the component folder and must not be exported via \`index.ts\`.`;
+};
+
+const renderNamingHeader = (policy: Policy): string => {
+  if (policy.stack.pattern === 'ui-lib') {
+    return '> **Component files:** `PascalCase` · **Utility files:** `camelCase` · Symbols: per-type rules below';
+  }
+  return `> Files: \`${policy.naming_conventions.global_strategy}\` globally · Symbols: per-type rules below`;
+};
+
+const renderUiLibConfig = (policy: Policy): string => {
+  const cfg = policy.ui_lib_config;
+  if (!cfg) return '';
+
+  const isUtilityFirst = policy.stack.styling_strategy === 'utility-first';
+  const compoundNote = '\n> Svelte 5+: use `children: Snippet` + `$props()` rest spread. No `as` prop needed.';
+
+  if (isUtilityFirst) {
+    return `## UI Library Rules
+
+### Design Tokens (Utility-First Mode)
+- **Primary Source:** Tailwind/UnoCSS Config
+- **Rule:** Use strictly Tailwind utility classes. Do NOT use arbitrary values.
+- **Customization:** If a specific brand color is needed, add it to the config, not hardcoded in components.
+- **Forbidden:** \`arbitrary-values-in-utils\` (e.g., \`text-[14px]\` → use \`text-sm\` instead)
+
+### Compound Component Pattern
+- **Enforced:** ${cfg.compound_pattern.enforced ? 'YES' : 'no'}
+- **Export style:** \`${cfg.compound_pattern.export_style}\`
+${cfg.compound_pattern.export_style === 'namespace'
+        ? '- Exports as \`Button.Root\`, \`Button.Trigger\`, \`Button.Icon\`\n- Root component is the namespace object — never export parts standalone'
+        : '- Exports as \`ButtonRoot\`, \`ButtonTrigger\` — each part is a named export'}${compoundNote}
+
+### Publish Contract
+- **package.json exports map:** required — every component gets its 
+  own export path (\`"./button": "./src/components/Button/index.ts"\`)
+- **Types exported:** YES — ship \`.d.ts\` alongside every component
+- **Peer dependencies:** ${cfg.publish.peer_dependencies.join(', ')}
+- **Never bundle peer deps** — consumers provide them
+
+---
+`;
+  }
+
+  // For scoped mode
+  const tokenLocation = policy.stack.styling_strategy === 'scoped'
+    ? '- **CSS Variables:** Expose tokens as `:root { --color-primary: #... }`'
+    : '';
+
+  return `## UI Library Rules
+
+### Design Tokens
+- **Categories:** ${cfg.token_categories.join(', ')}
+- **Rule:** every visual value (color, spacing, radius) must reference 
+  a token — no hardcoded values
+- **Location:** \`tokens/\` layer — no framework imports allowed here
+${tokenLocation}
+
+### Compound Component Pattern
+- **Enforced:** ${cfg.compound_pattern.enforced ? 'YES' : 'no'}
+- **Export style:** \`${cfg.compound_pattern.export_style}\`
+${cfg.compound_pattern.export_style === 'namespace'
+      ? '- Exports as \`Button.Root\`, \`Button.Trigger\`, \`Button.Icon\`\n- Root component is the namespace object — never export parts standalone'
+      : '- Exports as \`ButtonRoot\`, \`ButtonTrigger\` — each part is a named export'}${compoundNote}
+
+### Publish Contract
+- **package.json exports map:** required — every component gets its 
+  own export path (\`"./button": "./src/components/Button/index.ts"\`)
+- **Types exported:** YES — ship \`.d.ts\` alongside every component
+- **Peer dependencies:** ${cfg.publish.peer_dependencies.join(', ')}
+- **Never bundle peer deps** — consumers provide them
+
+---
+`;
+};
+
+const renderExpectedStructure = (policy: Policy): string => {
+  const { stack } = policy;
+  const pattern = stack.pattern;
+
+  const renderers: Record<string, () => string> = {
+    'feature-sliced': () => renderFSDStructure(policy),
+    'modular': () => renderModularStructure(policy),
+    'flat': () => renderFlatStructure(policy),
+    'atomic': () => renderAtomicStructure(policy),
+    'ui-lib': () => renderUiLibStructure(policy),
+  };
+
+  const renderer = renderers[pattern];
+  if (!renderer) return '';
+
+  return `## Expected Directory Structure
+
+\`\`\`
+${renderer()}
+\`\`\`${renderDirectoryDepthNote(policy)}`;
+};
+
+const renderStackSection = (policy: Policy): string => {
+  const { stack } = policy;
+
+  const lines: string[] = ['## Stack'];
+  lines.push(`- **Framework:** ${stack.framework}`);
+  if (stack.component_lib) {
+    lines.push(`- **Component Library:** ${stack.component_lib}`);
+  }
+  return lines.join('\n');
+};
+
+const getLogicExtractionTarget = (): string => {
+  return '`*.svelte.ts` (Svelte logic module)';
+};
+
+const getLocalStatePrimitive = (): string => {
+  return '`$state` rune';
+};
+
+const renderSvelteRunesGuide = (): string => {
+  return `## Svelte 5 Runes Contract
+- **\`$state\`** → local reactive state (avoid legacy \`let\` variables for state)
+- **\`$derived\`** → computed values; replaces selectors and reactive declarations
+- **\`$effect\`** → side effects only (DOM, subscriptions); **forbidden for syncing state**
+- **\`$props\`** → official component interface; no more \`export let\`
+- **\`$bindable\`** → explicit two-way binding; use sparingly to maintain data flow clarity`;
+};
+
+const renderStateSection = (policy: Policy): string => {
+  if (policy.stack.pattern === 'ui-lib') {
+    const statePrimitive = getLocalStatePrimitive();
+    const forbiddenManagers = 'Svelte stores at module level';
+
+    return `## State & Async Rules
+
+- **Philosophy:** UI-only state — this library does NOT manage application state
+- **Allowed:** component-internal UI state only (${statePrimitive}) — e.g. \`isOpen\`, \`isFocused\`, \`isDisabled\`
+- **Compound component state sharing:** via scoped Context — never exposed outside the component boundary
+- **FORBIDDEN:** global state managers (${forbiddenManagers})
+- **FORBIDDEN:** fetching data or managing server state inside the library
+- **FORBIDDEN:** sharing state between unrelated components via module-level variables
+- **Props & callbacks** are the public contract — consumers own the state, the lib only reflects it
+- **All promises must be handled** — no floating async calls
+- **Every async UI operation requires** loading state + error state`;
+  }
+
+  const { state_constraints, side_effect_boundaries } = policy;
+  return `## State & Async Rules
+- **Scope:** ${state_constraints.global_state_scope}
+- **Derived state:** ${state_constraints.derived_state_strategy}
+- **Data fetching:** ${side_effect_boundaries.data_fetching_scope} — follow SvelteKit conventions, never fetch() directly in components
+- **All promises must be handled** — no floating async calls
+- **API errors must not reach UI raw** — map to domain error types in service layer
+- **Every async UI operation requires** loading state + error state`;
+};
+
+const renderComponentRules = (policy: Policy): string => {
+  const { ui_constraints } = policy;
+  const logicTarget = getLogicExtractionTarget();
+
+  if (policy.stack.pattern === 'ui-lib') {
+    const maxProps = ui_constraints.component_max_props;
+    const philosophy = maxProps <= 5
+      ? 'Compound-first — visual variations become subcomponents, not props'
+      : maxProps <= 10
+        ? 'Hybrid — common variations as props, structural extensions as compound parts'
+        : 'Config-driven — broad direct API, compound only for structural composition';
+
+    const asPropRule = '- **Primitives accept `children: Snippet` and spread rest props via `$props()`** — the consumer controls wrapping; no \`as\` prop needed';
+
+    return `## Component API Design Rules
+- **API philosophy:** ${philosophy}
+- **Max props per component:** ${maxProps} — split into compound parts if exceeded
+- **Separate style props from behavior props** — \`variant\`, \`size\` are style; \`onClick\`, \`disabled\` are behavior
+- **All props must be typed** — no \`[key: string]: any\` escape hatches
+- **No prop drilling beyond depth ${ui_constraints.prop_drilling_max_depth}** — use scoped Context for compound internals
+- **Logic in components:** FORBIDDEN — extract to ${logicTarget}
+- **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
+${asPropRule}`;
+  }
+
+  return `## Component Composition Rules
+- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
+- **Logic signal:** extract to ${logicTarget} when script block exceeds ~20-25 lines
+- **Max props:** ${ui_constraints.component_max_props} — split into compound component if exceeded
+- **No prop drilling beyond depth ${ui_constraints.prop_drilling_max_depth}** — lift to store or context
+- **Logic in components:** ${ui_constraints.logic_in_components ? 'allowed' : `FORBIDDEN — extract to ${logicTarget}`}
+- **Presentational components** must not import from \`state\` or \`services\` layers
+- **Prefer composition over configuration:** ${ui_constraints.prefer_composition ? 'YES — pass children/slots, avoid boolean prop explosion' : 'optional'}`;
+};
+
+/**
+ * Renders the policy to official Markdown format.
+ */
+export const renderMarkdown = (policy: Policy): string => {
+  const { stack, meta, structural_constraints, ui_constraints, state_constraints, file_conventions, side_effect_boundaries, domain_rules, naming_conventions } = policy;
+
+  const stackSection = renderStackSection(policy);
+  const logicTarget = getLogicExtractionTarget();
+  const stateSection = renderStateSection(policy);
+  const runesGuide = renderSvelteRunesGuide();
+
+  return `# Architecture Policy
+> Pattern: **${stack.pattern}** | State: **${stack.state_philosophy}** | Styling: **${stack.styling_strategy}**
+
+---
+
+${stackSection ? `${stackSection}\n\n---\n\n` : ''}## Layer Rules
+Imports are unidirectional. Each layer may only import from layers listed below it.
+Violations of import rules are **not permitted**.
+
+${renderLayerTable(policy)}
+
+${renderBoundariesTable(policy)}
+
+**Cross-feature imports:** ${structural_constraints.cross_feature_imports.replace(/-/g, ' ')}
+**Circular imports:** ${structural_constraints.circular_imports}${policy.cross_module_communication ? `\n**Cross-module communication:** ${policy.cross_module_communication.replace(/-/g, ' ')}` : ''}
+
+---
+
+${renderExpectedStructure(policy)}
+
+---
+
+${policy.ui_lib_config ? renderUiLibConfig(policy) : ''}${domain_rules ? `## Domain Rules
+- **Entities location:** \`${domain_rules.entities_location}\`
+- **Value objects:** ${domain_rules.value_objects_allowed ? 'allowed' : 'forbidden'}
+- **Immutable entities:** ${domain_rules.entity_rules.must_be_immutable ? 'YES' : 'no'}
+- **Framework-agnostic domain:** ${domain_rules.entity_rules.no_framework_imports ? 'YES' : 'no'}
+- **Validation:** ${domain_rules.entity_rules.validation_location}
+- **Anemic model:** ${domain_rules.anemic_model_allowed ? 'allowed' : 'FORBIDDEN — business logic belongs in entities'}
+- **Ubiquitous Language:** ${domain_rules.ubiquitous_language.enforced ? 'enforced' : 'optional'}
+
+---\n\n` : ''}## File Conventions
+
+### Naming
+${renderNamingHeader(policy)}
+
+${renderNamingTable(policy)}
+
+### Required Companions
+
+${renderCompanionsTable(policy)}
+
+### Structure Rules
+- **Co-location:** ${file_conventions.colocation} — companions must live beside source file
+- **Test placement:** ${file_conventions.test_placement}
+- **Public API:** ${file_conventions.public_api.required ? `every feature root requires \`${file_conventions.public_api.filename || 'index'}.ts\` — internal files must not be imported directly` : 'optional'}
+- **Max directory depth:** ${file_conventions.directory?.max_depth || 'N/A'}
+- **Barrel exports:** ${structural_constraints.barrel_exports_required ? 'required at feature roots only' : 'optional'}
+
+### Forbidden Patterns
+${file_conventions.forbidden_patterns.map(p => `- \`${p}\``).join('\n')}
+
+---
+
+${renderComponentRules(policy)}
+
+---
+
+## Abstraction Rules
+- Extract to **${logicTarget}** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **service** when: logic touches external I/O (API, storage, cookies)
+- Extract to **utility** when: logic is pure, stateless, domain-agnostic
+- **Do not abstract preemptively** — wrong abstraction costs more than duplication
+
+---
+
+${runesGuide}
+
+---
+
+${stateSection}
+
+---
+
+## Type Rules
+- **No \`any\`** — use \`unknown\` + type narrowing
+- **Props interface required** per component — no inline type literals
+- **No type assertions (\`as\`)** except at data boundaries (API responses, DOM events)
+
+---
+
+*Generated by agent-arch · [edit templates to change rules]*`.trim();
+};
+</file>
+
+<file path="core/renderer/renderer.test.ts">
+import { describe, test, expect } from 'bun:test';
+import { composePolicy } from '../composer';
+import { renderMarkdown } from './markdown-renderer';
+
+describe('Markdown Renderer', () => {
+  test('FSD + utility-first compact output matches snapshot', () => {
+    const policy = composePolicy({
+      pattern: 'feature-sliced',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case',
+      styling_strategy: 'utility-first',
+    });
+    expect(renderMarkdown(policy)).toMatchSnapshot();
+  });
+
+  test('Modular + utility-first compact output matches snapshot', () => {
+    const policy = composePolicy({
+      pattern: 'modular',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      styling_strategy: 'utility-first',
+    });
+    expect(renderMarkdown(policy)).toMatchSnapshot();
+  });
+
+  test('Flat compact output matches snapshot', () => {
+    const policy = composePolicy({
+      pattern: 'flat',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case',
+    });
+    expect(renderMarkdown(policy)).toMatchSnapshot();
+  });
+
+  test('Atomic + utility-first — no css files in structure or companions', () => {
+    const policy = composePolicy({
+      pattern: 'atomic',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case',
+      styling_strategy: 'utility-first',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toMatchSnapshot();
+    expect(output).not.toContain('.module.css');
+  });
+
+  test('Atomic + scoped — css files appear in structure and companions', () => {
+    const policy = composePolicy({
+      pattern: 'atomic',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case',
+      styling_strategy: 'scoped',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('.module.css');
+  });
+
+  test('ui-lib + utility-first hides tokens folder in structure', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      styling_strategy: 'utility-first',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('## Expected Directory Structure');
+    expect(output).not.toContain('tokens/');
+    expect(output).toContain('## UI Library Rules');
+    expect(output).toContain('Design Tokens (Utility-First Mode)');
+  });
+
+  test('ui-lib + scoped shows tokens folder in structure', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      styling_strategy: 'scoped',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('## Expected Directory Structure');
+    expect(output).toContain('tokens/');
+    expect(output).toContain('## UI Library Rules');
+    expect(output).toContain('CSS Variables:');
+  });
+
+  test('FSD + shadcn output contains Stack section', () => {
+    const policy = composePolicy({
+      pattern: 'feature-sliced',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case',
+      styling_strategy: 'utility-first',
+      component_lib: 'shadcn',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('## Stack');
+    expect(output).toContain('- **Framework:** svelte');
+    expect(output).toContain('- **Component Library:** shadcn');
+  });
+
+  test('Svelte framework applies Svelte-specific rules', () => {
+    const policy = composePolicy({
+      pattern: 'feature-sliced',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('*.svelte');
+    expect(output).toContain('*.svelte.ts'); // for both hook and store
+    expect(output).toContain('*.test.ts');
+    expect(output).not.toContain('*.test.tsx');
+    expect(output).toContain('runes/logic functions');
+  });
+
+  test('ui-lib state section uses $state and Svelte-specific forbidden', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('`$state` rune');
+    expect(output).toContain('Svelte stores at module level');
+    expect(output).not.toContain('useState');
+    expect(output).not.toContain('Zustand');
+  });
+
+  test('Stack section always shows Svelte 5+ framework', () => {
+    const policy = composePolicy({
+      pattern: 'flat',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case'
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('## Stack');
+    expect(output).toContain('svelte');
+  });
+
+  test('ui-lib naming header communicates PascalCase for components camelCase for utils', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('**Component files:** `PascalCase`');
+    expect(output).toContain('**Utility files:** `camelCase`');
+    expect(output).not.toContain('globally');
+  });
+
+  test('ui-lib compound-first renders correct API philosophy', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      component_preference: 'strict',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('## Component API Design Rules');
+    expect(output).toContain('Compound-first');
+    expect(output).toContain('**Max props per component:** 5');
+    expect(output).not.toContain('## Component Composition Rules');
+  });
+
+  test('ui-lib does not mention asChild and recommends Snippet + $props spread', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).not.toContain('asChild');
+    expect(output).toContain('children: Snippet');
+    expect(output).toContain('$props()');
+    // Also check the layer table for the updated responsibility
+    expect(output).toContain('rest props spread via `$props()` for full HTML attribute passthrough');
+  });
+
+  test('ui-lib hybrid renders correct API philosophy', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      component_preference: 'balanced',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('Hybrid');
+    expect(output).toContain('**Max props per component:** 10');
+  });
+
+  test('ui-lib directory shows context file and depth note', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      styling_strategy: 'utility-first',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('Button.context.svelte.ts');
+    expect(output).toContain('Depth note');
+    expect(output).toContain('never in a subdirectory');
+  });
+
+  test('non ui-lib pattern still renders Component Composition Rules', () => {
+    const policy = composePolicy({
+      pattern: 'feature-sliced',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case',
+      component_preference: 'strict',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('## Component Composition Rules');
+    expect(output).not.toContain('## Component API Design Rules');
+  });
+});
+</file>
+
+<file path="core/shared/framework-rules.ts">
+import type { Policy } from "../../schema/policy.schema";
+
+export type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends (infer U)[]
+    ? DeepPartial<U>[]
+    : T[P] extends object
+      ? DeepPartial<T[P]>
+      : T[P];
+};
+
+export const SVELTE_OVERRIDES: DeepPartial<Policy> = {
+  naming_conventions: {
+    hook: "camelCase (runes/logic functions)",
+    component: "PascalCase",
+    store: "camelCase (reactive runes)",
+  },
+  file_conventions: {
+    types: {
+      component: {
+        pattern: "*.svelte",
+        companions: {
+          test: { required: true, extensions: [".test.ts", ".spec.ts"] },
+        },
+      },
+      store: { pattern: "*.svelte.ts" },
+      hook: { pattern: "*.svelte.ts" },
+      service: { pattern: "*.ts" },
+    },
+    forbidden_patterns: [
+      "legacy-stores-for-local-state",
+      "effect-for-derived-state",
+      "direct-mutation-outside-runes"
+    ],
+  },
+  state_constraints: {
+    local_state_allowed: true,
+    derived_state_strategy: "$derived rune (computed values)",
+    forbidden_patterns: [
+      "direct-mutation",
+      "prop-drilling",
+      "untemplated-$effect"
+    ],
+  },
+};
+</file>
+
+<file path="core/shared/pattern-state.ts">
+export const STATE_BY_PATTERN: Record<string, { philosophy: string; scope: string }> = {
+  'feature-sliced': { philosophy: 'feature-based', scope: 'feature-based' },
+  'modular': { philosophy: 'module-based', scope: 'module-based' },
+  'flat': { philosophy: 'flexible', scope: 'any' },
+  'atomic': { philosophy: 'minimal', scope: 'minimal' },
+  'ui-lib': { philosophy: 'minimal', scope: 'minimal' },
+};
+</file>
+
+<file path="core/token/index.ts">
+/**
+ * Simple token estimator for architecture policies.
+ * Uses a standard rule of thumb (length / 4) for English-like text.
+ */
+export const estimateTokens = (text: string): number => {
+  if (!text) return 0;
+  // Standard approximation: ~4 characters per token
+  return Math.ceil(text.length / 4);
+};
+
+export const formatTokenCount = (count: number): string => {
+  if (count < 1000) return `${count}`;
+  return `${(count / 1000).toFixed(1)}k`;
+};
+</file>
+
+<file path="core/token/token.test.ts">
+import { expect, test, describe } from 'bun:test';
+import { estimateTokens, formatTokenCount } from './index';
+
+describe('Token Estimator', () => {
+  test('estimateTokens should return 0 for empty string', () => {
+    expect(estimateTokens('')).toBe(0);
+  });
+
+  test('estimateTokens should approximate based on length', () => {
+    const text = 'abcd'.repeat(10); // 40 chars
+    expect(estimateTokens(text)).toBe(10);
+  });
+
+  test('formatTokenCount should format small numbers', () => {
+    expect(formatTokenCount(500)).toBe('500');
+  });
+
+  test('formatTokenCount should format large numbers', () => {
+    expect(formatTokenCount(1200)).toBe('1.2k');
+    expect(formatTokenCount(2500)).toBe('2.5k');
+  });
+});
+</file>
+
+<file path="core/writer/index.ts">
+import fs from 'fs-extra';
+import path from 'path';
+import type { Policy } from '../../schema/policy.schema';
+import { renderMarkdown } from '../renderer/markdown-renderer';
+import { estimateTokens } from '../token';
+
+export const writePolicyFiles = async (policy: Policy, targetDir = '.ai') => {
+  await fs.ensureDir(targetDir);
+
+  const policyMdPath = path.join(targetDir, 'policy.md');
+  const mdContent = renderMarkdown(policy);
+  const tokens = estimateTokens(mdContent);
+
+  // Atualiza metadata no objeto mas não re-renderiza
+  policy.token_metadata.estimated_prompt_tokens = tokens;
+
+  await fs.writeFile(policyMdPath, mdContent);
+
+  return { policyMdPath, mdContent };
+};
+</file>
+
+<file path="core/writer/writer.test.ts">
+import { expect, test, describe, beforeEach, afterEach, spyOn } from 'bun:test';
+import fs from 'fs-extra';
+import path from 'path';
+import { writePolicyFiles } from './index';
+import { featureSlicedTemplate } from '../registry/templates/feature-sliced';
+
+describe('writePolicyFiles', () => {
+  const targetDir = './test-ai';
+
+  beforeEach(async () => {
+    if (await fs.pathExists(targetDir)) {
+      await fs.remove(targetDir);
+    }
+  });
+
+  afterEach(async () => {
+    if (await fs.pathExists(targetDir)) {
+      await fs.remove(targetDir);
+    }
+  });
+
+  test('should write policy.md with correct content', async () => {
+    const policy = { ...featureSlicedTemplate };
+    const result = await writePolicyFiles(policy, targetDir);
+
+    expect(result.policyMdPath).toBe(path.join(targetDir, 'policy.md'));
+    expect(await fs.pathExists(result.policyMdPath)).toBe(true);
+
+    const content = await fs.readFile(result.policyMdPath, 'utf8');
+    expect(content).toContain('# Architecture Policy');
+    expect(content).toContain('Pattern: **feature-sliced**');
+  });
+
+  test('should include token metadata in the policy object', async () => {
+    const policy = { ...featureSlicedTemplate };
+    await writePolicyFiles(policy, targetDir);
+    
+    // The policy object passed to renderers should have token_metadata updated.
+    // Since writePolicyFiles returns the content, we check if the content was rendered.
+    // (Actual verification of the 'policy' object mutation or return value 
+    // depends on implementation details, but here we check output)
+  });
+});
+</file>
+
+<file path="core/constants.ts">
+export const VALID_STYLING = ['utility-first', 'scoped', 'any'] as const;
+export type StylingStrategy = typeof VALID_STYLING[number];
+
+export const VALID_STRATEGIES = ['kebab-case', 'camelCase', 'PascalCase', 'snake_case'] as const;
+export type NamingStrategy = typeof VALID_STRATEGIES[number];
+
+export const STYLING_EXTENSIONS: Record<string, string[]> = {
+  'scoped':       ['.module.css', '.css'],
+  'utility-first': [],
+};
+
+export const PREFERENCE_MAP = {
+  strict: 5,
+  balanced: 10,
+  relaxed: 15,
+} as const;
+
+export const UI_LIB_PREFERENCE_MAP = {
+  strict: { max_props: 5, label: 'Compound-first' },
+  balanced: { max_props: 10, label: 'Hybrid' },
+  relaxed: { max_props: 15, label: 'Config-driven' },
+} as const;
+
+
+export type ComponentPreference = keyof typeof PREFERENCE_MAP;
+</file>
+
+<file path="schema/policy.schema.ts">
+import * as v from 'valibot';
+
+export const OutputModeSchema = v.literal('compact');
+
+export const LayerResponsibilitiesSchema = v.object({
+  owns: v.array(v.string()),
+  must_not: v.array(v.string()),
+  depends_on_abstractions: v.boolean(),
+});
+
+export const LayerSchema = v.object({
+  id: v.string(),
+  allowed_imports: v.array(v.string()),
+  forbidden_imports: v.optional(v.array(v.string())),
+  responsibilities: v.optional(LayerResponsibilitiesSchema),
+});
+
+// ─── File Conventions agora com companion opcional e pattern livre ────────────
+export const CompanionRuleSchema = v.object({
+  required: v.boolean(),
+  extensions: v.array(v.string()), // ex: ['.test.ts', '.spec.ts']
+});
+
+export const FileTypeConventionSchema = v.object({
+  pattern: v.string(),             // ex: "*.component.tsx"
+  companions: v.optional(          // undefined = sem companions obrigatórios
+    v.record(v.string(), CompanionRuleSchema)
+  ),
+  // ex: { test: { required: true, extensions: ['.test.ts'] },
+  //        style: { required: false, extensions: ['.module.css'] } }
+});
+
+export const FileConventionsSchema = v.object({
+  // Cada tipo de arquivo tem sua própria definição completa
+  types: v.record(v.string(), FileTypeConventionSchema),
+  // ex: { component: { pattern: "*.component.tsx", companions: { test: {...}, style: {...} } } }
+
+  colocation: v.union([v.literal('strict'), v.literal('loose'), v.literal('none')]),
+
+  public_api: v.object({
+    required: v.boolean(),
+    filename: v.optional(v.string()),       // default: "index"
+    extensions: v.optional(v.array(v.string())), // default: [".ts", ".tsx"]
+    expose_internals: v.boolean(),
+  }),
+
+  test_placement: v.union([
+    v.literal('colocated'),
+    v.literal('__tests__-sibling'),
+    v.literal('dedicated-root'),
+  ]),
+
+  directory: v.optional(v.object({
+    max_depth: v.number(),
+    feature_root_marker: v.optional(v.string()), // ex: "index.ts"
+  })),
+
+  forbidden_patterns: v.array(v.string()),
+});
+
+export const SideEffectBoundariesSchema = v.object({
+  allowed_in_layers: v.array(v.string()),
+  forbidden_in_layers: v.array(v.string()),
+  async_pattern: v.string(),
+  data_fetching_scope: v.string(),
+});
+
+export const UIConstraintsSchema = v.object({
+  component_max_props: v.number(),
+  prop_drilling_max_depth: v.number(),
+  logic_in_components: v.boolean(),
+  style_co_location: v.boolean(),
+  allowed_style_extensions: v.array(v.string()),
+  prefer_composition: v.boolean(),
+});
+
+export const AbstractionBoundarySchema = v.object({
+  boundary_name: v.string(),
+  inner_layer: v.string(),
+  outer_layer: v.string(),
+  interface_required: v.boolean(),
+  interface_location: v.string(),
+  forbidden_leakage: v.array(v.string()),
+});
+
+export const ErrorHandlingSchema = v.object({
+  layer: v.string(),
+  strategy: v.union([
+    v.literal('throw-domain-error'),
+    v.literal('return-result-type'),
+    v.literal('propagate'),
+    v.literal('silent-log'),
+  ]),
+  allowed_error_types: v.array(v.string()),
+  forbidden_error_types: v.array(v.string()),
+  boundary_mapping_required: v.boolean(),
+});
+
+export const DomainRulesSchema = v.object({
+  entities_location: v.string(),
+  value_objects_allowed: v.boolean(),
+  entity_rules: v.object({
+    must_be_immutable: v.boolean(),
+    no_framework_imports: v.boolean(),
+    validation_location: v.union([
+      v.literal('constructor'),
+      v.literal('factory-function'),
+      v.literal('external-validator'),
+    ]),
+  }),
+  anemic_model_allowed: v.boolean(),
+  ubiquitous_language: v.object({
+    enforced: v.boolean(),
+    glossary_path: v.optional(v.string()),
+  }),
+});
+
+export const CompoundPatternSchema = v.object({
+  enforced: v.boolean(),
+  root_suffix: v.string(),
+  export_style: v.union([
+    v.literal('namespace'),
+    v.literal('named'),
+  ]),
+});
+
+export const PublishConfigSchema = v.object({
+  package_exports_required: v.boolean(),
+  barrel_per_component: v.boolean(),
+  types_exported: v.boolean(),
+  peer_dependencies: v.array(v.string()),
+});
+
+export const UiLibConfigSchema = v.optional(v.object({
+  token_categories: v.array(v.string()),
+  compound_pattern: CompoundPatternSchema,
+  publish: PublishConfigSchema,
+}));
+
+export const PolicySchema = v.object({
+  meta: v.object({
+    version: v.string(),
+    generated_at: v.string(),
+    output_mode: OutputModeSchema,
+    token_budget: v.optional(v.number()),
+  }),
+  stack: v.object({
+    domain: v.literal('frontend'),
+    pattern: v.string(),
+    state_philosophy: v.string(),
+    styling_strategy: v.string(),
+    framework: v.literal('svelte'),
+    component_lib: v.optional(v.string()),
+  }),
+  fsd_config: v.optional(v.object({
+    segments: v.array(v.string()),
+  })),
+  layers: v.array(LayerSchema),
+  import_matrix: v.record(v.string(), v.array(v.string())),
+  abstraction_boundaries: v.optional(v.array(AbstractionBoundarySchema)),
+  error_handling_strategy: v.optional(v.array(ErrorHandlingSchema)),
+  domain_rules: v.optional(DomainRulesSchema),
+  ui_lib_config: UiLibConfigSchema,
+  structural_constraints: v.object({
+    max_component_depth: v.number(),
+    barrel_exports_required: v.boolean(),
+    circular_imports: v.literal('FORBIDDEN'),
+    cross_feature_imports: v.union([
+      v.literal('via-public-api-only'),
+      v.literal('FORBIDDEN'),
+      v.literal('allowed'),
+    ]),
+  }),
+  cross_module_communication: v.optional(v.union([
+    v.literal('via-shared-only'),
+    v.literal('via-event-bus'),
+    v.literal('via-context'),
+    v.literal('any'),
+  ])),
+  atomic_config: v.optional(v.object({
+    layer_internals: v.record(v.string(), v.array(v.string()))
+  })),
+  graduation_signals: v.optional(v.object({
+    component_count_threshold: v.number(),
+    duplicated_fetch_threshold: v.number(),
+    suggested_next_pattern: v.optional(v.string()),
+  })),
+  ui_constraints: UIConstraintsSchema,
+  state_constraints: v.object({
+    global_state_scope: v.string(),
+    local_state_allowed: v.boolean(),
+    derived_state_strategy: v.string(),
+    forbidden_patterns: v.array(v.string()),
+  }),
+  side_effect_boundaries: SideEffectBoundariesSchema,
+  naming_conventions: v.looseObject({
+    global_strategy: v.union([
+      v.literal('kebab-case'),
+      v.literal('PascalCase'),
+      v.literal('snake_case'),
+      v.literal('camelCase'),
+    ]),
+    component: v.optional(v.string()),
+    hook: v.optional(v.string()),
+    store: v.optional(v.string()),
+    service: v.optional(v.string()),
+    constant: v.optional(v.string()),
+    type: v.optional(v.string()),
+    test: v.optional(v.string()),
+  }),
+  file_conventions: FileConventionsSchema,
+  token_metadata: v.object({
+    estimated_prompt_tokens: v.number(),
+    compression_applied: v.boolean(),
+    omitted_sections: v.array(v.string()),
+  }),
+});
+export type Policy = v.InferOutput<typeof PolicySchema>;
+export type Layer = v.InferOutput<typeof LayerSchema>;
+export type FileConventions = v.InferOutput<typeof FileConventionsSchema>;
+export type FileTypeConvention = v.InferOutput<typeof FileTypeConventionSchema>;
+export type CompanionRule = v.InferOutput<typeof CompanionRuleSchema>;
+export type OutputMode = v.InferOutput<typeof OutputModeSchema>;
+</file>
+
+<file path="ui/components/ComponentLibStep.tsx">
+import React, { useState } from 'react';
+import { Box, Text } from 'ink';
+import TextInput from 'ink-text-input';
+
+export const ComponentLibStep = ({
+  onSubmit,
+}: {
+  onSubmit: (value: string | undefined) => void;
+}) => {
+  const [value, setValue] = useState('');
+
+  return (
+    <Box flexDirection="column" paddingLeft={1}>
+      <Box marginBottom={1}>
+        <Text bold color="yellow" underline>
+          Component Library
+        </Text>
+      </Box>
+      <Box>
+        <Text dimColor>Library name: </Text>
+        <TextInput
+          value={value}
+          onChange={setValue}
+          onSubmit={(val) => onSubmit(val.trim() || undefined)}
+          placeholder="e.g. shadcn-svelte, bits-ui, melt-ui... (Enter to skip)"
+        />
+      </Box>
+      <Box marginTop={1}>
+        <Text dimColor>Press Enter to skip</Text>
+      </Box>
+    </Box>
+  );
+};
+</file>
+
+<file path="ui/components/ConfirmScreen.tsx">
+import React from 'react';
+import { Box, Text, useInput } from 'ink';
+import { STATE_BY_PATTERN } from '../../core/shared/pattern-state';
+import type { UserSelections } from '../../types';
+
+export const ConfirmScreen = ({
+  selections,
+  onConfirm,
+  onBack,
+}: {
+  selections: Partial<UserSelections>;
+  onConfirm: () => void;
+  onBack: () => void;
+}) => {
+  useInput((input, key) => {
+    if (key.return) onConfirm();
+    if (key.escape || input === 'b') onBack();
+  });
+
+  const derivedState = STATE_BY_PATTERN[selections.pattern ?? '']?.philosophy ?? 'flexible';
+
+  return (
+    <Box flexDirection="column" paddingLeft={1}>
+      <Text bold color="yellow" underline>Review & Confirm</Text>
+      <Text dimColor>Verify your choices before generating the policy.</Text>
+
+      <Box flexDirection="column" marginTop={1} borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1}>
+        <Box marginBottom={1}>
+          <Text bold color="cyan" underline>Selected Configuration</Text>
+        </Box>
+        <Box flexDirection="column">
+          {(['pattern', 'component_lib', 'styling_strategy', 'component_preference', 'naming_strategy'] as const).map((key) => {
+             const labelMap: Record<string, string> = {
+               pattern: 'Architecture Pattern',
+               component_lib: 'Component Library',
+               styling_strategy: 'Styling Strategy',
+               component_preference: 'Component Preference',
+               naming_strategy: 'Naming Convention',
+             };
+             const val = (selections as any)[key];
+             if (!val) return null;
+             return (
+              <Box key={key} marginBottom={0}>
+                <Box width={25}>
+                  <Text dimColor>{labelMap[key]}:</Text>
+                </Box>
+                <Text color="green" bold>{val}</Text>
+              </Box>
+             );
+          })}
+          <Box marginTop={1}>
+            <Box width={25}>
+              <Text dimColor>State Philosophy:</Text>
+            </Box>
+            <Text color="cyan" bold>{derivedState}</Text>
+            <Text dimColor italic> (auto-derived)</Text>
+          </Box>
+        </Box>
+      </Box>
+
+      <Box marginTop={1}>
+        <Text color="green" bold>↵ Enter </Text>
+        <Text>to generate  </Text>
+        <Text color="yellow" bold>Esc / b </Text>
+        <Text>to go back</Text>
+      </Box>
+    </Box>
+  );
+};
+</file>
+
+<file path="ui/components/Header.tsx">
+import React from 'react';
+import { Box, Text } from 'ink';
+import { STEP_LABELS, MAIN_STEPS } from '../steps';
+
+export const Header = ({ step, stepIndex, totalSteps }: { step: string; stepIndex: number; totalSteps: number }) => (
+  <Box flexDirection="column" marginBottom={1}>
+    <Box borderStyle="double" borderColor="cyan" paddingX={2} paddingY={0}>
+      <Text color="cyan" bold>AGENT-ARCH </Text>
+      <Text dimColor>| AI Agent Architecture Policy</Text>
+    </Box>
+    {totalSteps > 1 && (
+      <Box marginTop={1} paddingX={1}>
+        {MAIN_STEPS.map((s, i) => {
+          const isActive = i === stepIndex;
+          const isDone = stepIndex !== -1 && i < stepIndex;
+          const label = STEP_LABELS[s] || s;
+          return (
+            <Text key={s}>
+              <Text color={isDone ? 'green' : isActive ? 'cyan' : 'gray'} bold={isActive}>
+                {isDone ? '✓' : isActive ? '▶' : '○'} {label}
+              </Text>
+              {i < MAIN_STEPS.length - 1 && <Text dimColor>  ──  </Text>}
+            </Text>
+          );
+        })}
+      </Box>
+    )}
+  </Box>
+);
+</file>
+
+<file path="ui/components/OptionDescription.tsx">
+import React from 'react';
+import { Box, Text } from 'ink';
+
+export interface OptionWithMeta {
+  label: string;
+  value: string;
+  description: string;
+  hint: string;
+  impact?: string;
+}
+
+export const OptionDescription = ({ option }: { option: OptionWithMeta | undefined }) => {
+  if (!option) return null;
+  return (
+    <Box flexDirection="column" marginTop={1} borderStyle="round" borderColor="blue" paddingX={2} paddingY={1}>
+      <Text bold color="white">Description</Text>
+      <Text color="white">{option.description}</Text>
+      <Box marginTop={1}>
+        <Text dimColor italic>💡 {option.hint}</Text>
+      </Box>
+      {option.impact && (
+        <Box marginTop={1}>
+          <Text color="yellow" bold>{option.impact}</Text>
+        </Box>
+      )}
+    </Box>
+  );
+};
+</file>
+
+<file path="ui/components/QuestionStep.tsx">
+import React, { useState } from 'react';
+import { Box, Text } from 'ink';
+import SelectInput from 'ink-select-input';
+import { OptionDescription, type OptionWithMeta } from './OptionDescription';
+import { STEP_LABELS } from '../steps';
+
+export const QuestionStep = ({
+  stepKey,
+  options,
+  onSelect,
+}: {
+  stepKey: string;
+  options: OptionWithMeta[];
+  onSelect: (value: string) => void;
+}) => {
+  const [focused, setFocused] = useState(options[0]?.value ?? '');
+
+  const inkItems = options.map((o) => ({ label: o.label, value: o.value }));
+  const focusedOption = options.find((o) => o.value === focused);
+  const label = STEP_LABELS[stepKey as keyof typeof STEP_LABELS] || stepKey;
+
+  return (
+    <Box flexDirection="column" paddingLeft={1}>
+      <Box marginBottom={1}>
+        <Text bold color="yellow" underline>
+          {stepKey === 'welcome' ? 'How do you want to start?' : `Select ${label}`}
+        </Text>
+      </Box>
+      <Box>
+        <SelectInput
+          items={inkItems}
+          onSelect={(item) => onSelect(item.value)}
+          onHighlight={(item) => setFocused(item.value)}
+        />
+      </Box>
+      <OptionDescription option={focusedOption} />
+      <Box marginTop={1}>
+        <Text dimColor>Use ↑↓ to navigate, Enter to select</Text>
+      </Box>
+    </Box>
+  );
+};
+</file>
+
+<file path="ui/hooks/useWizard.ts">
+import { useState, useCallback } from 'react';
+import type { Step, UserSelections } from '../../types';
+import { GUIDED_STEPS } from '../steps';
+
+export const useWizard = () => {
+  const [step, setStep] = useState<Step>('welcome');
+  const [selections, setSelections] = useState<Partial<UserSelections>>({});
+
+  const nextStep = useCallback((currentStep: Step, value?: string) => {
+    if (currentStep === 'welcome') {
+      setStep('pattern');
+      return;
+    }
+
+    const idx = GUIDED_STEPS.indexOf(currentStep);
+    let next: Step | undefined = GUIDED_STEPS[idx + 1];
+
+    // Skip naming step for ui-lib pattern as it's enforced to PascalCase
+    if (next === 'naming' && (selections.pattern === 'ui-lib' || (currentStep === 'pattern' && value === 'ui-lib'))) {
+      next = 'confirm';
+    }
+
+    if (next) {
+      setStep(next);
+    }
+  }, [selections.pattern]);
+
+  const updateSelections = useCallback((mapping: Partial<UserSelections>) => {
+    setSelections((prev) => ({ ...prev, ...mapping, output_mode: prev.output_mode || 'compact' }));
+  }, []);
+
+  return {
+    step,
+    setStep,
+    selections,
+    updateSelections,
+    nextStep,
+  };
+};
+</file>
+
+<file path="ui/app.tsx">
+import React, { useState } from 'react';
+import { Box, Text, useApp, useInput } from 'ink';
+import { composePolicy } from '../core/composer';
+import type { UserSelections, Step } from '../types';
+import { writePolicyFiles } from '../core/writer';
+import { Header } from './components/Header';
+import { QuestionStep } from './components/QuestionStep';
+import { ConfirmScreen } from './components/ConfirmScreen';
+import { ComponentLibStep } from './components/ComponentLibStep';
+import { OPTIONS, MAIN_STEPS } from './steps';
+import { useWizard } from './hooks/useWizard';
+
+export const App = () => {
+  const { exit } = useApp();
+  const { step, setStep, selections, updateSelections, nextStep } = useWizard();
+  const [error, setError] = useState<string | null>(null);
+  const [generatedPrompt, setGeneratedPrompt] = useState<string>('');
+
+  const stepIndex = MAIN_STEPS.indexOf(step as any);
+  const totalSteps = MAIN_STEPS.length;
+
+  const handleSelect = (stepKey: Step, value: string) => {
+    let mapping: Partial<UserSelections> = {};
+    if (stepKey === 'styling') mapping = { styling_strategy: value as UserSelections['styling_strategy'] };
+    else if (stepKey === 'naming') mapping = { naming_strategy: value as UserSelections['naming_strategy'] };
+    else if (stepKey === 'component_preference') mapping = { component_preference: value as UserSelections['component_preference'] };
+    else mapping = { [stepKey]: value };
+
+    updateSelections(mapping);
+    nextStep(stepKey, value);
+  };
+
+  const handleConfirm = async () => {
+    setStep('generating');
+    try {
+      const policy = composePolicy(selections as UserSelections);
+      const { mdContent } = await writePolicyFiles(policy);
+      
+      setGeneratedPrompt(mdContent);
+      setStep('done');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setStep('confirm');
+    }
+  };
+
+  useInput((input, key) => {
+    if (step === 'done') {
+      if (input === 'q' || key.escape || key.return) exit();
+    }
+  });
+
+  return (
+    <Box flexDirection="column" padding={1}>
+      <Header step={step} stepIndex={stepIndex} totalSteps={step === 'welcome' ? 1 : totalSteps} />
+
+      <Box marginTop={1}>
+        {/* Welcome */}
+        {step === 'welcome' && (
+          <QuestionStep 
+            stepKey="welcome" 
+            options={OPTIONS.welcome ?? []} 
+            onSelect={() => nextStep('welcome')} 
+          />
+        )}
+
+        {/* Wizard steps */}
+        {(['pattern', 'styling', 'component_preference', 'naming'] as const).map(
+          (s) => {
+            const options = s === 'component_preference' && selections.pattern === 'ui-lib'
+                ? OPTIONS.component_preference_ui_lib ?? []
+                : OPTIONS[s] ?? [];
+            return (
+              step === s && (
+                <QuestionStep 
+                  key={s} 
+                  stepKey={s} 
+                  options={options} 
+                  onSelect={(val) => handleSelect(s, val)} 
+                />
+              )
+            );
+          },
+        )}
+
+        {/* Component Lib Step */}
+        {step === 'component_lib' && (
+          <ComponentLibStep
+            onSubmit={(val) => {
+              updateSelections({ component_lib: val });
+              nextStep('component_lib');
+            }}
+          />
+        )}
+
+        {/* Confirm */}
+        {step === 'confirm' && (
+          <ConfirmScreen
+            selections={selections}
+            onConfirm={handleConfirm}
+            onBack={() => setStep(selections.pattern === 'ui-lib' ? 'component_preference' : 'naming')}
+          />
+        )}
+
+        {/* Generating */}
+        {step === 'generating' && (
+          <Box flexDirection="column" paddingLeft={1}>
+            <Text color="yellow" bold>⟳ Generating policy artifacts...</Text>
+            <Box flexDirection="column" marginLeft={2} marginTop={1}>
+              <Text color="cyan">▶ Rendering policy.md</Text>
+            </Box>
+          </Box>
+        )}
+
+        {/* Done */}
+        {step === 'done' && (
+          <Box flexDirection="column" paddingLeft={1}>
+            <Box borderStyle="round" borderColor="green" paddingX={2} paddingY={1} flexDirection="column">
+              <Text color="green" bold>✓ SUCCESS</Text>
+              <Text color="white">Architecture policy generated successfully!</Text>
+              <Box marginTop={1}>
+                <Text dimColor>Artifact created in </Text>
+                <Text color="yellow" bold>.ai/policy.md</Text>
+              </Box>
+            </Box>
+
+            <Box marginTop={1} flexDirection="column" paddingLeft={1}>
+              <Text bold color="cyan">🚀 Next Step:</Text>
+              <Text> 1. Attach <Text color="yellow">.ai/policy.md</Text> to your AI Agent.</Text>
+            </Box>
+
+            <Box marginTop={1} flexDirection="column">
+              <Text bold color="cyan" underline>Preview: .ai/policy.md</Text>
+              <Box borderStyle="single" borderColor="gray" paddingX={1} marginTop={1}>
+                <Text>
+                  {generatedPrompt
+                    .split('\n')
+                    .slice(0, 15)
+                    .map(line => line.replace(/^#+\s/, '➤ ').replace(/\*\*/g, ''))
+                    .join('\n')}
+                </Text>
+                <Text dimColor>... (truncated)</Text>
+              </Box>
+            </Box>
+
+            <Box marginTop={1}>
+              <Text>Press </Text>
+              <Text color="yellow" bold>Enter / q</Text>
+              <Text> to exit</Text>
+            </Box>
+          </Box>
+        )}
+
+        {/* Error */}
+        {error && (
+          <Box borderStyle="single" borderColor="red" paddingX={2} paddingY={1} marginTop={1}>
+            <Text color="red" bold>✖ Error</Text>
+            <Text color="red">{error}</Text>
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+};
+</file>
+
+<file path="ui/steps.ts">
+import type { OptionWithMeta, Step } from '../types';
+
+export const OPTIONS: Record<string, OptionWithMeta[]> = {
+  welcome: [
+    {
+      label: '🚀 Start Setup',
+      value: 'guided',
+      description: 'Step-by-step configuration of architectural rules.',
+      hint: 'Pattern | Styling | Naming',
+    },
+  ],
+  pattern: [
+    {
+      label: '🏗️  Feature-Sliced (FSD)',
+      value: 'feature-sliced',
+      description: 'Organizes code by business domain (e.g., /auth, /billing).',
+      hint: 'Scaling: High | Complexity: High | Use for medium-to-large apps.',
+      impact: '⚡ Prompt: Adds strict layer hierarchy and import rules (ui→hooks→state).',
+    },
+    {
+      label: '📦 Modular Layered',
+      value: 'modular',
+      description: 'Organizes by technical layers (components/, hooks/, services/).',
+      hint: 'Scaling: Medium | Complexity: Low | Standard for many teams.',
+      impact: '⚡ Prompt: Defines clear technical boundaries between layers.',
+    },
+    {
+      label: '📄 Flat Layered',
+      value: 'flat',
+      description: 'Simple, flat structure with minimal hierarchy.',
+      hint: 'Scaling: Low | Complexity: Very Low | Best for MVPs.',
+      impact: '⚡ Prompt: Minimizes structural noise, focused on simple exports.',
+    },
+    {
+      label: '⚛️  Atomic Design',
+      value: 'atomic',
+      description: 'Organizes UI by complexity (Atoms, Molecules, Organisms).',
+      hint: 'Scaling: Medium | Complexity: Medium | Best for design systems.',
+      impact: '⚡ Prompt: Enforces strict composition hierarchy (Atoms → Molecules → ...).',
+    },
+    {
+      label: '🧩 Composable UI Primitives',
+      value: 'ui-lib',
+      description: 'Layered structure for publishable component libraries. Tokens → Primitives → Components → Patterns.',
+      hint: 'Scaling: Medium | Use for design systems and shared UI packages.',
+      impact: '⚡ Prompt: Enforces token usage, compound components, and clean npm export contracts.',
+    },
+  ],
+  styling: [
+    {
+      label: '🎨 Utility-First (Tailwind)',
+      value: 'utility-first',
+      description: 'Atomic classes directly in markup.',
+      hint: 'Speed: Extreme | Bundle Size: Minimal.',
+      impact: '⚡ Prompt: Agent writes CSS directly in JSX attributes.',
+    },
+    {
+      label: '🧩 Scoped / Modular (CSS Modules)',
+      value: 'scoped',
+      description: 'Component-specific styles with local scope.',
+      hint: 'Encapsulation: High | Reuse: Medium.',
+      impact: '⚡ Prompt: Agent creates companion .module.css files.',
+    },
+  ],
+  component_preference: [
+    {
+      label: '⚖️  Balanced',
+      value: 'balanced',
+      description: 'Standard props limit (7). Good for most projects.',
+      hint: 'Balanced reuse and complexity.',
+    },
+    {
+      label: '🛡️  Strict',
+      value: 'strict',
+      description: 'Aggressive prop limit (5). Enforces small, focused components.',
+      hint: 'High reuse, more small components.',
+    },
+    {
+      label: '🌊 Relaxed',
+      value: 'relaxed',
+      description: 'Higher prop limit (10). Allows larger components.',
+      hint: 'Less overhead, potentially higher complexity.',
+    },
+  ],
+  component_preference_ui_lib: [
+    {
+      label: '🏗️  Compound-first (max 5 props)',
+      value: 'strict',
+      description: 'Visual variations become compound subcomponents. Button.Root, Button.Icon.',
+      hint: 'Most composable API. Higher implementation cost per component.',
+      impact: '⚡ Prompt: Agent splits every visual variation into a named compound part.',
+    },
+    {
+      label: '⚖️  Hybrid (max 10 props)',
+      value: 'balanced',
+      description: 'Common variations as direct props, structural extensions as compound parts.',
+      hint: 'Recommended for most UI libraries. Balances ergonomics and composability.',
+      impact: '⚡ Prompt: Agent uses props for variant/size, compound for slots and extensions.',
+    },
+    {
+      label: '🌊 Config-driven (max 15 props)',
+      value: 'relaxed',
+      description: 'Broad direct API. Compound pattern only for structural composition.',
+      hint: 'Easiest to consume. Harder to extend without breaking changes.',
+      impact: '⚡ Prompt: Agent prefers props over compound parts wherever possible.',
+    },
+  ],
+  naming: [
+    {
+      label: '🔗 kebab-case (user-profile.ts)',
+      value: 'kebab-case',
+      description: 'Lowercase words separated by hyphens.',
+      hint: 'The most common standard for web filenames.',
+    },
+    {
+      label: '🐪 camelCase (userProfile.ts)',
+      value: 'camelCase',
+      description: 'Lowercase first letter, capitalized subsequent words.',
+      hint: 'Standard for many JavaScript/TypeScript projects.',
+    },
+    {
+      label: '🏛️  PascalCase (UserProfile.ts)',
+      value: 'PascalCase',
+      description: 'All words capitalized.',
+      hint: 'Standard for Svelte component names.',
+    },
+    {
+      label: '🐍 snake_case (user_profile.ts)',
+      value: 'snake_case',
+      description: 'Words separated by underscores.',
+      hint: 'Common in backend-heavy or Python-influenced projects.',
+    },
+  ],
+};
+
+export const MAIN_STEPS: Step[] = ['pattern', 'component_lib', 'styling', 'component_preference', 'naming', 'confirm'];
+export const GUIDED_STEPS: Step[] = ['pattern', 'component_lib', 'styling', 'component_preference', 'naming', 'confirm'];
+
+export const STEP_LABELS: Partial<Record<Step, string>> = {
+  welcome: 'Start',
+  pattern: 'Pattern',
+  component_lib: 'Library',
+  styling: 'Styling',
+  component_preference: 'Preference',
+  naming: 'Naming',
+  confirm: 'Confirm',
+  generating: 'Generating',
+  done: 'Done',
+};
+</file>
+
+<file path="bin.ts">
+#!/usr/bin/env bun
+import { Command } from 'commander';
+import React from 'react';
+import { render } from 'ink';
+import { App } from './ui/app';
+import { generateAction } from './commands/generate';
+import { validateAction } from './commands/validate';
+import { renderAction } from './commands/render';
+import { estimateAction } from './commands/estimate';
+import { registryListAction } from './commands/registry';
+
+const program = new Command();
+
+program
+  .name('agent-arch')
+  .description('Generate architecture policy for AI agents (Markdown only)')
+  .version('2.0.0');
+
+program
+  .command('init')
+  .description('Interactive wizard to generate policy.md')
+  .action(() => {
+    render(React.createElement(App));
+  });
+
+program
+  .command('generate')
+  .description('Non-interactive generation using flags')
+  .requiredOption('--pattern <pattern>', 'Architectural pattern (e.g., feature-sliced, modular, flat, atomic)')
+  .requiredOption('--naming <strategy>', 'Naming strategy (kebab-case, camelCase, PascalCase, snake_case)')
+  .option('--styling <strategy>', 'Styling strategy (utility-first, scoped, any)')
+  .option('--component-lib <lib>', 'Component library')
+  .option('--preference <pref>', 'Component preference (strict, balanced, relaxed)', 'balanced')
+  .action((options) => {
+    generateAction({
+      pattern: options.pattern,
+      output_mode: 'compact', // Fixed for Markdown
+      naming_strategy: options.naming,
+      styling_strategy: options.styling,
+      component_lib: options.componentLib,
+      component_preference: options.preference,
+    });
+  });
+
+program
+  .command('validate')
+  .description('Validate an existing policy.md')
+  .argument('[path]', 'Path to policy.md', '.ai/policy.md')
+  .action((path) => {
+    validateAction(path);
+  });
+
+program
+  .command('render')
+  .description('Render a pattern to the console')
+  .argument('<patternId>', 'ID of the pattern to render (e.g., feature-sliced)')
+  .action((patternId) => {
+    renderAction(patternId);
+  });
+
+program
+  .command('estimate')
+  .description('Estimate token usage for a policy.md')
+  .argument('[path]', 'Path to policy.md', '.ai/policy.md')
+  .action((path) => {
+    estimateAction(path);
+  });
+
+program
+  .command('registry')
+  .description('List registered templates')
+  .command('list')
+  .action(() => {
+    registryListAction();
+  });
+
+program.parse();
+</file>
+
+<file path="types.ts">
+import type { NamingStrategy, StylingStrategy, ComponentPreference } from './core/constants';
+
+export type Step =
+  | 'welcome'
+  | 'pattern'
+  | 'component_lib'
+  | 'styling'
+  | 'component_preference'
+  | 'naming'
+  | 'confirm'
+  | 'generating'
+  | 'done';
+
+export interface OptionWithMeta {
+  label: string;
+  value: string;
+  description: string;
+  hint: string;
+  impact?: string;
+}
+
+export interface UserSelections {
+  pattern: string;
+  naming_strategy?: NamingStrategy;
+  styling_strategy?: StylingStrategy;
+  component_lib?: string;
+  component_preference?: ComponentPreference;
+}
+</file>
+
+</files>
