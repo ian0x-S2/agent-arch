@@ -169,14 +169,14 @@ const renderFSDStructure = (policy: Policy): string => {
 };
 
 const renderModularStructure = (policy: Policy): string => {
-  const { ui_constraints, structural_constraints, file_conventions } = policy;
+  const { ui_constraints, structural_constraints } = policy;
 
   return [
     'src/',
     '├── modules/',
     '│   ├── <module-name>/        # one per business capability',
     '│   │   ├── components/       # extract if template > 2 logical sections',
-    `│   │   │   └── ComponentName.tsx`,
+    '│   │   │   └── ComponentName.svelte',
     `│   │   │       # ${ui_constraints.logic_in_components ? 'logic allowed here' : 'no logic — use hooks/'}`,
     '│   │   ├── hooks/            # all logic lives here',
     '│   │   ├── services/         # external I/O only — API, storage',
@@ -199,7 +199,7 @@ const renderFlatStructure = (policy: Policy): string => {
   return [
     'src/',
     '├── components/               # all components live here',
-    '│   └── ComponentName.tsx     # logic colocated — ok at this scale',
+    '│   └── ComponentName.svelte     # logic colocated — ok at this scale',
     '├── hooks/                    # extract when logic repeats 2+ times',
     '├── services/                 # extract when touching external I/O',
     '├── types/                    # shared types',
@@ -216,7 +216,7 @@ const renderFlatStructure = (policy: Policy): string => {
 const renderAtomicStructure = (policy: Policy): string => {
   const { layers, stack, atomic_config } = policy;
   const totalLayers = layers.length;
-  const hasStyleFile = !['utility-first', 'css-in-js'].includes(stack.styling_strategy ?? '');
+  const hasStyleFile = !['utility-first'].includes(stack.styling_strategy ?? '');
   const layerInternals = atomic_config?.layer_internals;
 
   const layerLines = layers.flatMap((layer, i) => {
@@ -229,10 +229,10 @@ const renderAtomicStructure = (policy: Policy): string => {
 
     if (layer.id === 'pages') {
       lines.push(`${childPrefix}├── <route>/`);
-      lines.push(`${childPrefix}│   └── PageName.tsx`);
+      lines.push(`${childPrefix}│   └── PageName.svelte`);
     } else if (!['shared'].includes(layer.id)) {
       lines.push(`${childPrefix}├── <component>/`);
-      lines.push(`${childPrefix}│   ├── ComponentName.tsx`);
+      lines.push(`${childPrefix}│   ├── ComponentName.svelte`);
       if (internals && internals.length > 0) {
         internals.forEach((internal, idx) => {
           const internalPrefix = idx === internals.length - 1 ? '└──' : '├──';
@@ -260,6 +260,8 @@ const renderUiLibStructure = (policy: Policy): string => {
   const ns = cfg?.compound_pattern.export_style === 'namespace';
   const isUtilityFirst = policy.stack.styling_strategy === 'utility-first';
 
+  const contextFile = 'Button.context.svelte.ts  # shared $state for compound parts via Svelte Context';
+
   const tokensSection = isUtilityFirst
     ? ''
     : `├── tokens/
@@ -273,24 +275,40 @@ const renderUiLibStructure = (policy: Policy): string => {
     'src/',
     tokensSection + "├── primitives/",
     "│   ├── Box/",
-    "│   │   ├── Box.tsx         # unstyled, polymorphic",
+    '│   │   ├── Box.svelte         # unstyled, polymorphic',
     "│   │   ├── Box.types.ts",
     "│   │   └── index.ts",
     "│   └── Text/",
     "├── components/",
     "│   ├── Button/",
     ns
-      ? "│   │   ├── Button.tsx          # namespace: Button.Root, Button.Icon"
-      : "│   │   ├── ButtonRoot.tsx      # named exports",
+      ? '│   │   ├── Button.svelte          # namespace: Button.Root, Button.Icon'
+      : '│   │   ├── ButtonRoot.svelte      # named exports',
+    `│   │   ├── ${contextFile}`,
     "│   │   ├── Button.types.ts",
-    "│   │   ├── Button.test.tsx",
+    '│   │   ├── Button.test.ts',
     "│   │   └── index.ts        # exports Button namespace",
     "├── patterns/",
     "│   ├── Form/",
-    "│   │   ├── Form.tsx        # composes components",
+    '│   │   ├── Form.svelte        # composes components',
     "│   │   └── index.ts",
     "└── index.ts                # package root — public API only",
   ].join('\n');
+};
+
+const renderDirectoryDepthNote = (policy: Policy): string => {
+  if (policy.stack.pattern !== 'ui-lib') return '';
+
+  const stateFile = '`*.context.svelte.ts`';
+
+  return `\n> **Depth note:** max depth 3 is intentional — compound component state lives beside the component as ${stateFile}, never in a subdirectory. Context files are private to the component folder and must not be exported via \`index.ts\`.`;
+};
+
+const renderNamingHeader = (policy: Policy): string => {
+  if (policy.stack.pattern === 'ui-lib') {
+    return '> **Component files:** `PascalCase` · **Utility files:** `camelCase` · Symbols: per-type rules below';
+  }
+  return `> Files: \`${policy.naming_conventions.global_strategy}\` globally · Symbols: per-type rules below`;
 };
 
 const renderUiLibConfig = (policy: Policy): string => {
@@ -298,6 +316,7 @@ const renderUiLibConfig = (policy: Policy): string => {
   if (!cfg) return '';
 
   const isUtilityFirst = policy.stack.styling_strategy === 'utility-first';
+  const compoundNote = '\n> Svelte 5+: use `children: Snippet` + `$props()` rest spread. No `as` prop needed.';
 
   if (isUtilityFirst) {
     return `## UI Library Rules
@@ -313,7 +332,7 @@ const renderUiLibConfig = (policy: Policy): string => {
 - **Export style:** \`${cfg.compound_pattern.export_style}\`
 ${cfg.compound_pattern.export_style === 'namespace'
         ? '- Exports as \`Button.Root\`, \`Button.Trigger\`, \`Button.Icon\`\n- Root component is the namespace object — never export parts standalone'
-        : '- Exports as \`ButtonRoot\`, \`ButtonTrigger\` — each part is a named export'}
+        : '- Exports as \`ButtonRoot\`, \`ButtonTrigger\` — each part is a named export'}${compoundNote}
 
 ### Publish Contract
 - **package.json exports map:** required — every component gets its 
@@ -326,12 +345,10 @@ ${cfg.compound_pattern.export_style === 'namespace'
 `;
   }
 
-  // For scoped/css-in-js modes
+  // For scoped mode
   const tokenLocation = policy.stack.styling_strategy === 'scoped'
     ? '- **CSS Variables:** Expose tokens as `:root { --color-primary: #... }`'
-    : policy.stack.styling_strategy === 'css-in-js'
-      ? '- **Direct Import:** Import token objects directly in style files'
-      : '';
+    : '';
 
   return `## UI Library Rules
 
@@ -347,7 +364,7 @@ ${tokenLocation}
 - **Export style:** \`${cfg.compound_pattern.export_style}\`
 ${cfg.compound_pattern.export_style === 'namespace'
       ? '- Exports as \`Button.Root\`, \`Button.Trigger\`, \`Button.Icon\`\n- Root component is the namespace object — never export parts standalone'
-      : '- Exports as \`ButtonRoot\`, \`ButtonTrigger\` — each part is a named export'}
+      : '- Exports as \`ButtonRoot\`, \`ButtonTrigger\` — each part is a named export'}${compoundNote}
 
 ### Publish Contract
 - **package.json exports map:** required — every component gets its 
@@ -375,26 +392,93 @@ const renderExpectedStructure = (policy: Policy): string => {
   const renderer = renderers[pattern];
   if (!renderer) return '';
 
-  return `## Expected Directory Structure\n\n\`\`\`\n${renderer()}\n\`\`\``;
+  return `## Expected Directory Structure
+
+\`\`\`
+${renderer()}
+\`\`\`${renderDirectoryDepthNote(policy)}`;
 };
 
 const renderStackSection = (policy: Policy): string => {
   const { stack } = policy;
-  if (!stack.framework && !stack.component_lib) return '';
 
   const lines: string[] = ['## Stack'];
-  if (stack.framework) lines.push(`- **Framework:** ${stack.framework}`);
+  lines.push(`- **Framework:** ${stack.framework}`);
   if (stack.component_lib) {
     lines.push(`- **Component Library:** ${stack.component_lib}`);
   }
   return lines.join('\n');
 };
 
-const getLogicExtractionTarget = (policy: Policy): string => {
-  const { framework } = policy.stack;
-  if (framework === 'svelte') return '`*.svelte.ts`';
-  if (framework === 'vue') return 'composables';
-  return 'hooks';
+const getLogicExtractionTarget = (): string => {
+  return '`*.svelte.ts`';
+};
+
+const getLocalStatePrimitive = (): string => {
+  return '`$state` rune';
+};
+
+const renderStateSection = (policy: Policy): string => {
+  if (policy.stack.pattern === 'ui-lib') {
+    const statePrimitive = getLocalStatePrimitive();
+    const forbiddenManagers = 'Svelte stores at module level';
+
+    return `## State & Async Rules
+
+- **Philosophy:** UI-only state — this library does NOT manage application state
+- **Allowed:** component-internal UI state only (${statePrimitive}) — e.g. \`isOpen\`, \`isFocused\`, \`isDisabled\`
+- **Compound component state sharing:** via scoped Context — never exposed outside the component boundary
+- **FORBIDDEN:** global state managers (${forbiddenManagers})
+- **FORBIDDEN:** fetching data or managing server state inside the library
+- **FORBIDDEN:** sharing state between unrelated components via module-level variables
+- **Props & callbacks** are the public contract — consumers own the state, the lib only reflects it
+- **All promises must be handled** — no floating async calls
+- **Every async UI operation requires** loading state + error state`;
+  }
+
+  const { state_constraints, side_effect_boundaries } = policy;
+  return `## State & Async Rules
+- **Scope:** ${state_constraints.global_state_scope}
+- **Derived state:** ${state_constraints.derived_state_strategy}
+- **Data fetching:** ${side_effect_boundaries.data_fetching_scope}, consumed via hooks
+- **All promises must be handled** — no floating async calls
+- **API errors must not reach UI raw** — map to domain error types in service layer
+- **Every async UI operation requires** loading state + error state`;
+};
+
+const renderComponentRules = (policy: Policy): string => {
+  const { ui_constraints } = policy;
+  const logicTarget = getLogicExtractionTarget();
+
+  if (policy.stack.pattern === 'ui-lib') {
+    const maxProps = ui_constraints.component_max_props;
+    const philosophy = maxProps <= 5
+      ? 'Compound-first — visual variations become subcomponents, not props'
+      : maxProps <= 10
+        ? 'Hybrid — common variations as props, structural extensions as compound parts'
+        : 'Config-driven — broad direct API, compound only for structural composition';
+
+    const asPropRule = '- **Primitives accept `children: Snippet` and spread rest props via `$props()`** — the consumer controls wrapping; no \`as\` prop needed';
+
+    return `## Component API Design Rules
+- **API philosophy:** ${philosophy}
+- **Max props per component:** ${maxProps} — split into compound parts if exceeded
+- **Separate style props from behavior props** — \`variant\`, \`size\` are style; \`onClick\`, \`disabled\` are behavior
+- **All props must be typed** — no \`[key: string]: any\` escape hatches
+- **No prop drilling beyond depth ${ui_constraints.prop_drilling_max_depth}** — use scoped Context for compound internals
+- **Logic in components:** FORBIDDEN — extract to ${logicTarget}
+- **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
+${asPropRule}`;
+  }
+
+  return `## Component Composition Rules
+- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
+- **Logic signal:** extract to ${logicTarget} when script block exceeds ~20-25 lines
+- **Max props:** ${ui_constraints.component_max_props} — split into compound component if exceeded
+- **No prop drilling beyond depth ${ui_constraints.prop_drilling_max_depth}** — lift to store or context
+- **Logic in components:** ${ui_constraints.logic_in_components ? 'allowed' : `FORBIDDEN — extract to ${logicTarget}`}
+- **Presentational components** must not import from \`state\` or \`services\` layers
+- **Prefer composition over configuration:** ${ui_constraints.prefer_composition ? 'YES — pass children/slots, avoid boolean prop explosion' : 'optional'}`;
 };
 
 /**
@@ -404,7 +488,8 @@ export const renderMarkdown = (policy: Policy): string => {
   const { stack, meta, structural_constraints, ui_constraints, state_constraints, file_conventions, side_effect_boundaries, domain_rules, naming_conventions } = policy;
 
   const stackSection = renderStackSection(policy);
-  const logicTarget = getLogicExtractionTarget(policy);
+  const logicTarget = getLogicExtractionTarget();
+  const stateSection = renderStateSection(policy);
 
   return `# Architecture Policy
 > Pattern: **${stack.pattern}** | State: **${stack.state_philosophy}** | Styling: **${stack.styling_strategy}**
@@ -440,7 +525,7 @@ ${policy.ui_lib_config ? renderUiLibConfig(policy) : ''}${domain_rules ? `## Dom
 ---\n\n` : ''}## File Conventions
 
 ### Naming
-> Files: \`${naming_conventions.global_strategy}\` globally · Symbols: per-type rules below
+${renderNamingHeader(policy)}
 
 ${renderNamingTable(policy)}
 
@@ -460,14 +545,7 @@ ${file_conventions.forbidden_patterns.map(p => `- \`${p}\``).join('\n')}
 
 ---
 
-## Component Composition Rules
-- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to ${logicTarget} when script block exceeds ~20-25 lines
-- **Max props:** ${ui_constraints.component_max_props} — split into compound component if exceeded
-- **No prop drilling beyond depth ${ui_constraints.prop_drilling_max_depth}** — lift to store or context
-- **Logic in components:** ${ui_constraints.logic_in_components ? 'allowed' : `FORBIDDEN — extract to ${logicTarget}`}
-- **Presentational components** must not import from \`state\` or \`services\` layers
-- **Prefer composition over configuration:** ${ui_constraints.prefer_composition ? 'YES — pass children/slots, avoid boolean prop explosion' : 'optional'}
+${renderComponentRules(policy)}
 
 ---
 
@@ -479,13 +557,7 @@ ${file_conventions.forbidden_patterns.map(p => `- \`${p}\``).join('\n')}
 
 ---
 
-## State & Async Rules
-- **Scope:** ${state_constraints.global_state_scope}
-- **Derived state:** ${state_constraints.derived_state_strategy}
-- **Data fetching:** ${side_effect_boundaries.data_fetching_scope}, consumed via hooks
-- **All promises must be handled** — no floating async calls
-- **API errors must not reach UI raw** — map to domain error types in service layer
-- **Every async UI operation requires** loading state + error state
+${stateSection}
 
 ---
 

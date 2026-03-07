@@ -11,7 +11,7 @@ export const atomicTemplate: Policy = {
     pattern: 'atomic',
     state_philosophy: 'minimal',
     styling_strategy: 'utility-first',
-    framework: undefined,
+    framework: 'svelte',
     component_lib: undefined,
   },
   layers: [
@@ -119,9 +119,9 @@ export const atomicTemplate: Policy = {
   file_conventions: {
     types: {
       component: {
-        pattern: '*.tsx',
+        pattern: '*.ts',
         companions: {
-          test: { required: true, extensions: ['.test.tsx'] },
+          test: { required: true, extensions: ['.test.ts'] },
           style: { required: false, extensions: ['.module.css'] },
         },
       },

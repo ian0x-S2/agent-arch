@@ -15,10 +15,15 @@ export const useWizard = () => {
     const idx = GUIDED_STEPS.indexOf(currentStep);
     let next: Step | undefined = GUIDED_STEPS[idx + 1];
 
+    // Skip naming step for ui-lib pattern as it's enforced to PascalCase
+    if (next === 'naming' && (selections.pattern === 'ui-lib' || (currentStep === 'pattern' && value === 'ui-lib'))) {
+      next = 'confirm';
+    }
+
     if (next) {
       setStep(next);
     }
-  }, []);
+  }, [selections.pattern]);
 
   const updateSelections = useCallback((mapping: Partial<UserSelections>) => {
     setSelections((prev) => ({ ...prev, ...mapping, output_mode: prev.output_mode || 'compact' }));

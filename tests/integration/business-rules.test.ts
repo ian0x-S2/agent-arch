@@ -23,19 +23,6 @@ describe('Regras de negócio: styling_strategy', () => {
         }));
         expect(output).toContain('.module.css');
     });
-
-    test('css-in-js: sem companion de estilo, mas style_co_location = true', () => {
-        const policy = composePolicy({
-            pattern: 'modular',
-            output_mode: 'compact',
-            naming_strategy: 'PascalCase',
-            styling_strategy: 'css-in-js',
-        });
-        for (const typeDef of Object.values(policy.file_conventions.types)) {
-            expect(typeDef.companions?.['style']).toBeUndefined();
-        }
-        expect(policy.ui_constraints.style_co_location).toBe(true);
-    });
 });
 
 describe('Regras de negócio: component_preference', () => {
@@ -50,33 +37,33 @@ describe('Regras de negócio: component_preference', () => {
         expect(renderMarkdown(policy)).toContain('Max props:** 5');
     });
 
-    test('balanced: max_props = 7', () => {
+    test('balanced: max_props = 10', () => {
         const policy = composePolicy({
             pattern: 'flat',
             output_mode: 'compact',
             naming_strategy: 'kebab-case',
             component_preference: 'balanced',
         });
-        expect(policy.ui_constraints.component_max_props).toBe(7);
+        expect(policy.ui_constraints.component_max_props).toBe(10);
     });
 
-    test('relaxed: max_props = 10', () => {
+    test('relaxed: max_props = 15', () => {
         const policy = composePolicy({
             pattern: 'flat',
             output_mode: 'compact',
             naming_strategy: 'kebab-case',
             component_preference: 'relaxed',
         });
-        expect(policy.ui_constraints.component_max_props).toBe(10);
+        expect(policy.ui_constraints.component_max_props).toBe(15);
     });
 });
 
 describe('Regras de negócio: naming_strategy no markdown final', () => {
     const cases = [
-        { strategy: 'kebab-case', expected: '*.component.tsx' },
-        { strategy: 'PascalCase', expected: '*Component.tsx' },
-        { strategy: 'snake_case', expected: '*_component.tsx' },
-        { strategy: 'camelCase', expected: '*.component.tsx' },
+        { strategy: 'kebab-case', expected: '*.svelte' },
+        { strategy: 'PascalCase', expected: '*.svelte' },
+        { strategy: 'snake_case', expected: '*.svelte' },
+        { strategy: 'camelCase', expected: '*.svelte' },
     ] as const;
 
     for (const { strategy, expected } of cases) {

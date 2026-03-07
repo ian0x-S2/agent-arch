@@ -22,7 +22,7 @@ export const ComponentLibStep = ({
           value={value}
           onChange={setValue}
           onSubmit={(val) => onSubmit(val.trim() || undefined)}
-          placeholder="e.g. shadcn, MUI, Radix... (Enter to skip)"
+          placeholder="e.g. shadcn-svelte, bits-ui, melt-ui... (Enter to skip)"
         />
       </Box>
       <Box marginTop={1}>

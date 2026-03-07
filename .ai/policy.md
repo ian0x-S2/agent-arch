@@ -15,12 +15,12 @@
 Imports are unidirectional. Each layer may only import from layers listed below it.
 Violations of import rules are **not permitted**.
 
-| Layer      | May Import                     | Responsibilities                                                                                                                                                                                                                                 | Side Effects |
-| ---------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
-| tokens     | —                              | **Owns:** design tokens (color, spacing, typography, radius, shadow), CSS custom properties, theme contract<br>**Not:** import from any other layer, contain component logic, reference framework APIs                                           | ✗ forbidden  |
-| primitives | tokens                         | **Owns:** unstyled base elements (Box, Text, Icon), accessibility attributes (aria-\*, role), polymorphic `as` prop support<br>**Not:** apply visual styles directly, import from components or patterns, contain business logic                 | ✗ forbidden  |
-| components | primitives, tokens             | **Owns:** compound components (Button.Root + Button.Icon), controlled and uncontrolled variants, component-scoped types and props interfaces<br>**Not:** import from patterns layer, fetch data or call APIs, contain application business logic | ✓ allowed    |
-| patterns   | components, primitives, tokens | **Owns:** compositions of multiple components (Form, DataTable, Modal), higher-order interaction patterns<br>**Not:** be published as standalone primitives, introduce new tokens, import from consuming app layers                              | ✓ allowed    |
+| Layer      | May Import                     | Responsibilities                                                                                                                                                                                                                                                        | Side Effects |
+| ---------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| tokens     | —                              | **Owns:** design tokens (color, spacing, typography, radius, shadow), CSS custom properties, theme contract<br>**Not:** import from any other layer, contain component logic, reference framework APIs                                                                  | ✗ forbidden  |
+| primitives | tokens                         | **Owns:** unstyled base elements (Box, Text, Icon), accessibility attributes (aria-\*, role), rest props spread via `$props()` for full HTML attribute passthrough<br>**Not:** apply visual styles directly, import from components or patterns, contain business logic | ✗ forbidden  |
+| components | primitives, tokens             | **Owns:** compound components (Button.Root + Button.Icon), controlled and uncontrolled variants, component-scoped types and props interfaces<br>**Not:** import from patterns layer, fetch data or call APIs, contain application business logic                        | ✓ allowed    |
+| patterns   | components, primitives, tokens | **Owns:** compositions of multiple components (Form, DataTable, Modal), higher-order interaction patterns<br>**Not:** be published as standalone primitives, introduce new tokens, import from consuming app layers                                                     | ✓ allowed    |
 
 **Cross-feature imports:** via public api only
 **Circular imports:** FORBIDDEN
@@ -38,22 +38,25 @@ src/
 │   └── index.ts            # re-exports all tokens
 ├── primitives/
 │   ├── Box/
-│   │   ├── Box.tsx         # unstyled, polymorphic
+│   │   ├── Box.svelte         # unstyled, polymorphic
 │   │   ├── Box.types.ts
 │   │   └── index.ts
 │   └── Text/
 ├── components/
 │   ├── Button/
-│   │   ├── Button.tsx          # namespace: Button.Root, Button.Icon
+│   │   ├── Button.svelte          # namespace: Button.Root, Button.Icon
+│   │   ├── Button.context.svelte.ts  # shared $state for compound parts via Svelte Context
 │   │   ├── Button.types.ts
-│   │   ├── Button.test.tsx
+│   │   ├── Button.test.ts
 │   │   └── index.ts        # exports Button namespace
 ├── patterns/
 │   ├── Form/
-│   │   ├── Form.tsx        # composes components
+│   │   ├── Form.svelte        # composes components
 │   │   └── index.ts
 └── index.ts                # package root — public API only
 ```
+
+> **Depth note:** max depth 3 is intentional — compound component state lives beside the component as `*.context.svelte.ts`, never in a subdirectory. Context files are private to the component folder and must not be exported via `index.ts`.
 
 ---
 
@@ -73,6 +76,7 @@ src/
 - **Export style:** `namespace`
 - Exports as `Button.Root`, `Button.Trigger`, `Button.Icon`
 - Root component is the namespace object — never export parts standalone
+  > Svelte 5+: use `children: Snippet` + `$props()` rest spread. No `as` prop needed.
 
 ### Publish Contract
 
@@ -88,7 +92,7 @@ src/
 
 ### Naming
 
-> Files: `kebab-case` globally · Symbols: per-type rules below
+> **Component files:** `PascalCase` · **Utility files:** `camelCase` · Symbols: per-type rules below
 
 | Type      | File Pattern     | Export Name Convention              |
 | --------- | ---------------- | ----------------------------------- | ---------------- |
@@ -127,15 +131,16 @@ src/
 
 ---
 
-## Component Composition Rules
+## Component API Design Rules
 
-- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to `*.svelte.ts` when script block exceeds ~20-25 lines
-- **Max props:** 7 — split into compound component if exceeded
-- **No prop drilling beyond depth 2** — lift to store or context
+- **API philosophy:** Config-driven — broad direct API, compound only for structural composition
+- **Max props per component:** 15 — split into compound parts if exceeded
+- **Separate style props from behavior props** — `variant`, `size` are style; `onClick`, `disabled` are behavior
+- **All props must be typed** — no `[key: string]: any` escape hatches
+- **No prop drilling beyond depth 2** — use scoped Context for compound internals
 - **Logic in components:** FORBIDDEN — extract to `*.svelte.ts`
-- **Presentational components** must not import from `state` or `services` layers
 - **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
+- **Primitives accept `children: Snippet` and spread rest props via `$props()`** — the consumer controls wrapping; no `as` prop needed
 
 ---
 
@@ -150,11 +155,14 @@ src/
 
 ## State & Async Rules
 
-- **Scope:** minimal
-- **Derived state:** selectors
-- **Data fetching:** patterns, consumed via hooks
+- **Philosophy:** UI-only state — this library does NOT manage application state
+- **Allowed:** component-internal UI state only (`$state` rune) — e.g. `isOpen`, `isFocused`, `isDisabled`
+- **Compound component state sharing:** via scoped Context — never exposed outside the component boundary
+- **FORBIDDEN:** global state managers (Svelte stores at module level)
+- **FORBIDDEN:** fetching data or managing server state inside the library
+- **FORBIDDEN:** sharing state between unrelated components via module-level variables
+- **Props & callbacks** are the public contract — consumers own the state, the lib only reflects it
 - **All promises must be handled** — no floating async calls
-- **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state
 
 ---

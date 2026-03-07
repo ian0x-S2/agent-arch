@@ -28,8 +28,7 @@ program
   .description('Non-interactive generation using flags')
   .requiredOption('--pattern <pattern>', 'Architectural pattern (e.g., feature-sliced, modular, flat, atomic)')
   .requiredOption('--naming <strategy>', 'Naming strategy (kebab-case, camelCase, PascalCase, snake_case)')
-  .option('--styling <strategy>', 'Styling strategy (utility-first, scoped, css-in-js, any)')
-  .option('--framework <framework>', 'Frontend framework (react, vue, svelte)')
+  .option('--styling <strategy>', 'Styling strategy (utility-first, scoped, any)')
   .option('--component-lib <lib>', 'Component library')
   .option('--preference <pref>', 'Component preference (strict, balanced, relaxed)', 'balanced')
   .action((options) => {
@@ -38,7 +37,6 @@ program
       output_mode: 'compact', // Fixed for Markdown
       naming_strategy: options.naming,
       styling_strategy: options.styling,
-      framework: options.framework,
       component_lib: options.componentLib,
       component_preference: options.preference,
     });

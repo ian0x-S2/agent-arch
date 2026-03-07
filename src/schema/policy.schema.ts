@@ -149,7 +149,7 @@ export const PolicySchema = v.object({
     pattern: v.string(),
     state_philosophy: v.string(),
     styling_strategy: v.string(),
-    framework: v.optional(v.union([v.literal('react'), v.literal('vue'), v.literal('svelte')])),
+    framework: v.literal('svelte'),
     component_lib: v.optional(v.string()),
   }),
   fsd_config: v.optional(v.object({

@@ -2,15 +2,7 @@ import React, { useState } from 'react';
 import { Box, Text } from 'ink';
 import SelectInput from 'ink-select-input';
 import { OptionDescription, type OptionWithMeta } from './OptionDescription';
-
-const STEP_LABELS: Record<string, string> = {
-  welcome: 'Start',
-  pattern: 'Pattern',
-  framework: 'Framework',
-  styling: 'Styling',
-  component_preference: 'Component Preference',
-  naming: 'Naming',
-};
+import { STEP_LABELS } from '../steps';
 
 export const QuestionStep = ({
   stepKey,
@@ -25,12 +17,13 @@ export const QuestionStep = ({
 
   const inkItems = options.map((o) => ({ label: o.label, value: o.value }));
   const focusedOption = options.find((o) => o.value === focused);
+  const label = STEP_LABELS[stepKey as keyof typeof STEP_LABELS] || stepKey;
 
   return (
     <Box flexDirection="column" paddingLeft={1}>
       <Box marginBottom={1}>
         <Text bold color="yellow" underline>
-          {stepKey === 'welcome' ? 'How do you want to start?' : `Select ${STEP_LABELS[stepKey]}`}
+          {stepKey === 'welcome' ? 'How do you want to start?' : `Select ${label}`}
         </Text>
       </Box>
       <Box>

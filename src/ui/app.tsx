@@ -23,7 +23,6 @@ export const App = () => {
     let mapping: Partial<UserSelections> = {};
     if (stepKey === 'styling') mapping = { styling_strategy: value as UserSelections['styling_strategy'] };
     else if (stepKey === 'naming') mapping = { naming_strategy: value as UserSelections['naming_strategy'] };
-    else if (stepKey === 'framework') mapping = { framework: value as UserSelections['framework'] };
     else if (stepKey === 'component_preference') mapping = { component_preference: value as UserSelections['component_preference'] };
     else mapping = { [stepKey]: value };
 
@@ -66,12 +65,11 @@ export const App = () => {
         )}
 
         {/* Wizard steps */}
-        {(['pattern', 'framework', 'styling', 'component_preference', 'naming'] as const).map(
+        {(['pattern', 'styling', 'component_preference', 'naming'] as const).map(
           (s) => {
-            const options = s === 'styling' 
-              ? OPTIONS.styling?.filter(o => !(o.value === 'css-in-js' && (selections.framework === 'vue' || selections.framework === 'svelte'))) ?? []
-              : OPTIONS[s] ?? [];
-
+            const options = s === 'component_preference' && selections.pattern === 'ui-lib'
+                ? OPTIONS.component_preference_ui_lib ?? []
+                : OPTIONS[s] ?? [];
             return (
               step === s && (
                 <QuestionStep 
@@ -90,7 +88,7 @@ export const App = () => {
           <ComponentLibStep
             onSubmit={(val) => {
               updateSelections({ component_lib: val });
-              setStep('styling');
+              nextStep('component_lib');
             }}
           />
         )}
@@ -100,7 +98,7 @@ export const App = () => {
           <ConfirmScreen
             selections={selections}
             onConfirm={handleConfirm}
-            onBack={() => setStep('naming')}
+            onBack={() => setStep(selections.pattern === 'ui-lib' ? 'component_preference' : 'naming')}
           />
         )}
 

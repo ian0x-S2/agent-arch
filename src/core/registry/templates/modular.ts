@@ -11,7 +11,8 @@ export const modularTemplate: Policy = {
     "pattern": "modular",
     "state_philosophy": "module-based",
     "styling_strategy": "any",
-    "framework": undefined,
+    framework: 'svelte',
+
     "component_lib": undefined
   },
   "layers": [
@@ -77,10 +78,10 @@ export const modularTemplate: Policy = {
   "file_conventions": {
     "types": {
       "component": {
-        "pattern": "*.tsx",
+        "pattern": "*.ts",
         "companions": {
           "style": { "required": false, "extensions": [".css", ".module.css"] },
-          "test": { "required": true, "extensions": [".test.tsx"] }
+          "test": { "required": true, "extensions": [".test.ts"] }
         }
       },
       "hook": {

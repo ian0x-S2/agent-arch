@@ -3,7 +3,6 @@ import type { NamingStrategy, StylingStrategy, ComponentPreference } from './cor
 export type Step =
   | 'welcome'
   | 'pattern'
-  | 'framework'
   | 'component_lib'
   | 'styling'
   | 'component_preference'
@@ -23,9 +22,8 @@ export interface OptionWithMeta {
 export interface UserSelections {
   pattern: string;
   output_mode: 'compact' | 'balanced' | 'verbose';
-  naming_strategy: NamingStrategy;
+  naming_strategy?: NamingStrategy;
   styling_strategy?: StylingStrategy;
-  framework?: 'react' | 'vue' | 'svelte';
   component_lib?: string;
   component_preference?: ComponentPreference;
 }

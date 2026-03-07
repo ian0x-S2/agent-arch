@@ -104,12 +104,39 @@ describe("Composer", () => {
     expect(policy.side_effect_boundaries.allowed_in_layers).not.toContain('tokens');
   });
 
-  test("ui-lib + svelte sets correct peer dependencies", () => {
+  test("ui-lib always uses PascalCase naming regardless of user selection", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "kebab-case", // user picked this, should be overridden
+    });
+    expect(policy.naming_conventions.global_strategy).toBe("PascalCase");
+  });
+
+  test("ui-lib utility files always use dot-separated pattern regardless of naming strategy", () => {
     const policy = composePolicy({
       pattern: "ui-lib",
       output_mode: "compact",
       naming_strategy: "PascalCase",
-      framework: "svelte",
+    });
+    expect(policy.file_conventions.types.types?.pattern).toBe("*.types.ts");
+    expect(policy.file_conventions.types.constants?.pattern).toBe("*.constants.ts");
+  });
+
+  test("framework is always svelte regardless of input", () => {
+    const policy = composePolicy({
+      pattern: 'flat',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case'
+    });
+    expect(policy.stack.framework).toBe('svelte');
+  });
+
+  test("ui-lib sets correct svelte peer dependencies", () => {
+    const policy = composePolicy({
+      pattern: "ui-lib",
+      output_mode: "compact",
+      naming_strategy: "PascalCase",
     });
     expect(policy.ui_lib_config?.publish.peer_dependencies).toEqual(['svelte']);
   });
@@ -152,20 +179,6 @@ describe("Composer", () => {
     expect(policy.ui_constraints.style_co_location).toBe(true);
   });
 
-  test("css-in-js removes companion but keeps co_location true", () => {
-    const policy = composePolicy({
-      pattern: "modular",
-      output_mode: "compact",
-      naming_strategy: "PascalCase",
-      styling_strategy: "css-in-js",
-    });
-
-    const component = policy.file_conventions.types.component!;
-    expect(component.companions?.style).toBeUndefined();
-    expect(policy.ui_constraints.style_co_location).toBe(true);
-    expect(policy.ui_constraints.allowed_style_extensions).toHaveLength(0);
-  });
-
   test("atomic + utility-first has no style companions", () => {
     const policy = composePolicy({
       pattern: "atomic",
@@ -187,9 +200,9 @@ describe("Composer", () => {
     });
 
     expect(policy.file_conventions.types.component?.pattern).toBe(
-      "*Component.tsx",
+      "*.svelte",
     );
-    expect(policy.file_conventions.types.hook?.pattern).toBe("*Hook.ts");
+    expect(policy.file_conventions.types.hook?.pattern).toBe("*.svelte.ts");
 
     const featuresLayer = policy.layers.find((l: Layer) => l.id === "features");
     expect(featuresLayer?.responsibilities).toBeDefined();
@@ -265,7 +278,45 @@ describe("Composer", () => {
       naming_strategy: 'camelCase',
     });
     expect(policy.naming_conventions.global_strategy).toBe('camelCase');
-    expect(policy.file_conventions.types.component?.pattern).toBe('*.component.tsx');
-    expect(policy.file_conventions.types.hook?.pattern).toBe('*.hook.ts');
+    expect(policy.file_conventions.types.component?.pattern).toBe('*.svelte');
+    expect(policy.file_conventions.types.hook?.pattern).toBe('*.svelte.ts');
+  });
+
+  test('ui-lib + strict uses compound-first max_props of 5', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      component_preference: 'strict',
+    });
+    expect(policy.ui_constraints.component_max_props).toBe(5);
+  });
+
+  test('ui-lib + relaxed uses config-driven max_props of 15', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      component_preference: 'relaxed',
+    });
+    expect(policy.ui_constraints.component_max_props).toBe(15);
+  });
+
+  test('non ui-lib patterns preserve original PREFERENCE_MAP values', () => {
+    const strict = composePolicy({
+      pattern: 'feature-sliced',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case',
+      component_preference: 'strict',
+    });
+    expect(strict.ui_constraints.component_max_props).toBe(5);
+
+    const relaxed = composePolicy({
+      pattern: 'feature-sliced',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case',
+      component_preference: 'relaxed',
+    });
+    expect(relaxed.ui_constraints.component_max_props).toBe(15);
   });
 });

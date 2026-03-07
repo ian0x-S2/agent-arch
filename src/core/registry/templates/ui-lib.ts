@@ -11,7 +11,7 @@ export const uiLibTemplate: Policy = {
         pattern: 'ui-lib',
         state_philosophy: 'minimal',
         styling_strategy: 'utility-first',
-        framework: undefined,
+        framework: 'svelte',
         component_lib: undefined,
     },
     ui_lib_config: {
@@ -25,7 +25,7 @@ export const uiLibTemplate: Policy = {
             package_exports_required: true,
             barrel_per_component: true,
             types_exported: true,
-            peer_dependencies: ['react', 'react-dom'],
+            peer_dependencies: ['svelte'],
         },
     },
     layers: [
@@ -53,7 +53,7 @@ export const uiLibTemplate: Policy = {
                 owns: [
                     'unstyled base elements (Box, Text, Icon)',
                     'accessibility attributes (aria-*, role)',
-                    'polymorphic `as` prop support',
+                    'rest props spread via `$props()` for full HTML attribute passthrough',
                 ],
                 must_not: [
                     'apply visual styles directly',
@@ -136,7 +136,7 @@ export const uiLibTemplate: Policy = {
     naming_conventions: {
         global_strategy: 'PascalCase',
         component: 'PascalCase (ComponentName.Root, ComponentName.Trigger)',
-        hook: 'camelCase (use* prefix)',
+        hook: 'camelCase (runes/logic functions)',
         store: 'camelCase',
         service: 'camelCase',
         type: 'PascalCase (*Props | *Ref suffix)',
@@ -145,14 +145,14 @@ export const uiLibTemplate: Policy = {
     file_conventions: {
         types: {
             component: {
-                pattern: '*.tsx',
+                pattern: '*.ts',
                 companions: {
                     types: { required: true, extensions: ['.types.ts'] },
-                    test: { required: true, extensions: ['.test.tsx'] },
+                    test: { required: true, extensions: ['.test.ts'] },
                 },
             },
             hook: {
-                pattern: 'use*.ts',
+                pattern: '*.ts',
                 companions: {
                     test: { required: true, extensions: ['.test.ts'] },
                 },

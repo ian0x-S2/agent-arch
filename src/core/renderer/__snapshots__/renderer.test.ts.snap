@@ -6,6 +6,11 @@ exports[`Markdown Renderer FSD + utility-first compact output matches snapshot 1
 
 ---
 
+## Stack
+- **Framework:** svelte
+
+---
+
 ## Layer Rules
 Imports are unidirectional. Each layer may only import from layers listed below it.
 Violations of import rules are **not permitted**.
@@ -129,9 +134,9 @@ src/
 
 | Type | File Pattern | Export Name Convention |
 |------|--------------|------------------------|
-| component | \`*.component.tsx\` | \`PascalCase\` |
-| hook | \`*.hook.ts\` | \`camelCase (use* prefix)\` |
-| store | \`*.store.ts\` | \`camelCase (*Store suffix)\` |
+| component | \`*.svelte\` | \`PascalCase\` |
+| hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
+| store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
 | service | \`*.service.ts\` | \`camelCase (*Service suffix)\` |
 | types | \`*.types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
 | constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
@@ -141,7 +146,7 @@ src/
 
 | File Type | Required | Optional |
 |-----------|----------|----------|
-| component | \`*.test.tsx\` | — |
+| component | \`*.test.ts\` | — |
 | hook | \`*.test.ts\` | — |
 | store | \`*.test.ts\` | — |
 | service | — | \`*.test.ts\` |
@@ -165,17 +170,17 @@ src/
 
 ## Component Composition Rules
 - **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to hooks when script block exceeds ~20-25 lines
+- **Logic signal:** extract to \`*.svelte.ts\` when script block exceeds ~20-25 lines
 - **Max props:** 7 — split into compound component if exceeded
 - **No prop drilling beyond depth 2** — lift to store or context
-- **Logic in components:** FORBIDDEN — extract to hooks
+- **Logic in components:** FORBIDDEN — extract to \`*.svelte.ts\`
 - **Presentational components** must not import from \`state\` or \`services\` layers
 - **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
 
 ---
 
 ## Abstraction Rules
-- Extract to **hooks** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **\`*.svelte.ts\`** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication
@@ -208,6 +213,11 @@ exports[`Markdown Renderer Modular + utility-first compact output matches snapsh
 
 ---
 
+## Stack
+- **Framework:** svelte
+
+---
+
 ## Layer Rules
 Imports are unidirectional. Each layer may only import from layers listed below it.
 Violations of import rules are **not permitted**.
@@ -233,7 +243,7 @@ src/
 ├── modules/
 │   ├── <module-name>/        # one per business capability
 │   │   ├── components/       # extract if template > 2 logical sections
-│   │   │   └── ComponentName.tsx
+│   │   │   └── ComponentName.svelte
 │   │   │       # no logic — use hooks/
 │   │   ├── hooks/            # all logic lives here
 │   │   ├── services/         # external I/O only — API, storage
@@ -255,9 +265,9 @@ src/
 
 | Type | File Pattern | Export Name Convention |
 |------|--------------|------------------------|
-| component | \`*Component.tsx\` | \`PascalCase\` |
-| hook | \`*Hook.ts\` | \`camelCase\` |
-| store | \`*Store.ts\` | \`camelCase\` |
+| component | \`*.svelte\` | \`PascalCase\` |
+| hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
+| store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
 | service | \`*Service.ts\` | \`camelCase\` |
 | types | \`*Types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
 | constants | \`*Constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
@@ -267,7 +277,7 @@ src/
 
 | File Type | Required | Optional |
 |-----------|----------|----------|
-| component | \`*.test.tsx\` | — |
+| component | \`*.test.ts\` | — |
 | hook | \`*.test.ts\` | — |
 | store | \`*.test.ts\` | — |
 | service | — | \`*.test.ts\` |
@@ -290,17 +300,17 @@ src/
 
 ## Component Composition Rules
 - **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to hooks when script block exceeds ~20-25 lines
+- **Logic signal:** extract to \`*.svelte.ts\` when script block exceeds ~20-25 lines
 - **Max props:** 7 — split into compound component if exceeded
 - **No prop drilling beyond depth 2** — lift to store or context
-- **Logic in components:** FORBIDDEN — extract to hooks
+- **Logic in components:** FORBIDDEN — extract to \`*.svelte.ts\`
 - **Presentational components** must not import from \`state\` or \`services\` layers
 - **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
 
 ---
 
 ## Abstraction Rules
-- Extract to **hooks** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **\`*.svelte.ts\`** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication
@@ -333,6 +343,11 @@ exports[`Markdown Renderer Flat compact output matches snapshot 1`] = `
 
 ---
 
+## Stack
+- **Framework:** svelte
+
+---
+
 ## Layer Rules
 Imports are unidirectional. Each layer may only import from layers listed below it.
 Violations of import rules are **not permitted**.
@@ -354,7 +369,7 @@ Violations of import rules are **not permitted**.
 \`\`\`
 src/
 ├── components/               # all components live here
-│   └── ComponentName.tsx     # logic colocated — ok at this scale
+│   └── ComponentName.svelte     # logic colocated — ok at this scale
 ├── hooks/                    # extract when logic repeats 2+ times
 ├── services/                 # extract when touching external I/O
 ├── types/                    # shared types
@@ -374,9 +389,9 @@ src/
 
 | Type | File Pattern | Export Name Convention |
 |------|--------------|------------------------|
-| component | \`*.component.tsx\` | \`PascalCase\` |
-| hook | \`*.hook.ts\` | \`camelCase\` |
-| store | \`*.store.ts\` | \`camelCase\` |
+| component | \`*.svelte\` | \`PascalCase\` |
+| hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
+| store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
 | service | \`*.service.ts\` | \`camelCase\` |
 | types | \`*.types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
 | constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
@@ -387,7 +402,7 @@ src/
 
 | File Type | Required | Optional |
 |-----------|----------|----------|
-| component | — | \`*.test.tsx\` |
+| component | \`*.test.ts\` | — |
 | hook | — | — |
 | store | — | — |
 | service | — | — |
@@ -411,7 +426,7 @@ src/
 
 ## Component Composition Rules
 - **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to hooks when script block exceeds ~20-25 lines
+- **Logic signal:** extract to \`*.svelte.ts\` when script block exceeds ~20-25 lines
 - **Max props:** 7 — split into compound component if exceeded
 - **No prop drilling beyond depth 3** — lift to store or context
 - **Logic in components:** allowed
@@ -421,7 +436,7 @@ src/
 ---
 
 ## Abstraction Rules
-- Extract to **hooks** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **\`*.svelte.ts\`** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication
@@ -454,6 +469,11 @@ exports[`Markdown Renderer Atomic + utility-first — no css files in structure 
 
 ---
 
+## Stack
+- **Framework:** svelte
+
+---
+
 ## Layer Rules
 Imports are unidirectional. Each layer may only import from layers listed below it.
 Violations of import rules are **not permitted**.
@@ -481,22 +501,22 @@ Violations of import rules are **not permitted**.
 src/
 ├── pages/
 │   ├── <route>/
-│   │   └── PageName.tsx
+│   │   └── PageName.svelte
 ├── templates/
 │   ├── <component>/
-│   │   ├── ComponentName.tsx
+│   │   ├── ComponentName.svelte
 ├── organisms/
 │   ├── <component>/
-│   │   ├── ComponentName.tsx
+│   │   ├── ComponentName.svelte
 │   │   ├── hooks/
 │   │   └── types/
 ├── molecules/
 │   ├── <component>/
-│   │   ├── ComponentName.tsx
+│   │   ├── ComponentName.svelte
 │   │   └── types/
 ├── atoms/
 │   ├── <component>/
-│   │   ├── ComponentName.tsx
+│   │   ├── ComponentName.svelte
 │   │   └── types/
 └── shared/
     ├── utils/
@@ -513,18 +533,22 @@ src/
 
 | Type | File Pattern | Export Name Convention |
 |------|--------------|------------------------|
-| component | \`*.component.tsx\` | \`PascalCase\` |
+| component | \`*.svelte\` | \`PascalCase\` |
 | types | \`*.types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
 | constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
+| store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
+| hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
 
 
 ### Required Companions
 
 | File Type | Required | Optional |
 |-----------|----------|----------|
-| component | \`*.test.tsx\` | — |
+| component | \`*.test.ts\` | — |
 | types | — | — |
 | constants | — | — |
+| store | — | — |
+| hook | — | — |
 
 
 ### Structure Rules
@@ -541,7 +565,7 @@ src/
 
 ## Component Composition Rules
 - **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to hooks when script block exceeds ~20-25 lines
+- **Logic signal:** extract to \`*.svelte.ts\` when script block exceeds ~20-25 lines
 - **Max props:** 7 — split into compound component if exceeded
 - **No prop drilling beyond depth 3** — lift to store or context
 - **Logic in components:** allowed
@@ -551,7 +575,7 @@ src/
 ---
 
 ## Abstraction Rules
-- Extract to **hooks** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **\`*.svelte.ts\`** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication

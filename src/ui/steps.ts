@@ -46,26 +46,6 @@ export const OPTIONS: Record<string, OptionWithMeta[]> = {
       impact: '⚡ Prompt: Enforces token usage, compound components, and clean npm export contracts.',
     },
   ],
-  framework: [
-    {
-      label: '⚛️  React',
-      value: 'react',
-      description: 'Component-based UI library. Hooks for logic, JSX for templates.',
-      hint: 'Most common choice. Works with any arch pattern.',
-    },
-    {
-      label: '💚 Vue',
-      value: 'vue',
-      description: 'Progressive framework. Composables follow the use* convention.',
-      hint: 'Good fit for modular and flat patterns.',
-    },
-    {
-      label: '🔥 Svelte',
-      value: 'svelte',
-      description: 'Compiler-based framework. Reactive stores replace hooks.',
-      hint: 'Minimal boilerplate. State rules differ from React/Vue.',
-    },
-  ],
   styling: [
     {
       label: '🎨 Utility-First (Tailwind)',
@@ -80,13 +60,6 @@ export const OPTIONS: Record<string, OptionWithMeta[]> = {
       description: 'Component-specific styles with local scope.',
       hint: 'Encapsulation: High | Reuse: Medium.',
       impact: '⚡ Prompt: Agent creates companion .module.css files.',
-    },
-    {
-      label: '💅 CSS-in-JS (Emotion/Styled)',
-      value: 'css-in-js',
-      description: 'Styles defined within the TypeScript code.',
-      hint: 'Dynamic: High | Portability: Low.',
-      impact: '⚡ Prompt: Agent defines styled components in the same file.',
     },
   ],
   component_preference: [
@@ -109,6 +82,29 @@ export const OPTIONS: Record<string, OptionWithMeta[]> = {
       hint: 'Less overhead, potentially higher complexity.',
     },
   ],
+  component_preference_ui_lib: [
+    {
+      label: '🏗️  Compound-first (max 5 props)',
+      value: 'strict',
+      description: 'Visual variations become compound subcomponents. Button.Root, Button.Icon.',
+      hint: 'Most composable API. Higher implementation cost per component.',
+      impact: '⚡ Prompt: Agent splits every visual variation into a named compound part.',
+    },
+    {
+      label: '⚖️  Hybrid (max 10 props)',
+      value: 'balanced',
+      description: 'Common variations as direct props, structural extensions as compound parts.',
+      hint: 'Recommended for most UI libraries. Balances ergonomics and composability.',
+      impact: '⚡ Prompt: Agent uses props for variant/size, compound for slots and extensions.',
+    },
+    {
+      label: '🌊 Config-driven (max 15 props)',
+      value: 'relaxed',
+      description: 'Broad direct API. Compound pattern only for structural composition.',
+      hint: 'Easiest to consume. Harder to extend without breaking changes.',
+      impact: '⚡ Prompt: Agent prefers props over compound parts wherever possible.',
+    },
+  ],
   naming: [
     {
       label: '🔗 kebab-case (user-profile.ts)',
@@ -123,10 +119,10 @@ export const OPTIONS: Record<string, OptionWithMeta[]> = {
       hint: 'Standard for many JavaScript/TypeScript projects.',
     },
     {
-      label: '🏛️  PascalCase (UserProfile.tsx)',
+      label: '🏛️  PascalCase (UserProfile.ts)',
       value: 'PascalCase',
       description: 'All words capitalized.',
-      hint: 'Standard for React/Vue component names.',
+      hint: 'Standard for Svelte component names.',
     },
     {
       label: '🐍 snake_case (user_profile.ts)',
@@ -137,5 +133,17 @@ export const OPTIONS: Record<string, OptionWithMeta[]> = {
   ],
 };
 
-export const GUIDED_STEPS: Step[] = ['pattern', 'framework', 'component_lib', 'styling', 'component_preference', 'naming', 'confirm'];
-export const MAIN_STEPS: Step[] = ['pattern', 'framework', 'styling', 'naming', 'confirm'];
+export const MAIN_STEPS: Step[] = ['pattern', 'component_lib', 'styling', 'component_preference', 'naming', 'confirm'];
+export const GUIDED_STEPS: Step[] = ['pattern', 'component_lib', 'styling', 'component_preference', 'naming', 'confirm'];
+
+export const STEP_LABELS: Partial<Record<Step, string>> = {
+  welcome: 'Start',
+  pattern: 'Pattern',
+  component_lib: 'Library',
+  styling: 'Styling',
+  component_preference: 'Preference',
+  naming: 'Naming',
+  confirm: 'Confirm',
+  generating: 'Generating',
+  done: 'Done',
+};

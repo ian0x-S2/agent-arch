@@ -11,7 +11,8 @@ export const flatTemplate: Policy = {
     "pattern": "flat",
     "state_philosophy": "flexible",
     "styling_strategy": "any",
-    "framework": undefined,
+    framework: 'svelte',
+
     "component_lib": undefined
   },
   "layers": [
@@ -75,9 +76,9 @@ export const flatTemplate: Policy = {
   "file_conventions": {
     "types": {
       "component": {
-        "pattern": "*.tsx",
+        "pattern": "*.ts",
         "companions": {
-          "test": { "required": false, "extensions": [".test.tsx", ".spec.tsx"] }
+          "test": { "required": false, "extensions": [".test.ts", ".spec.ts"] }
         }
       },
       "hook": {

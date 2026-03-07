@@ -83,31 +83,18 @@ describe('Markdown Renderer', () => {
     expect(output).toContain('CSS Variables:');
   });
 
-  test('FSD + React + shadcn output contains Stack section', () => {
+  test('FSD + shadcn output contains Stack section', () => {
     const policy = composePolicy({
       pattern: 'feature-sliced',
       output_mode: 'compact',
       naming_strategy: 'kebab-case',
       styling_strategy: 'utility-first',
-      framework: 'react',
       component_lib: 'shadcn',
     });
     const output = renderMarkdown(policy);
     expect(output).toContain('## Stack');
-    expect(output).toContain('- **Framework:** react');
+    expect(output).toContain('- **Framework:** svelte');
     expect(output).toContain('- **Component Library:** shadcn');
-  });
-
-  test('Vue framework applies Vue-specific rules', () => {
-    const policy = composePolicy({
-      pattern: 'feature-sliced',
-      output_mode: 'compact',
-      naming_strategy: 'kebab-case',
-      framework: 'vue',
-    });
-    const output = renderMarkdown(policy);
-    expect(output).toContain('*.vue');
-    expect(output).toContain('async-await');
   });
 
   test('Svelte framework applies Svelte-specific rules', () => {
@@ -115,7 +102,6 @@ describe('Markdown Renderer', () => {
       pattern: 'feature-sliced',
       output_mode: 'compact',
       naming_strategy: 'kebab-case',
-      framework: 'svelte',
     });
     const output = renderMarkdown(policy);
     expect(output).toContain('*.svelte');
@@ -123,6 +109,107 @@ describe('Markdown Renderer', () => {
     expect(output).toContain('*.test.ts');
     expect(output).not.toContain('*.test.tsx');
     expect(output).toContain('runes/logic functions');
+  });
+
+  test('ui-lib state section uses $state and Svelte-specific forbidden', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('`$state` rune');
+    expect(output).toContain('Svelte stores at module level');
+    expect(output).not.toContain('useState');
+    expect(output).not.toContain('Zustand');
+  });
+
+  test('Stack section always shows Svelte 5+ framework', () => {
+    const policy = composePolicy({
+      pattern: 'flat',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case'
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('## Stack');
+    expect(output).toContain('svelte');
+  });
+
+  test('ui-lib naming header communicates PascalCase for components camelCase for utils', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('**Component files:** `PascalCase`');
+    expect(output).toContain('**Utility files:** `camelCase`');
+    expect(output).not.toContain('globally');
+  });
+
+  test('ui-lib compound-first renders correct API philosophy', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      component_preference: 'strict',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('## Component API Design Rules');
+    expect(output).toContain('Compound-first');
+    expect(output).toContain('**Max props per component:** 5');
+    expect(output).not.toContain('## Component Composition Rules');
+  });
+
+  test('ui-lib does not mention asChild and recommends Snippet + $props spread', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).not.toContain('asChild');
+    expect(output).toContain('children: Snippet');
+    expect(output).toContain('$props()');
+    // Also check the layer table for the updated responsibility
+    expect(output).toContain('rest props spread via `$props()` for full HTML attribute passthrough');
+  });
+
+  test('ui-lib hybrid renders correct API philosophy', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      component_preference: 'balanced',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('Hybrid');
+    expect(output).toContain('**Max props per component:** 10');
+  });
+
+  test('ui-lib directory shows context file and depth note', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      output_mode: 'compact',
+      naming_strategy: 'PascalCase',
+      styling_strategy: 'utility-first',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('Button.context.svelte.ts');
+    expect(output).toContain('Depth note');
+    expect(output).toContain('never in a subdirectory');
+  });
+
+  test('non ui-lib pattern still renders Component Composition Rules', () => {
+    const policy = composePolicy({
+      pattern: 'feature-sliced',
+      output_mode: 'compact',
+      naming_strategy: 'kebab-case',
+      component_preference: 'strict',
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('## Component Composition Rules');
+    expect(output).not.toContain('## Component API Design Rules');
   });
 });
 

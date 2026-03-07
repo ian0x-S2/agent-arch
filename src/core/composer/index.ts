@@ -3,11 +3,12 @@ import { PolicySchema, type Policy } from '../../schema/policy.schema';
 import { TemplateRegistry } from '../registry';
 import { resolveNamingPatterns } from './naming';
 import { STATE_BY_PATTERN } from '../shared/pattern-state';
-import { FRAMEWORK_OVERRIDES } from '../shared/framework-rules';
+import { SVELTE_OVERRIDES } from '../shared/framework-rules';
 import {
   VALID_STYLING,
   STYLING_EXTENSIONS,
   PREFERENCE_MAP,
+  UI_LIB_PREFERENCE_MAP,
   VALID_STRATEGIES
 } from '../constants';
 import type { UserSelections } from '../../types';
@@ -15,9 +16,8 @@ import type { UserSelections } from '../../types';
 export const UserSelectionsSchema = v.object({
   pattern: v.string(),
   output_mode: v.union([v.literal('compact'), v.literal('balanced'), v.literal('verbose')]),
-  naming_strategy: v.picklist(VALID_STRATEGIES),
+  naming_strategy: v.optional(v.picklist(VALID_STRATEGIES)),
   styling_strategy: v.optional(v.picklist(VALID_STYLING)),
-  framework: v.optional(v.union([v.literal('react'), v.literal('vue'), v.literal('svelte')])),
   component_lib: v.optional(v.string()),
   component_preference: v.optional(v.picklist(['strict', 'balanced', 'relaxed'] as const)),
 });
@@ -77,7 +77,7 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
       pattern: selections.pattern,
       state_philosophy: state.philosophy,
       styling_strategy: stylingStrategy,
-      framework: selections.framework,
+      framework: 'svelte' as const,
       component_lib: selections.component_lib || undefined,
     },
     state_constraints: {
@@ -101,23 +101,25 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
   }
 
   // Apply framework overrides
-  if (selections.framework) {
-    const frameworkOverride = FRAMEWORK_OVERRIDES[selections.framework];
-    if (frameworkOverride) {
-      merged = deepMerge(merged, frameworkOverride);
-    }
-  }
+  merged = deepMerge(merged, SVELTE_OVERRIDES);
 
   // Framework-specific peer dependencies for ui-lib pattern
-  const FRAMEWORK_PEER_DEPS: Record<string, string[]> = {
-    react: ['react', 'react-dom'],
-    vue: ['vue'],
-    svelte: ['svelte'],
-  };
+  if (merged.ui_lib_config) {
+    merged.ui_lib_config.publish.peer_dependencies = ['svelte'];
+  }
 
-  if (selections.framework && merged.ui_lib_config) {
-    merged.ui_lib_config.publish.peer_dependencies =
-      FRAMEWORK_PEER_DEPS[selections.framework] ?? merged.ui_lib_config.publish.peer_dependencies;
+  // ui-lib: always enforce PascalCase as the declared naming convention
+  if (selections.pattern === "ui-lib") {
+    merged.naming_conventions.global_strategy = "PascalCase";
+
+    // ui-lib: utility files always use dot-separated convention (*.types.ts, *.constants.ts)
+    // regardless of naming strategy — only component files follow PascalCase
+    if (merged.file_conventions.types.types) {
+      merged.file_conventions.types.types.pattern = "*.types.ts";
+    }
+    if (merged.file_conventions.types.constants) {
+      merged.file_conventions.types.constants.pattern = "*.constants.ts";
+    }
   }
 
   // 6. Pattern-specific overrides
@@ -140,11 +142,6 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
   }
 
   // 8. Update ui_constraints based on styling strategy
-  if (selections.styling_strategy === 'css-in-js') {
-    merged.ui_constraints.style_co_location = true;
-    merged.ui_constraints.allowed_style_extensions = [];
-  }
-
   if (selections.styling_strategy === 'scoped') {
     merged.ui_constraints.style_co_location = true;
     merged.ui_constraints.allowed_style_extensions = ['.module.css', '.css'];
@@ -172,11 +169,13 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
         forbiddenPatterns.splice(styleIdx, 1);
       }
     }
-    // For scoped and css-in-js: keep default token rules (hardcoded-color-without-token)
+    // For scoped: keep default token rules (hardcoded-color-without-token)
   }
 
   if (selections.component_preference) {
-    merged.ui_constraints.component_max_props = PREFERENCE_MAP[selections.component_preference];
+    merged.ui_constraints.component_max_props = selections.pattern === 'ui-lib'
+      ? UI_LIB_PREFERENCE_MAP[selections.component_preference].max_props
+      : PREFERENCE_MAP[selections.component_preference];
   }
 
   // ui-lib + utility-first: remove tokens layer and related config

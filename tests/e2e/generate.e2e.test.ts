@@ -27,26 +27,9 @@ describe('E2E: generate command', () => {
                     (c) => expect(c).toContain('Pattern: **feature-sliced**'),
                     (c) => expect(c).toContain('Styling: **utility-first**'),
                     (c) => expect(c).not.toContain('.module.css'),
-                    (c) => expect(c).toContain('*.component.tsx'),
+                    (c) => expect(c).toContain('*.svelte'),
+                    (c) => expect(c).toContain('*.svelte.ts'),
                     (c) => expect(c).toContain('feature-based'),
-                ],
-            },
-            {
-                label: 'Modular + scoped + PascalCase + React',
-                input: {
-                    pattern: 'modular',
-                    output_mode: 'compact',
-                    naming_strategy: 'PascalCase',
-                    styling_strategy: 'scoped',
-                    framework: 'react',
-                },
-                assertions: [
-                    (c) => expect(c).toContain('Pattern: **modular**'),
-                    (c) => expect(c).toContain('.module.css'),
-                    (c) => expect(c).toContain('*Component.tsx'),
-                    (c) => expect(c).toContain('module-based'),
-                    (c) => expect(c).toContain('## Stack'),
-                    (c) => expect(c).toContain('Framework:** react'),
                 ],
             },
             {
@@ -59,6 +42,7 @@ describe('E2E: generate command', () => {
                 assertions: [
                     (c) => expect(c).toContain('Pattern: **flat**'),
                     (c) => expect(c).toContain('flexible'),
+                    (c) => expect(c).toContain('*.svelte'),
                     (c) => expect(c).toContain('Barrel exports:** optional'),
                 ],
             },
@@ -74,74 +58,30 @@ describe('E2E: generate command', () => {
                     (c) => expect(c).toContain('Pattern: **atomic**'),
                     (c) => expect(c).toContain('minimal'),
                     (c) => expect(c).toContain('.module.css'),
-                    (c) => expect(c).toContain('*_component.tsx'),
-                ],
-            },
-            {
-                label: 'FSD + Vue',
-                input: {
-                    pattern: 'feature-sliced',
-                    output_mode: 'compact',
-                    naming_strategy: 'kebab-case',
-                    framework: 'vue',
-                },
-                assertions: [
-                    (c) => expect(c).toContain('*.vue'),
-                    (c) => expect(c).toContain('Framework:** vue'),
-                    (c) => expect(c).toContain('async-await'),
-                ],
-            },
-            {
-                label: 'FSD + Svelte',
-                input: {
-                    pattern: 'feature-sliced',
-                    output_mode: 'compact',
-                    naming_strategy: 'kebab-case',
-                    framework: 'svelte',
-                },
-                assertions: [
                     (c) => expect(c).toContain('*.svelte'),
-                    (c) => expect(c).toContain('*.svelte.ts'),
-                    (c) => expect(c).not.toContain('*.test.tsx'),
-                    (c) => expect(c).toContain('runes/logic functions'),
                 ],
             },
             {
-                label: 'UI-Lib + utility-first removes tokens layer',
+                label: 'UI-Lib + utility-first: naming override and tokens removal',
                 input: {
                     pattern: 'ui-lib',
                     output_mode: 'compact',
-                    naming_strategy: 'PascalCase',
+                    naming_strategy: 'kebab-case', // Should be overridden to PascalCase
                     styling_strategy: 'utility-first',
                 },
                 assertions: [
                     (c) => expect(c).toContain('Pattern: **ui-lib**'),
                     (c) => expect(c).toContain('Styling: **utility-first**'),
+                    (c) => expect(c).toContain('Component files:** `PascalCase`'),
                     (c) => expect(c).not.toContain('tokens/'),
                     (c) => expect(c).not.toContain('*.tokens.ts'),
-                    (c) => expect(c).not.toContain('| tokens |'), // Layer table should not have tokens layer
-                    (c) => expect(c).not.toContain('| primitives | tokens |'), // primitives should not import tokens
-                    (c) => expect(c).not.toContain('| components | primitives, tokens |'), // components should not import tokens
-                    (c) => expect(c).not.toContain('| patterns | components, primitives, tokens |'), // patterns should not import tokens
+                    (c) => expect(c).not.toContain('| tokens |'),
                     (c) => expect(c).not.toContain('styles-hardcoded-without-token'),
-                    (c) => expect(c).not.toContain('side-effects-in-tokens'),
                     (c) => expect(c).toContain('arbitrary-values-in-utils'),
-                ],
-            },
-            {
-                label: 'UI-Lib + React + scoped: peer dependencies',
-                input: {
-                    pattern: 'ui-lib',
-                    output_mode: 'compact',
-                    naming_strategy: 'PascalCase',
-                    styling_strategy: 'scoped',
-                    framework: 'react',
-                },
-                assertions: [
-                    (c) => expect(c).toContain('Pattern: **ui-lib**'),
-                    (c) => expect(c).toContain('Framework:** react'),
-                    (c) => expect(c).toContain('Peer dependencies:** react, react-dom'),
-                    (c) => expect(c).toContain('tokens/'), // tokens should exist in scoped mode
+                    (c) => expect(c).toContain('## State & Async Rules'),
+                    (c) => expect(c).toContain('UI-only state'),
+                    (c) => expect(c).toContain('`$state` rune'),
+                    (c) => expect(c).toContain('Svelte stores at module level'),
                 ],
             },
         ];

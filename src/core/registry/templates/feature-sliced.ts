@@ -11,7 +11,8 @@ export const featureSlicedTemplate: Policy = {
     "pattern": "feature-sliced",
     "state_philosophy": "feature-based",
     "styling_strategy": "utility-first",
-    "framework": undefined,
+    framework: 'svelte',
+
     "component_lib": undefined
   },
   "fsd_config": {
@@ -142,10 +143,10 @@ export const featureSlicedTemplate: Policy = {
   "file_conventions": {
     "types": {
       "component": {
-        "pattern": "*.component.tsx",
+        "pattern": "*.component.ts",
         "companions": {
           "style":  { "required": true,  "extensions": [".module.css", ".css"] },
-          "test":   { "required": true,  "extensions": [".test.tsx", ".test.ts", ".spec.tsx"] }
+          "test":   { "required": true,  "extensions": [".test.ts", ".spec.ts"] }
         }
       },
       "hook": {
@@ -177,7 +178,7 @@ export const featureSlicedTemplate: Policy = {
     "public_api": {
       "required": true,
       "filename": "index",
-      "extensions": [".ts", ".tsx"],
+      "extensions": [".ts"],
       "expose_internals": false
     },
     "test_placement": "colocated",
