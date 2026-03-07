@@ -134,7 +134,6 @@ export const OPTIONS: Record<string, OptionWithMeta[]> = {
 };
 
 export const MAIN_STEPS: Step[] = ['pattern', 'component_lib', 'styling', 'component_preference', 'naming', 'confirm'];
-export const GUIDED_STEPS: Step[] = ['pattern', 'component_lib', 'styling', 'component_preference', 'naming', 'confirm'];
 
 export const STEP_LABELS: Partial<Record<Step, string>> = {
   welcome: 'Start',

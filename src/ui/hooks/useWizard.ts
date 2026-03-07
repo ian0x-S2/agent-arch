@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { Step, UserSelections } from '../../types';
-import { GUIDED_STEPS } from '../steps';
+import { MAIN_STEPS } from '../steps';
 
 export const useWizard = () => {
   const [step, setStep] = useState<Step>('welcome');
@@ -12,8 +12,8 @@ export const useWizard = () => {
       return;
     }
 
-    const idx = GUIDED_STEPS.indexOf(currentStep);
-    let next: Step | undefined = GUIDED_STEPS[idx + 1];
+    const idx = MAIN_STEPS.indexOf(currentStep);
+    let next: Step | undefined = MAIN_STEPS[idx + 1];
 
     // Skip naming step for ui-lib pattern as it's enforced to PascalCase
     if (next === 'naming' && (selections.pattern === 'ui-lib' || (currentStep === 'pattern' && value === 'ui-lib'))) {

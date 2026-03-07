@@ -8,11 +8,16 @@ export const writePolicyFiles = async (policy: Policy, targetDir = '.ai') => {
   await fs.ensureDir(targetDir);
 
   const policyMdPath = path.join(targetDir, 'policy.md');
-  const mdContent = renderMarkdown(policy);
-  const tokens = estimateTokens(mdContent);
-
-  // Atualiza metadata no objeto mas não re-renderiza
+  
+  // Render first time to get token count
+  const roughContent = renderMarkdown(policy);
+  const tokens = estimateTokens(roughContent);
+  
+  // Update metadata
   policy.token_metadata.estimated_prompt_tokens = tokens;
+  
+  // Re-render with updated metadata
+  const mdContent = renderMarkdown(policy);
 
   await fs.writeFile(policyMdPath, mdContent);
 

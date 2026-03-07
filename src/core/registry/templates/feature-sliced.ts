@@ -127,7 +127,7 @@ export const featureSlicedTemplate: Policy = {
   },
   "side_effect_boundaries": {
     "allowed_in_layers": ["features", "entities"],
-    "forbidden_in_layers": ["ui", "shared"],
+    "forbidden_in_layers": ["app", "pages", "widgets", "shared"],
     "async_pattern": "async-await",
     "data_fetching_scope": "entities"
   },
@@ -143,7 +143,7 @@ export const featureSlicedTemplate: Policy = {
   "file_conventions": {
     "types": {
       "component": {
-        "pattern": "*.component.ts",
+        "pattern": "*.svelte",
         "companions": {
           "style":  { "required": true,  "extensions": [".module.css", ".css"] },
           "test":   { "required": true,  "extensions": [".test.ts", ".spec.ts"] }

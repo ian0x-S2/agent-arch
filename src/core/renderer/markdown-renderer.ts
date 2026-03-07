@@ -449,7 +449,7 @@ const renderStateSection = (policy: Policy): string => {
   return `## State & Async Rules
 - **Scope:** ${state_constraints.global_state_scope}
 - **Derived state:** ${state_constraints.derived_state_strategy}
-- **Data fetching:** ${side_effect_boundaries.data_fetching_scope} — follow SvelteKit conventions, never fetch() directly in components
+- **Data fetching:** ${side_effect_boundaries.data_fetching_scope} — pattern: ${side_effect_boundaries.async_pattern}
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state`;

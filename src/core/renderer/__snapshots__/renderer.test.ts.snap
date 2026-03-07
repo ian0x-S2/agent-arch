@@ -54,7 +54,7 @@ src/
 │   │   ├── model/
 │   │   │   # reactive state (runes in .svelte.ts), types — no side effects
 │   │   ├── api/
-│   │   │   # data fetching — async-await, map errors to domain types
+│   │   │   # follow SvelteKit conventions — +page.server.ts, +server.ts or remote functions
 │   │   ├── lib/
 │   │   │   # pure utils — stateless, no imports from ui or model
 │   │   ├── config/
@@ -69,7 +69,7 @@ src/
 │   │   ├── model/
 │   │   │   # reactive state (runes in .svelte.ts), types — no side effects
 │   │   ├── api/
-│   │   │   # data fetching — async-await, map errors to domain types
+│   │   │   # follow SvelteKit conventions — +page.server.ts, +server.ts or remote functions
 │   │   ├── lib/
 │   │   │   # pure utils — stateless, no imports from ui or model
 │   │   ├── config/
@@ -84,7 +84,7 @@ src/
 │   │   ├── model/
 │   │   │   # feature state (runes in .svelte.ts) — only for this feature
 │   │   ├── api/
-│   │   │   # feature-specific mutations — calls entity api, never raw fetch
+│   │   │   # server mutations — follow SvelteKit conventions (actions / remote functions), never fetch() in component
 │   │   ├── lib/
 │   │   │   # pure utils — stateless, no imports from ui or model
 │   │   ├── config/
@@ -99,7 +99,7 @@ src/
 │   │   ├── model/
 │   │   │   # entity state (runes in .svelte.ts), types — pure business logic
 │   │   ├── api/
-│   │   │   # data access for this entity — maps to domain types, no raw responses
+│   │   │   # server data access — follow SvelteKit conventions (+page.server.ts / remote functions), map to domain types
 │   │   ├── lib/
 │   │   │   # pure utils — stateless, no imports from ui or model
 │   │   ├── config/
@@ -202,7 +202,7 @@ src/
 ## State & Async Rules
 - **Scope:** feature-based
 - **Derived state:** $derived rune (computed values)
-- **Data fetching:** entities, consumed via hooks
+- **Data fetching:** entities — pattern: async-await
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state
@@ -344,7 +344,7 @@ src/
 ## State & Async Rules
 - **Scope:** module-based
 - **Derived state:** $derived rune (computed values)
-- **Data fetching:** modules, consumed via hooks
+- **Data fetching:** modules — pattern: async-await
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state
@@ -482,7 +482,7 @@ src/
 ## State & Async Rules
 - **Scope:** any
 - **Derived state:** $derived rune (computed values)
-- **Data fetching:** any, consumed via hooks
+- **Data fetching:** any — pattern: any
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state
@@ -634,7 +634,7 @@ src/
 ## State & Async Rules
 - **Scope:** minimal
 - **Derived state:** $derived rune (computed values)
-- **Data fetching:** pages, consumed via hooks
+- **Data fetching:** pages — pattern: hooks
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state

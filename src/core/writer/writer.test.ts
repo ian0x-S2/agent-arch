@@ -35,9 +35,6 @@ describe('writePolicyFiles', () => {
     const policy = { ...featureSlicedTemplate };
     await writePolicyFiles(policy, targetDir);
     
-    // The policy object passed to renderers should have token_metadata updated.
-    // Since writePolicyFiles returns the content, we check if the content was rendered.
-    // (Actual verification of the 'policy' object mutation or return value 
-    // depends on implementation details, but here we check output)
+    expect(policy.token_metadata.estimated_prompt_tokens).toBeGreaterThan(0);
   });
 });

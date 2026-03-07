@@ -119,7 +119,7 @@ export const atomicTemplate: Policy = {
   file_conventions: {
     types: {
       component: {
-        pattern: '*.ts',
+        pattern: '*.svelte',
         companions: {
           test: { required: true, extensions: ['.test.ts'] },
           style: { required: false, extensions: ['.module.css'] },

@@ -52,4 +52,33 @@ describe('TemplateRegistry external templates', () => {
     expect(TemplateRegistry.listTemplates()).toContain(id);
     expect(TemplateRegistry.getTemplate(id).meta.version).toBe('9.0.0');
   });
+
+  test('loadFromFile throws if JSON fails schema validation', () => {
+    const { tmpdir } = require('os');
+    const { writeFileSync } = require('fs');
+    const path = require('path');
+    
+    const id = `invalid-${Date.now()}`;
+    const tmpPath = path.join(tmpdir(), `${id}.json`);
+    
+    // Missing required meta.version field
+    const invalidJson = {
+      meta: {
+        generated_at: new Date().toISOString(),
+        output_mode: 'compact'
+      },
+      stack: {
+        domain: 'frontend',
+        pattern: 'flat',
+        state_philosophy: 'minimal',
+        styling_strategy: 'any',
+        framework: 'svelte'
+      }
+    };
+    
+    writeFileSync(tmpPath, JSON.stringify(invalidJson));
+    
+    expect(() => TemplateRegistry.loadFromFile(tmpPath))
+      .toThrow(/failed schema validation/);
+  });
 });

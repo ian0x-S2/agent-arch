@@ -4,32 +4,24 @@ import { VALID_STRATEGIES, type NamingStrategy } from '../constants';
 const FILE_SUFFIXES: Record<string, Record<string, string>> = {
   'kebab-case': {
     component: '*.component.svelte',
-    hook:      '*.hook.svelte.ts',
-    store:     '*.store.svelte.ts',
     service:   '*.service.ts',
     types:     '*.types.ts',
     constants: '*.constants.ts',
   },
   'PascalCase': {
     component: '*Component.svelte',
-    hook:      '*Hook.svelte.ts',
-    store:     '*Store.svelte.ts',
     service:   '*Service.ts',
     types:     '*Types.ts',
     constants: '*Constants.ts',
   },
   'snake_case': {
     component: '*_component.svelte',
-    hook:      '*_hook.svelte.ts',
-    store:     '*_store.svelte.ts',
     service:   '*_service.ts',
     types:     '*_types.ts',
     constants: '*_constants.ts',
   },
   'camelCase': {
     component: '*.component.svelte',
-    hook:      '*.hook.svelte.ts',
-    store:     '*.store.svelte.ts',
     service:   '*.service.ts',
     types:     '*.types.ts',
     constants: '*.constants.ts',

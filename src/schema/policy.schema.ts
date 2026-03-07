@@ -193,7 +193,7 @@ export const PolicySchema = v.object({
     forbidden_patterns: v.array(v.string()),
   }),
   side_effect_boundaries: SideEffectBoundariesSchema,
-  naming_conventions: v.looseObject({
+  naming_conventions: v.object({
     global_strategy: v.union([
       v.literal('kebab-case'),
       v.literal('PascalCase'),
