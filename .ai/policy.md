@@ -1,6 +1,6 @@
 # Architecture Policy
 
-> Pattern: **ui-lib** | State: **minimal** | Styling: **scoped**
+> Pattern: **feature-sliced** | State: **feature-based** | Styling: **utility-first**
 
 ---
 
@@ -15,12 +15,20 @@
 Imports are unidirectional. Each layer may only import from layers listed below it.
 Violations of import rules are **not permitted**.
 
-| Layer      | May Import                     | Responsibilities                                                                                                                                                                                                                                                        | Side Effects |
-| ---------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| tokens     | —                              | **Owns:** design tokens (color, spacing, typography, radius, shadow), CSS custom properties, theme contract<br>**Not:** import from any other layer, contain component logic, reference framework APIs                                                                  | ✗ forbidden  |
-| primitives | tokens                         | **Owns:** unstyled base elements (Box, Text, Icon), accessibility attributes (aria-\*, role), rest props spread via `$props()` for full HTML attribute passthrough<br>**Not:** apply visual styles directly, import from components or patterns, contain business logic | ✗ forbidden  |
-| components | primitives, tokens             | **Owns:** compound components (Button.Root + Button.Icon), controlled and uncontrolled variants, component-scoped types and props interfaces<br>**Not:** import from patterns layer, fetch data or call APIs, contain application business logic                        | ✓ allowed    |
-| patterns   | components, primitives, tokens | **Owns:** compositions of multiple components (Form, DataTable, Modal), higher-order interaction patterns<br>**Not:** be published as standalone primitives, introduce new tokens, import from consuming app layers                                                     | ✓ allowed    |
+| Layer    | May Import                                 | Responsibilities                                                                                                                                | Side Effects |
+| -------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| app      | pages, widgets, features, entities, shared | **Owns:** providers, routing, global styles, app initialization<br>**Not:** contain business logic                                              | ✗ forbidden  |
+| pages    | widgets, features, entities, shared        | **Owns:** composition of widgets for a route<br>**Not:** contain business logic                                                                 | ✗ forbidden  |
+| widgets  | features, entities, shared                 | **Owns:** composition of features, reusable page sections<br>**Not:** contain business logic directly                                           | ✗ forbidden  |
+| features | entities, shared                           | **Owns:** user interactions with business value (AddToCart, LoginForm)<br>**Not:** import from other features, know about pages                 | ✓ allowed    |
+| entities | shared                                     | **Owns:** business objects and their operations (User, Product, Order)<br>**Not:** import from features or above, contain UI components ideally | ✓ allowed    |
+| shared   | —                                          | **Owns:** reusable infra with no business logic (ui-kit, api client, utils)<br>**Not:** import from any other layer, contain business logic     | ✗ forbidden  |
+
+### Abstraction Boundaries
+
+| Boundary          | Inner    | Outer    | Interface Required | Forbidden Leakage                                    |
+| ----------------- | -------- | -------- | ------------------ | ---------------------------------------------------- |
+| features→entities | entities | features | ✓ (model)          | API raw responses, implementation details of storage |
 
 **Cross-feature imports:** via public api only
 **Circular imports:** FORBIDDEN
@@ -31,60 +39,89 @@ Violations of import rules are **not permitted**.
 
 ```
 src/
-├── tokens/
-│   ├── color.tokens.ts
-│   ├── spacing.tokens.ts
-│   ├── typography.tokens.ts
-│   └── index.ts            # re-exports all tokens
-├── primitives/
-│   ├── Box/
-│   │   ├── Box.svelte         # unstyled, polymorphic
-│   │   ├── Box.types.ts
-│   │   └── index.ts
-│   └── Text/
-├── components/
-│   ├── Button/
-│   │   ├── Button.svelte          # namespace: Button.Root, Button.Icon
-│   │   ├── Button.context.svelte.ts  # shared $state for compound parts via Svelte Context
-│   │   ├── Button.types.ts
-│   │   ├── Button.test.ts
-│   │   └── index.ts        # exports Button namespace
-├── patterns/
-│   ├── Form/
-│   │   ├── Form.svelte        # composes components
-│   │   └── index.ts
-└── index.ts                # package root — public API only
+├── app/
+│   # imports: [pages, widgets, features, entities, shared]
+│   # must not: contain business logic
+├── pages/
+│   # imports: [widgets, features, entities, shared]
+│   # must not: contain business logic
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # route components only — compose widgets, no business logic
+│   │   ├── model/
+│   │   │   # reactive state (runes in .svelte.ts), types — no side effects
+│   │   ├── api/
+│   │   │   # data fetching — async-await, map errors to domain types
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── widgets/
+│   # imports: [features, entities, shared]
+│   # must not: contain business logic directly
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
+│   │   ├── model/
+│   │   │   # reactive state (runes in .svelte.ts), types — no side effects
+│   │   ├── api/
+│   │   │   # data fetching — async-await, map errors to domain types
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── features/
+│   # imports: [entities, shared]
+│   # must not: import from other features
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
+│   │   ├── model/
+│   │   │   # feature state (runes in .svelte.ts) — only for this feature
+│   │   ├── api/
+│   │   │   # feature-specific mutations — calls entity api, never raw fetch
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── entities/
+│   # imports: [shared]
+│   # must not: import from features or above
+│   ├── <slice>/          # business domain unit
+│   │   ├── ui/
+│   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
+│   │   ├── model/
+│   │   │   # entity state (runes in .svelte.ts), types — pure business logic
+│   │   ├── api/
+│   │   │   # data access for this entity — maps to domain types, no raw responses
+│   │   ├── lib/
+│   │   │   # pure utils — stateless, no imports from ui or model
+│   │   ├── config/
+│   │   │   # constants, feature flags
+│   │   └── index.ts      # public api — only export what consumers need
+├── shared/
+│   # imports: [none]
+│   # must not: import from any other layer
+│   ├── ui-kit/           # design system primitives
+│   ├── api/              # base http client, interceptors
+│   ├── lib/              # pure utils — no business logic
+│   └── types/            # global types only
 ```
-
-> **Depth note:** max depth 3 is intentional — compound component state lives beside the component as `*.context.svelte.ts`, never in a subdirectory. Context files are private to the component folder and must not be exported via `index.ts`.
 
 ---
 
-## UI Library Rules
+## Domain Rules
 
-### Design Tokens
-
-- **Categories:** color, spacing, typography, radius, shadow
-- **Rule:** every visual value (color, spacing, radius) must reference
-  a token — no hardcoded values
-- **Location:** `tokens/` layer — no framework imports allowed here
-- **CSS Variables:** Expose tokens as `:root { --color-primary: #... }`
-
-### Compound Component Pattern
-
-- **Enforced:** YES
-- **Export style:** `namespace`
-- Exports as `Button.Root`, `Button.Trigger`, `Button.Icon`
-- Root component is the namespace object — never export parts standalone
-  > Svelte 5+: use `children: Snippet` + `$props()` rest spread. No `as` prop needed.
-
-### Publish Contract
-
-- **package.json exports map:** required — every component gets its
-  own export path (`"./button": "./src/components/Button/index.ts"`)
-- **Types exported:** YES — ship `.d.ts` alongside every component
-- **Peer dependencies:** svelte
-- **Never bundle peer deps** — consumers provide them
+- **Entities location:** `entities`
+- **Value objects:** allowed
+- **Immutable entities:** YES
+- **Framework-agnostic domain:** YES
+- **Validation:** factory-function
+- **Anemic model:** FORBIDDEN — business logic belongs in entities
+- **Ubiquitous Language:** enforced
 
 ---
 
@@ -92,77 +129,85 @@ src/
 
 ### Naming
 
-> **Component files:** `PascalCase` · **Utility files:** `camelCase` · Symbols: per-type rules below
+> Files: `kebab-case` globally · Symbols: per-type rules below
 
 | Type      | File Pattern     | Export Name Convention              |
 | --------- | ---------------- | ----------------------------------- | ---------------- |
 | component | `*.svelte`       | `PascalCase`                        |
 | hook      | `*.svelte.ts`    | `camelCase (runes/logic functions)` |
+| store     | `*.svelte.ts`    | `camelCase (reactive runes)`        |
+| service   | `*.ts`           | `camelCase (*Service suffix)`       |
 | types     | `*.types.ts`     | `PascalCase (\*Type                 | \*Props suffix)` |
 | constants | `*.constants.ts` | `SCREAMING_SNAKE_CASE`              |
-| tokens    | `*.tokens.ts`    | `—`                                 |
-| store     | `*.svelte.ts`    | `camelCase (reactive runes)`        |
 
 ### Required Companions
 
-| File Type | Required                   | Optional |
-| --------- | -------------------------- | -------- |
-| component | `*.types.ts` + `*.test.ts` | —        |
-| hook      | `*.test.ts`                | —        |
-| types     | —                          | —        |
-| constants | —                          | —        |
-| tokens    | —                          | —        |
-| store     | —                          | —        |
+| File Type | Required    | Optional    |
+| --------- | ----------- | ----------- |
+| component | `*.test.ts` | —           |
+| hook      | `*.test.ts` | —           |
+| store     | `*.test.ts` | —           |
+| service   | —           | `*.test.ts` |
+| types     | —           | —           |
+| constants | —           | —           |
 
 ### Structure Rules
 
 - **Co-location:** strict — companions must live beside source file
 - **Test placement:** colocated
 - **Public API:** every feature root requires `index.ts` — internal files must not be imported directly
-- **Max directory depth:** 3
+- **Max directory depth:** 5
 - **Barrel exports:** required at feature roots only
 
 ### Forbidden Patterns
 
-- `default-export-on-component`
-- `hardcoded-color-without-token`
-- `style-without-token-reference`
-- `compound-part-exported-without-namespace`
+- `default-export-on-utility`
+- `barrel-in-non-feature-root`
+- `named-export-mix-in-component-file`
+- `legacy-stores-for-local-state`
+- `effect-for-derived-state`
+- `direct-mutation-outside-runes`
 
 ---
 
-## Component API Design Rules
+## Component Composition Rules
 
-- **API philosophy:** Config-driven — broad direct API, compound only for structural composition
-- **Max props per component:** 15 — split into compound parts if exceeded
-- **Separate style props from behavior props** — `variant`, `size` are style; `onClick`, `disabled` are behavior
-- **All props must be typed** — no `[key: string]: any` escape hatches
-- **No prop drilling beyond depth 2** — use scoped Context for compound internals
-- **Logic in components:** FORBIDDEN — extract to `*.svelte.ts`
+- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
+- **Logic signal:** extract to `*.svelte.ts` (Svelte logic module) when script block exceeds ~20-25 lines
+- **Max props:** 10 — split into compound component if exceeded
+- **No prop drilling beyond depth 2** — lift to store or context
+- **Logic in components:** FORBIDDEN — extract to `*.svelte.ts` (Svelte logic module)
+- **Presentational components** must not import from `state` or `services` layers
 - **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
-- **Primitives accept `children: Snippet` and spread rest props via `$props()`** — the consumer controls wrapping; no `as` prop needed
 
 ---
 
 ## Abstraction Rules
 
-- Extract to **`*.svelte.ts`** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **`*.svelte.ts` (Svelte logic module)** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication
 
 ---
 
+## Svelte 5 Runes Contract
+
+- **`$state`** → local reactive state (avoid legacy `let` variables for state)
+- **`$derived`** → computed values; replaces selectors and reactive declarations
+- **`$effect`** → side effects only (DOM, subscriptions); **forbidden for syncing state**
+- **`$props`** → official component interface; no more `export let`
+- **`$bindable`** → explicit two-way binding; use sparingly to maintain data flow clarity
+
+---
+
 ## State & Async Rules
 
-- **Philosophy:** UI-only state — this library does NOT manage application state
-- **Allowed:** component-internal UI state only (`$state` rune) — e.g. `isOpen`, `isFocused`, `isDisabled`
-- **Compound component state sharing:** via scoped Context — never exposed outside the component boundary
-- **FORBIDDEN:** global state managers (Svelte stores at module level)
-- **FORBIDDEN:** fetching data or managing server state inside the library
-- **FORBIDDEN:** sharing state between unrelated components via module-level variables
-- **Props & callbacks** are the public contract — consumers own the state, the lib only reflects it
+- **Scope:** feature-based
+- **Derived state:** $derived rune (computed values)
+- **Data fetching:** entities, consumed via hooks
 - **All promises must be handled** — no floating async calls
+- **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state
 
 ---

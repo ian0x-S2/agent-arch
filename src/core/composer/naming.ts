@@ -1,4 +1,5 @@
 import type { Policy } from '../../schema/policy.schema';
+import { VALID_STRATEGIES, type NamingStrategy } from '../constants';
 
 const FILE_SUFFIXES: Record<string, Record<string, string>> = {
   'kebab-case': {
@@ -34,9 +35,6 @@ const FILE_SUFFIXES: Record<string, Record<string, string>> = {
     constants: '*.constants.ts',
   },
 };
-
-export const VALID_STRATEGIES = ['kebab-case', 'PascalCase', 'snake_case', 'camelCase'] as const;
-export type NamingStrategy = typeof VALID_STRATEGIES[number];
 
 export const resolveNamingPatterns = (
   types: Policy['file_conventions']['types'],

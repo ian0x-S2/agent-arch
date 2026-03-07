@@ -15,7 +15,6 @@ import type { UserSelections } from '../../types';
 
 export const UserSelectionsSchema = v.object({
   pattern: v.string(),
-  output_mode: v.union([v.literal('compact'), v.literal('balanced'), v.literal('verbose')]),
   naming_strategy: v.optional(v.picklist(VALID_STRATEGIES)),
   styling_strategy: v.optional(v.picklist(VALID_STYLING)),
   component_lib: v.optional(v.string()),
@@ -41,7 +40,7 @@ function deepMerge(target: any, source: any): any {
   const output = { ...target };
   for (const key of Object.keys(source)) {
     if (Array.isArray(source[key])) {
-      output[key] = source[key]; // arrays: source always wins
+      output[key] = source[key]; // arrays: source always wins (except special cases handled later)
     } else if (isObject(source[key]) && isObject(target[key])) {
       output[key] = deepMerge(target[key], source[key]);
     } else {
@@ -49,6 +48,10 @@ function deepMerge(target: any, source: any): any {
     }
   }
   return output;
+}
+
+function mergeStringArrayUnique(a: string[], b: string[]): string[] {
+  return [...new Set([...a, ...b])];
 }
 
 export const composePolicy = (rawSelections: Partial<UserSelections>): Policy => {
@@ -70,7 +73,7 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
   // 3. Define overrides
   const overrides: any = {
     meta: {
-      output_mode: selections.output_mode,
+      output_mode: 'compact',
       generated_at: new Date().toISOString()
     },
     stack: {
@@ -101,7 +104,21 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
   }
 
   // Apply framework overrides
+  const baseForbiddenFile = template.file_conventions.forbidden_patterns || [];
+  const baseForbiddenState = template.state_constraints.forbidden_patterns || [];
+
   merged = deepMerge(merged, SVELTE_OVERRIDES);
+
+  // Correct deepMerge for known arrays that should be merged (Task 2)
+  merged.file_conventions.forbidden_patterns = mergeStringArrayUnique(
+    baseForbiddenFile,
+    merged.file_conventions.forbidden_patterns || []
+  );
+
+  merged.state_constraints.forbidden_patterns = mergeStringArrayUnique(
+    baseForbiddenState,
+    merged.state_constraints.forbidden_patterns || []
+  );
 
   // Framework-specific peer dependencies for ui-lib pattern
   if (merged.ui_lib_config) {
@@ -154,20 +171,15 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
 
   // 8b. UI-Lib pattern-specific overrides based on styling strategy
   if (selections.pattern === 'ui-lib') {
-    const forbiddenPatterns = merged.file_conventions.forbidden_patterns;
-
     if (selections.styling_strategy === 'utility-first') {
       // Utility-first: Tailwind classes are the token source
       // Replace hardcoded-color rule with arbitrary-values rule
-      const idx = forbiddenPatterns.indexOf('hardcoded-color-without-token');
-      if (idx > -1) {
-        forbiddenPatterns[idx] = 'arbitrary-values-in-utils'; // e.g., text-[14px] -> text-sm
-      }
-      // Also remove style-without-token-reference as it's not applicable
-      const styleIdx = forbiddenPatterns.indexOf('style-without-token-reference');
-      if (styleIdx > -1) {
-        forbiddenPatterns.splice(styleIdx, 1);
-      }
+      merged.file_conventions.forbidden_patterns =
+        merged.file_conventions.forbidden_patterns
+          .map((p: string) => p === 'hardcoded-color-without-token'
+            ? 'arbitrary-values-in-utils'
+            : p)
+          .filter((p: string) => p !== 'style-without-token-reference');
     }
     // For scoped: keep default token rules (hardcoded-color-without-token)
   }

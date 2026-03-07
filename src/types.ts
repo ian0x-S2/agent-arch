@@ -21,7 +21,6 @@ export interface OptionWithMeta {
 
 export interface UserSelections {
   pattern: string;
-  output_mode: 'compact' | 'balanced' | 'verbose';
   naming_strategy?: NamingStrategy;
   styling_strategy?: StylingStrategy;
   component_lib?: string;

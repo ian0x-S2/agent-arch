@@ -24,9 +24,21 @@ export const SVELTE_OVERRIDES: DeepPartial<Policy> = {
       },
       store: { pattern: "*.svelte.ts" },
       hook: { pattern: "*.svelte.ts" },
+      service: { pattern: "*.ts" },
     },
+    forbidden_patterns: [
+      "legacy-stores-for-local-state",
+      "effect-for-derived-state",
+      "direct-mutation-outside-runes"
+    ],
   },
   state_constraints: {
-    forbidden_patterns: ["direct-mutation", "prop-drilling"],
+    local_state_allowed: true,
+    derived_state_strategy: "$derived rune (computed values)",
+    forbidden_patterns: [
+      "direct-mutation",
+      "prop-drilling",
+      "untemplated-$effect"
+    ],
   },
 };

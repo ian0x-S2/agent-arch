@@ -2,6 +2,13 @@ import { readFileSync, existsSync } from 'fs';
 import * as v from 'valibot';
 import { PolicySchema } from '../schema/policy.schema';
 
+const REQUIRED_SECTIONS = [
+  '# Architecture Policy',
+  '## Layer Rules',
+  '## File Conventions',
+  '## State & Async Rules',
+];
+
 export const validateAction = (filePath: string) => {
   try {
     if (!existsSync(filePath)) {
@@ -9,14 +16,14 @@ export const validateAction = (filePath: string) => {
     }
     const content = readFileSync(filePath, 'utf8');
 
-    if (!content.startsWith('# Architecture Policy')) {
-      throw new Error('File does not appear to be a valid Architecture Policy Markdown file.');
+    const missing = REQUIRED_SECTIONS.filter(s => !content.includes(s));
+    if (missing.length > 0) {
+      throw new Error(
+        `Missing required sections:\n${missing.map(s => `  - ${s}`).join('\n')}`
+      );
     }
 
-    // Try to parse as JSON to validate structure
-    // Note: Since we output Markdown, we do a lightweight validation
-    // A full implementation would parse the Markdown back to Policy object
-    console.log(`✓ Architecture policy at ${filePath} appears to be valid.`);
+    console.log(`✓ Architecture policy at ${filePath} is valid.`);
   } catch (error) {
     console.error(`✖ Validation failed:`, error instanceof Error ? error.message : String(error));
     process.exit(1);

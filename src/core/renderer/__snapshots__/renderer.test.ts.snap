@@ -52,7 +52,7 @@ src/
 │   │   ├── ui/
 │   │   │   # route components only — compose widgets, no business logic
 │   │   ├── model/
-│   │   │   # store, selectors, types — no side effects
+│   │   │   # reactive state (runes in .svelte.ts), types — no side effects
 │   │   ├── api/
 │   │   │   # data fetching — async-await, map errors to domain types
 │   │   ├── lib/
@@ -67,7 +67,7 @@ src/
 │   │   ├── ui/
 │   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
 │   │   ├── model/
-│   │   │   # store, selectors, types — no side effects
+│   │   │   # reactive state (runes in .svelte.ts), types — no side effects
 │   │   ├── api/
 │   │   │   # data fetching — async-await, map errors to domain types
 │   │   ├── lib/
@@ -82,7 +82,7 @@ src/
 │   │   ├── ui/
 │   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
 │   │   ├── model/
-│   │   │   # feature state, selectors — only for this feature
+│   │   │   # feature state (runes in .svelte.ts) — only for this feature
 │   │   ├── api/
 │   │   │   # feature-specific mutations — calls entity api, never raw fetch
 │   │   ├── lib/
@@ -97,7 +97,7 @@ src/
 │   │   ├── ui/
 │   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
 │   │   ├── model/
-│   │   │   # entity state, selectors, types — pure business logic
+│   │   │   # entity state (runes in .svelte.ts), types — pure business logic
 │   │   ├── api/
 │   │   │   # data access for this entity — maps to domain types, no raw responses
 │   │   ├── lib/
@@ -137,7 +137,7 @@ src/
 | component | \`*.svelte\` | \`PascalCase\` |
 | hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
 | store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
-| service | \`*.service.ts\` | \`camelCase (*Service suffix)\` |
+| service | \`*.ts\` | \`camelCase (*Service suffix)\` |
 | types | \`*.types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
 | constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
 
@@ -165,31 +165,43 @@ src/
 - \`default-export-on-utility\`
 - \`barrel-in-non-feature-root\`
 - \`named-export-mix-in-component-file\`
+- \`legacy-stores-for-local-state\`
+- \`effect-for-derived-state\`
+- \`direct-mutation-outside-runes\`
 
 ---
 
 ## Component Composition Rules
 - **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to \`*.svelte.ts\` when script block exceeds ~20-25 lines
+- **Logic signal:** extract to \`*.svelte.ts\` (Svelte logic module) when script block exceeds ~20-25 lines
 - **Max props:** 7 — split into compound component if exceeded
 - **No prop drilling beyond depth 2** — lift to store or context
-- **Logic in components:** FORBIDDEN — extract to \`*.svelte.ts\`
+- **Logic in components:** FORBIDDEN — extract to \`*.svelte.ts\` (Svelte logic module)
 - **Presentational components** must not import from \`state\` or \`services\` layers
 - **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
 
 ---
 
 ## Abstraction Rules
-- Extract to **\`*.svelte.ts\`** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **\`*.svelte.ts\` (Svelte logic module)** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication
 
 ---
 
+## Svelte 5 Runes Contract
+- **\`$state\`** → local reactive state (avoid legacy \`let\` variables for state)
+- **\`$derived\`** → computed values; replaces selectors and reactive declarations
+- **\`$effect\`** → side effects only (DOM, subscriptions); **forbidden for syncing state**
+- **\`$props\`** → official component interface; no more \`export let\`
+- **\`$bindable\`** → explicit two-way binding; use sparingly to maintain data flow clarity
+
+---
+
 ## State & Async Rules
 - **Scope:** feature-based
-- **Derived state:** selectors
+- **Derived state:** $derived rune (computed values)
 - **Data fetching:** entities, consumed via hooks
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
@@ -245,7 +257,7 @@ src/
 │   │   ├── components/       # extract if template > 2 logical sections
 │   │   │   └── ComponentName.svelte
 │   │   │       # no logic — use hooks/
-│   │   ├── hooks/            # all logic lives here
+│   │   ├── hooks/            # reactive logic and state modules (*.svelte.ts)
 │   │   ├── services/         # external I/O only — API, storage
 │   │   ├── types/            # module-scoped types
 │   │   └── index.ts          # public api — never import internals directly
@@ -268,7 +280,7 @@ src/
 | component | \`*.svelte\` | \`PascalCase\` |
 | hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
 | store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
-| service | \`*Service.ts\` | \`camelCase\` |
+| service | \`*.ts\` | \`camelCase\` |
 | types | \`*Types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
 | constants | \`*Constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
 
@@ -295,31 +307,43 @@ src/
 ### Forbidden Patterns
 - \`default-export-on-utility\`
 - \`barrel-in-non-feature-root\`
+- \`legacy-stores-for-local-state\`
+- \`effect-for-derived-state\`
+- \`direct-mutation-outside-runes\`
 
 ---
 
 ## Component Composition Rules
 - **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to \`*.svelte.ts\` when script block exceeds ~20-25 lines
+- **Logic signal:** extract to \`*.svelte.ts\` (Svelte logic module) when script block exceeds ~20-25 lines
 - **Max props:** 7 — split into compound component if exceeded
 - **No prop drilling beyond depth 2** — lift to store or context
-- **Logic in components:** FORBIDDEN — extract to \`*.svelte.ts\`
+- **Logic in components:** FORBIDDEN — extract to \`*.svelte.ts\` (Svelte logic module)
 - **Presentational components** must not import from \`state\` or \`services\` layers
 - **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
 
 ---
 
 ## Abstraction Rules
-- Extract to **\`*.svelte.ts\`** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **\`*.svelte.ts\` (Svelte logic module)** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication
 
 ---
 
+## Svelte 5 Runes Contract
+- **\`$state\`** → local reactive state (avoid legacy \`let\` variables for state)
+- **\`$derived\`** → computed values; replaces selectors and reactive declarations
+- **\`$effect\`** → side effects only (DOM, subscriptions); **forbidden for syncing state**
+- **\`$props\`** → official component interface; no more \`export let\`
+- **\`$bindable\`** → explicit two-way binding; use sparingly to maintain data flow clarity
+
+---
+
 ## State & Async Rules
 - **Scope:** module-based
-- **Derived state:** selectors
+- **Derived state:** $derived rune (computed values)
 - **Data fetching:** modules, consumed via hooks
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
@@ -370,7 +394,7 @@ Violations of import rules are **not permitted**.
 src/
 ├── components/               # all components live here
 │   └── ComponentName.svelte     # logic colocated — ok at this scale
-├── hooks/                    # extract when logic repeats 2+ times
+├── hooks/                    # reactive logic modules (*.svelte.ts)
 ├── services/                 # extract when touching external I/O
 ├── types/                    # shared types
 └── utils/                    # pure functions
@@ -392,7 +416,7 @@ src/
 | component | \`*.svelte\` | \`PascalCase\` |
 | hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
 | store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
-| service | \`*.service.ts\` | \`camelCase\` |
+| service | \`*.ts\` | \`camelCase\` |
 | types | \`*.types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
 | constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
 | utils | \`*.ts\` | \`camelCase\` |
@@ -421,12 +445,15 @@ src/
 ### Forbidden Patterns
 - \`deep-nesting\`
 - \`huge-component-file\`
+- \`legacy-stores-for-local-state\`
+- \`effect-for-derived-state\`
+- \`direct-mutation-outside-runes\`
 
 ---
 
 ## Component Composition Rules
 - **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to \`*.svelte.ts\` when script block exceeds ~20-25 lines
+- **Logic signal:** extract to \`*.svelte.ts\` (Svelte logic module) when script block exceeds ~20-25 lines
 - **Max props:** 7 — split into compound component if exceeded
 - **No prop drilling beyond depth 3** — lift to store or context
 - **Logic in components:** allowed
@@ -436,16 +463,25 @@ src/
 ---
 
 ## Abstraction Rules
-- Extract to **\`*.svelte.ts\`** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **\`*.svelte.ts\` (Svelte logic module)** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication
 
 ---
 
+## Svelte 5 Runes Contract
+- **\`$state\`** → local reactive state (avoid legacy \`let\` variables for state)
+- **\`$derived\`** → computed values; replaces selectors and reactive declarations
+- **\`$effect\`** → side effects only (DOM, subscriptions); **forbidden for syncing state**
+- **\`$props\`** → official component interface; no more \`export let\`
+- **\`$bindable\`** → explicit two-way binding; use sparingly to maintain data flow clarity
+
+---
+
 ## State & Async Rules
 - **Scope:** any
-- **Derived state:** any
+- **Derived state:** $derived rune (computed values)
 - **Data fetching:** any, consumed via hooks
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
@@ -538,6 +574,7 @@ src/
 | constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
 | store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
 | hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
+| service | \`*.ts\` | \`—\` |
 
 
 ### Required Companions
@@ -549,6 +586,7 @@ src/
 | constants | — | — |
 | store | — | — |
 | hook | — | — |
+| service | — | — |
 
 
 ### Structure Rules
@@ -559,13 +597,15 @@ src/
 - **Barrel exports:** required at feature roots only
 
 ### Forbidden Patterns
-
+- \`legacy-stores-for-local-state\`
+- \`effect-for-derived-state\`
+- \`direct-mutation-outside-runes\`
 
 ---
 
 ## Component Composition Rules
 - **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to \`*.svelte.ts\` when script block exceeds ~20-25 lines
+- **Logic signal:** extract to \`*.svelte.ts\` (Svelte logic module) when script block exceeds ~20-25 lines
 - **Max props:** 7 — split into compound component if exceeded
 - **No prop drilling beyond depth 3** — lift to store or context
 - **Logic in components:** allowed
@@ -575,16 +615,25 @@ src/
 ---
 
 ## Abstraction Rules
-- Extract to **\`*.svelte.ts\`** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
+- Extract to **\`*.svelte.ts\` (Svelte logic module)** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
 - Extract to **service** when: logic touches external I/O (API, storage, cookies)
 - Extract to **utility** when: logic is pure, stateless, domain-agnostic
 - **Do not abstract preemptively** — wrong abstraction costs more than duplication
 
 ---
 
+## Svelte 5 Runes Contract
+- **\`$state\`** → local reactive state (avoid legacy \`let\` variables for state)
+- **\`$derived\`** → computed values; replaces selectors and reactive declarations
+- **\`$effect\`** → side effects only (DOM, subscriptions); **forbidden for syncing state**
+- **\`$props\`** → official component interface; no more \`export let\`
+- **\`$bindable\`** → explicit two-way binding; use sparingly to maintain data flow clarity
+
+---
+
 ## State & Async Rules
 - **Scope:** minimal
-- **Derived state:** selectors
+- **Derived state:** $derived rune (computed values)
 - **Data fetching:** pages, consumed via hooks
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
