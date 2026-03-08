@@ -20,6 +20,7 @@ export const UserSelectionsSchema = v.object({
   styling_strategy: v.optional(v.picklist(VALID_STYLING)),
   component_lib: v.optional(v.string()),
   component_preference: v.optional(v.picklist(['strict', 'balanced', 'relaxed'] as const)),
+  data_fetching: v.optional(v.picklist(['load-functions', 'remote-functions'] as const)),
 });
 
 function deepClone<T>(obj: T): T {
@@ -142,10 +143,17 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
     naming_conventions: {
       global_strategy: namingStrategy
     }
-  };
+    };
 
-  // 4. Merge base with overrides
-  let merged = deepMerge(template, overrides);
+    if (selections.data_fetching && ['feature-sliced', 'modular', 'flat'].includes(selections.pattern)) {
+      overrides.side_effect_boundaries = {
+        async_pattern: selections.data_fetching,
+        data_fetching_scope: selections.pattern === 'feature-sliced' ? 'entities' : (selections.pattern === 'modular' ? 'modules' : 'any')
+      };
+    }
+
+    // 4. Merge base with overrides
+    let merged = deepMerge(template, overrides);
 
   // 5. Update naming patterns based on strategy
   if (namingStrategy) {

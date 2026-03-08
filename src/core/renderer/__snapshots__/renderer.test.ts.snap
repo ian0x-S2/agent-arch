@@ -54,7 +54,7 @@ src/
 │   │   ├── model/
 │   │   │   # reactive state (runes in .svelte.ts), types — no side effects
 │   │   ├── api/
-│   │   │   # follow SvelteKit conventions — +page.server.ts, +server.ts or remote functions
+│   │   │   # follow SvelteKit conventions — +page.server.ts or actions
 │   │   ├── lib/
 │   │   │   # pure utils — stateless, no imports from ui or model
 │   │   ├── config/
@@ -69,7 +69,7 @@ src/
 │   │   ├── model/
 │   │   │   # reactive state (runes in .svelte.ts), types — no side effects
 │   │   ├── api/
-│   │   │   # follow SvelteKit conventions — +page.server.ts, +server.ts or remote functions
+│   │   │   # follow SvelteKit conventions — +page.server.ts or actions
 │   │   ├── lib/
 │   │   │   # pure utils — stateless, no imports from ui or model
 │   │   ├── config/
@@ -84,7 +84,7 @@ src/
 │   │   ├── model/
 │   │   │   # feature state (runes in .svelte.ts) — only for this feature
 │   │   ├── api/
-│   │   │   # server mutations — follow SvelteKit conventions (actions / remote functions), never fetch() in component
+│   │   │   # server mutations — follow SvelteKit conventions (actions), never fetch() in component
 │   │   ├── lib/
 │   │   │   # pure utils — stateless, no imports from ui or model
 │   │   ├── config/
@@ -99,7 +99,7 @@ src/
 │   │   ├── model/
 │   │   │   # entity state (runes in .svelte.ts), types — pure business logic
 │   │   ├── api/
-│   │   │   # server data access — follow SvelteKit conventions (+page.server.ts / remote functions), map to domain types
+│   │   │   # server data access — follow SvelteKit conventions (+page.server.ts), map to domain types
 │   │   ├── lib/
 │   │   │   # pure utils — stateless, no imports from ui or model
 │   │   ├── config/
@@ -202,7 +202,7 @@ src/
 ## State & Async Rules
 - **Scope:** feature-based
 - **Derived state:** $derived rune (computed values)
-- **Data fetching:** entities — pattern: async-await
+- **Data fetching:** entities — SvelteKit \`load\` functions (\`+page.server.ts\`, \`+page.ts\`); never \`fetch()\` directly in components
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state
@@ -258,7 +258,9 @@ src/
 │   │   │   └── ComponentName.svelte
 │   │   │       # no logic — use hooks/
 │   │   ├── hooks/            # reactive logic and state modules (*.svelte.ts)
-│   │   ├── services/         # external I/O only — API, storage
+│   │   ├── services/         # external I/O only — never import in components directly
+│   │   │   #                   use SvelteKit load functions (+page.server.ts) as the entry point
+│   │   │   #                   $env/static/private allowed here, forbidden in components
 │   │   ├── types/            # module-scoped types
 │   │   └── index.ts          # public api — never import internals directly
 │   │   # cross-module imports: FORBIDDEN — use shared/
@@ -344,7 +346,7 @@ src/
 ## State & Async Rules
 - **Scope:** module-based
 - **Derived state:** $derived rune (computed values)
-- **Data fetching:** modules — pattern: async-await
+- **Data fetching:** modules — via SvelteKit \`load\` functions; services are server-only, consumed through \`+page.server.ts\` not imported in components
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state
@@ -395,7 +397,7 @@ src/
 ├── components/               # all components live here
 │   └── ComponentName.svelte     # logic colocated — ok at this scale
 ├── hooks/                    # reactive logic modules (*.svelte.ts)
-├── services/                 # extract when touching external I/O
+├── services/                 # external I/O only — consume via SvelteKit load functions
 ├── types/                    # shared types
 └── utils/                    # pure functions
 

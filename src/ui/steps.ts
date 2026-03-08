@@ -131,15 +131,30 @@ export const OPTIONS: Record<string, OptionWithMeta[]> = {
       hint: 'Common in backend-heavy or Python-influenced projects.',
     },
   ],
+  data_fetching: [
+    {
+      label: '🚢 Load Functions',
+      value: 'load-functions',
+      description: 'Standard SvelteKit data fetching in +page.server.ts.',
+      hint: 'The default, most robust pattern.',
+    },
+    {
+      label: '📡 Remote Functions',
+      value: 'remote-functions',
+      description: 'Fetch data via direct RPC-style calls from components.',
+      hint: 'Useful for highly dynamic apps or SPA feel.',
+    },
+  ],
 };
 
-export const MAIN_STEPS: Step[] = ['pattern', 'component_lib', 'styling', 'component_preference', 'naming', 'confirm'];
+export const MAIN_STEPS: Step[] = ['pattern', 'component_lib', 'styling', 'data_fetching', 'component_preference', 'naming', 'confirm'];
 
 export const STEP_LABELS: Partial<Record<Step, string>> = {
   welcome: 'Start',
   pattern: 'Pattern',
   component_lib: 'Library',
   styling: 'Styling',
+  data_fetching: 'Fetching',
   component_preference: 'Preference',
   naming: 'Naming',
   confirm: 'Confirm',

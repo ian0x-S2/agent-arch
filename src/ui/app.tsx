@@ -24,6 +24,7 @@ export const App = () => {
     if (stepKey === 'styling') mapping = { styling_strategy: value as UserSelections['styling_strategy'] };
     else if (stepKey === 'naming') mapping = { naming_strategy: value as UserSelections['naming_strategy'] };
     else if (stepKey === 'component_preference') mapping = { component_preference: value as UserSelections['component_preference'] };
+    else if (stepKey === 'data_fetching') mapping = { data_fetching: value as UserSelections['data_fetching'] };
     else mapping = { [stepKey]: value };
 
     updateSelections(mapping);
@@ -65,7 +66,7 @@ export const App = () => {
         )}
 
         {/* Wizard steps */}
-        {(['pattern', 'styling', 'component_preference', 'naming'] as const).map(
+        {(['pattern', 'styling', 'data_fetching', 'component_preference', 'naming'] as const).map(
           (s) => {
             const options = s === 'component_preference' && selections.pattern === 'ui-lib'
                 ? OPTIONS.component_preference_ui_lib ?? []

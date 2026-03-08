@@ -62,6 +62,44 @@ describe('E2E: generate command', () => {
                 ],
             },
             {
+                label: 'FSD + load-functions',
+                input: {
+                    pattern: 'feature-sliced',
+                    output_mode: 'compact',
+                    data_fetching: 'load-functions',
+                },
+                assertions: [
+                    (c) => expect(c).toContain('SvelteKit `load` functions (`+page.server.ts`, `+page.ts`)'),
+                    (c) => expect(c).not.toContain('remote functions'),
+                    (c) => expect(c).toContain('follow SvelteKit conventions (+page.server.ts)'),
+                ],
+            },
+            {
+                label: 'Modular + remote-functions',
+                input: {
+                    pattern: 'modular',
+                    output_mode: 'compact',
+                    data_fetching: 'remote-functions',
+                },
+                assertions: [
+                    (c) => expect(c).toContain('via remote functions; services are consumed directly in components'),
+                    (c) => expect(c).toContain('# external I/O — RPC style endpoints'),
+                    (c) => expect(c).toContain('can be imported directly in components'),
+                ],
+            },
+            {
+                label: 'Flat + remote-functions',
+                input: {
+                    pattern: 'flat',
+                    output_mode: 'compact',
+                    data_fetching: 'remote-functions',
+                },
+                assertions: [
+                    (c) => expect(c).toContain('via remote functions; services consumed directly in components'),
+                    (c) => expect(c).toContain('# external I/O — RPC endpoints, components may import'),
+                ],
+            },
+            {
                 label: 'UI-Lib + utility-first: naming override and tokens removal',
                 input: {
                     pattern: 'ui-lib',

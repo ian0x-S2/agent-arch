@@ -5,6 +5,7 @@ export type Step =
   | 'pattern'
   | 'component_lib'
   | 'styling'
+  | 'data_fetching'
   | 'component_preference'
   | 'naming'
   | 'confirm'
@@ -26,4 +27,5 @@ export interface UserSelections {
   styling_strategy?: StylingStrategy;
   component_lib?: string;
   component_preference?: ComponentPreference;
+  data_fetching?: 'load-functions' | 'remote-functions';
 }

@@ -29,11 +29,12 @@ export const ConfirmScreen = ({
           <Text bold color="cyan" underline>Selected Configuration</Text>
         </Box>
         <Box flexDirection="column">
-          {(['pattern', 'component_lib', 'styling_strategy', 'component_preference', 'naming_strategy'] as const).map((key) => {
+          {(['pattern', 'component_lib', 'styling_strategy', 'data_fetching', 'component_preference', 'naming_strategy'] as const).map((key) => {
              const labelMap: Record<string, string> = {
                pattern: 'Architecture Pattern',
                component_lib: 'Component Library',
                styling_strategy: 'Styling Strategy',
+               data_fetching: 'Data Fetching',
                component_preference: 'Component Preference',
                naming_strategy: 'Naming Convention',
              };

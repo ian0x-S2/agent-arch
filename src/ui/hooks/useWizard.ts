@@ -15,8 +15,15 @@ export const useWizard = () => {
     const idx = MAIN_STEPS.indexOf(currentStep);
     let next: Step | undefined = MAIN_STEPS[idx + 1];
 
+    const currentPattern = value && currentStep === 'pattern' ? value : selections.pattern;
+
+    // Skip data_fetching for simple patterns
+    if (next === 'data_fetching' && !['feature-sliced', 'modular', 'flat'].includes(currentPattern || '')) {
+      next = MAIN_STEPS[idx + 2];
+    }
+
     // Skip naming step for ui-lib pattern as it's enforced to PascalCase
-    if (next === 'naming' && (selections.pattern === 'ui-lib' || (currentStep === 'pattern' && value === 'ui-lib'))) {
+    if (next === 'naming' && currentPattern === 'ui-lib') {
       next = 'confirm';
     }
 

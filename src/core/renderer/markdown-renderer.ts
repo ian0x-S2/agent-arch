@@ -97,15 +97,20 @@ const renderBoundariesTable = (policy: Policy): string => {
 
 const getSegmentRules = (segment: string, layerId: string, policy: Policy): string => {
   const { ui_constraints, side_effect_boundaries } = policy;
+  const isRemote = side_effect_boundaries.async_pattern === 'remote-functions';
 
   if (layerId === 'pages' && segment === 'ui') {
     return 'route components only — compose widgets, no business logic';
   }
   if (layerId === 'entities' && segment === 'api') {
-    return 'server data access — follow SvelteKit conventions (+page.server.ts / remote functions), map to domain types';
+    return isRemote
+      ? 'server data access — follow SvelteKit conventions (remote functions), map to domain types'
+      : 'server data access — follow SvelteKit conventions (+page.server.ts), map to domain types';
   }
   if (layerId === 'features' && segment === 'api') {
-    return 'server mutations — follow SvelteKit conventions (actions / remote functions), never fetch() in component';
+    return isRemote
+      ? 'server mutations — follow SvelteKit conventions (remote functions), never fetch() in component'
+      : 'server mutations — follow SvelteKit conventions (actions), never fetch() in component';
   }
   if (layerId === 'entities' && segment === 'model') {
     return 'entity state (runes in .svelte.ts), types — pure business logic';
@@ -117,7 +122,9 @@ const getSegmentRules = (segment: string, layerId: string, policy: Policy): stri
   const rules: Record<string, string> = {
     ui: `components — extract if template > 2 logical sections, ${ui_constraints.logic_in_components ? 'logic allowed' : 'no logic — extract to model'}`,
     model: `reactive state (runes in .svelte.ts), types — no side effects`,
-    api: `follow SvelteKit conventions — +page.server.ts, +server.ts or remote functions`,
+    api: isRemote
+      ? 'follow SvelteKit conventions — remote functions'
+      : 'follow SvelteKit conventions — +page.server.ts or actions',
     lib: `pure utils — stateless, no imports from ui or model`,
     config: `constants, feature flags`,
   };
@@ -169,7 +176,20 @@ const renderFSDStructure = (policy: Policy): string => {
 };
 
 const renderModularStructure = (policy: Policy): string => {
-  const { ui_constraints, structural_constraints } = policy;
+  const { ui_constraints, structural_constraints, side_effect_boundaries } = policy;
+  const isRemote = side_effect_boundaries.async_pattern === 'remote-functions';
+
+  const serviceLines = isRemote
+    ? [
+      '│   │   ├── services/         # external I/O — RPC style endpoints',
+      '│   │   │   #                   can be imported directly in components',
+      '│   │   │   #                   $env/static/public allowed, private forbidden',
+    ]
+    : [
+      '│   │   ├── services/         # external I/O only — never import in components directly',
+      '│   │   │   #                   use SvelteKit load functions (+page.server.ts) as the entry point',
+      '│   │   │   #                   $env/static/private allowed here, forbidden in components',
+    ];
 
   return [
     'src/',
@@ -179,7 +199,7 @@ const renderModularStructure = (policy: Policy): string => {
     '│   │   │   └── ComponentName.svelte',
     `│   │   │       # ${ui_constraints.logic_in_components ? 'logic allowed here' : 'no logic — use hooks/'}`,
     '│   │   ├── hooks/            # reactive logic and state modules (*.svelte.ts)',
-    '│   │   ├── services/         # external I/O only — API, storage',
+    ...serviceLines,
     '│   │   ├── types/            # module-scoped types',
     structural_constraints.barrel_exports_required
       ? '│   │   └── index.ts          # public api — never import internals directly'
@@ -193,15 +213,20 @@ const renderModularStructure = (policy: Policy): string => {
 };
 
 const renderFlatStructure = (policy: Policy): string => {
-  const { graduation_signals } = policy;
+  const { graduation_signals, side_effect_boundaries } = policy;
   const signals = graduation_signals;
+  const isRemote = side_effect_boundaries.async_pattern === 'remote-functions';
+
+  const serviceLine = isRemote
+    ? '├── services/                 # external I/O — RPC endpoints, components may import'
+    : '├── services/                 # external I/O only — consume via SvelteKit load functions';
 
   return [
     'src/',
     '├── components/               # all components live here',
     '│   └── ComponentName.svelte     # logic colocated — ok at this scale',
     '├── hooks/                    # reactive logic modules (*.svelte.ts)',
-    '├── services/                 # extract when touching external I/O',
+    serviceLine,
     '├── types/                    # shared types',
     '└── utils/                    # pure functions',
     '',
@@ -446,10 +471,41 @@ const renderStateSection = (policy: Policy): string => {
   }
 
   const { state_constraints, side_effect_boundaries } = policy;
+
+  const dataFetchingLine = (() => {
+    const pattern = policy.stack.pattern;
+    const strategy = side_effect_boundaries.async_pattern;
+
+    if (pattern === 'feature-sliced') {
+      if (strategy === 'remote-functions') {
+        return `- **Data fetching:** ${side_effect_boundaries.data_fetching_scope} — via remote functions; never \`fetch()\` directly in components`;
+      }
+      return `- **Data fetching:** ${side_effect_boundaries.data_fetching_scope} — SvelteKit \`load\` functions (\`+page.server.ts\`, \`+page.ts\`); never \`fetch()\` directly in components`;
+    }
+
+    if (pattern === 'modular') {
+      if (strategy === 'remote-functions') {
+        return `- **Data fetching:** ${side_effect_boundaries.data_fetching_scope} — via remote functions; services are consumed directly in components through RPC-style calls`;
+      }
+      return `- **Data fetching:** ${side_effect_boundaries.data_fetching_scope} — via SvelteKit \`load\` functions; services are server-only, consumed through \`+page.server.ts\` not imported in components`;
+    }
+
+    if (pattern === 'flat') {
+      if (strategy === 'remote-functions') {
+        return `- **Data fetching:** ${side_effect_boundaries.data_fetching_scope} — via remote functions; services consumed directly in components`;
+      }
+      if (strategy === 'load-functions') {
+        return `- **Data fetching:** ${side_effect_boundaries.data_fetching_scope} — SvelteKit \`load\` functions (\`+page.server.ts\`, \`+page.ts\`); never \`fetch()\` directly in components`;
+      }
+    }
+
+    return `- **Data fetching:** ${side_effect_boundaries.data_fetching_scope} — pattern: ${side_effect_boundaries.async_pattern}`;
+  })();
+
   return `## State & Async Rules
 - **Scope:** ${state_constraints.global_state_scope}
 - **Derived state:** ${state_constraints.derived_state_strategy}
-- **Data fetching:** ${side_effect_boundaries.data_fetching_scope} — pattern: ${side_effect_boundaries.async_pattern}
+${dataFetchingLine}
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state`;
