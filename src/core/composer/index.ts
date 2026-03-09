@@ -6,6 +6,7 @@ import { STATE_BY_PATTERN } from '../shared/pattern-state';
 import { FSD_LOAD_MODE, FSD_REMOTE_MODE } from '../registry/templates/feature-sliced';
 import { MODULAR_LOAD_MODE, MODULAR_REMOTE_MODE } from '../registry/templates/modular';
 import { FLAT_LOAD_MODE, FLAT_REMOTE_MODE } from '../registry/templates/flat';
+import { ATOMIC_DESIGN_SYSTEM } from '../registry/templates/atomic';
 import { SVELTE_OVERRIDES } from '../shared/framework-rules';
 import {
   VALID_STYLING,
@@ -182,6 +183,19 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
       
       raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
       raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
+      
+      merged._raw_template = raw;
+    } else if (selections.pattern === 'atomic') {
+      let raw = ATOMIC_DESIGN_SYSTEM;
+      
+      raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
+      raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
+
+      const themeComment = stylingStrategy === 'utility-first'
+        ? '# Tailwind config extensions — scoped tokens via CSS vars if needed'
+        : '# design tokens as CSS custom properties or JS constants — consumed in scoped styles';
+
+      raw = raw.replace('└── theme/                # design tokens, constants', `└── theme/                ${themeComment}`);
       
       merged._raw_template = raw;
     }

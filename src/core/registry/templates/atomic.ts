@@ -1,8 +1,76 @@
 import type { Policy } from '../../../schema/policy.schema';
 
+export const ATOMIC_DESIGN_SYSTEM = `# Architecture Policy
+Pattern: atomic | Framework: Svelte 5 | Styling: utility-first
+Focus: design system
+
+## Layers & Import Direction
+organisms → molecules → atoms → shared (unidirectional, strict)
+
+| Layer     | May Import              |
+|-----------|-------------------------|
+| organisms | molecules, atoms, shared |
+| molecules | atoms, shared           |
+| atoms     | shared                  |
+| shared    | —                       |
+
+- Circular imports: FORBIDDEN
+
+## Directory Structure
+src/
+├── organisms/<component>/
+│   ├── ComponentName.svelte  # complex UI sections — UI state allowed, no business logic
+│   ├── hooks/                # reusable reactive logic (.svelte.ts)
+│   └── types/
+├── molecules/<component>/
+│   ├── ComponentName.svelte  # atom combinations — UI state allowed, no business logic
+│   └── types/
+├── atoms/<component>/
+│   ├── ComponentName.svelte  # single element wrappers — primitive behavior only
+│   └── types/
+└── shared/
+    ├── utils/                # pure functions
+    ├── types/                # global types
+    └── theme/                # design tokens, constants
+
+## File Conventions
+| Type      | File           | Export          |
+|-----------|----------------|-----------------|
+| component | *.svelte       | PascalCase      |
+| hook      | *.svelte.ts    | camelCase       |
+| types     | *.types.ts     | PascalCase      |
+| constants | *.constants.ts | SCREAMING_SNAKE |
+
+- Naming: kebab-case for files
+- Barrel exports: required at component roots only
+- No default exports on utilities
+
+## Component Rules
+- No business logic at any layer — UI state is allowed
+- No data fetching at any layer
+- Extract to *.svelte.ts when script > 25 lines or logic repeats across 2+ components
+- Extract to new component when template has > 2 logical sections
+- Max props: 10 | No prop drilling beyond depth 3
+- Prefer composition over configuration (slots over boolean props)
+
+## Svelte 5 Runes
+- $state → local reactive state
+- $derived → computed values (never $effect for derived state)
+- $effect → side effects only (DOM, subscriptions)
+- $props → component interface
+- $bindable → explicit two-way binding (use sparingly)
+- No legacy stores for local state
+
+## Forbidden
+- Circular imports
+- Business logic at any layer
+- Data fetching at any layer
+- any type (use unknown + narrowing)
+- Type assertions (as) except at data boundaries`;
+
 export const atomicTemplate: Policy = {
   meta: {
-    version: '1.0.0',
+    version: '1.1.0',
     generated_at: new Date().toISOString(),
   },
   stack: {
@@ -15,29 +83,11 @@ export const atomicTemplate: Policy = {
   },
   layers: [
     {
-      id: 'pages',
-      allowed_imports: ['templates', 'organisms', 'molecules', 'atoms', 'shared'],
-      responsibilities: {
-        owns: ['Route components', 'Data fetching', 'Connecting templates to real data'],
-        must_not: ['Contain complex UI logic', 'Directly define complex layouts'],
-        depends_on_abstractions: false
-      }
-    },
-    {
-      id: 'templates',
-      allowed_imports: ['organisms', 'molecules', 'atoms', 'shared'],
-      responsibilities: {
-        owns: ['Page-level layout structures', 'Slot-based composition'],
-        must_not: ['Know about real data', 'Manage business logic'],
-        depends_on_abstractions: false
-      }
-    },
-    {
       id: 'organisms',
       allowed_imports: ['molecules', 'atoms', 'shared'],
       responsibilities: {
-        owns: ['Complex, standalone UI sections', 'Local state for interaction logic'],
-        must_not: ['Know about routing', 'Directly access global state if possible'],
+        owns: ['complex UI sections — UI state allowed'],
+        must_not: ['business logic', 'data fetching'],
         depends_on_abstractions: true
       }
     },
@@ -45,8 +95,8 @@ export const atomicTemplate: Policy = {
       id: 'molecules',
       allowed_imports: ['atoms', 'shared'],
       responsibilities: {
-        owns: ['Simple combinations of atoms', 'Purely presentational logic'],
-        must_not: ['Fetch data', 'Contain business rules'],
+        owns: ['atom combinations — UI state allowed'],
+        must_not: ['business logic', 'data fetching'],
         depends_on_abstractions: false
       }
     },
@@ -54,8 +104,8 @@ export const atomicTemplate: Policy = {
       id: 'atoms',
       allowed_imports: ['shared'],
       responsibilities: {
-        owns: ['Single HTML element wrappers', 'Basic styling and primitive behavior'],
-        must_not: ['Import from any other layer', 'Contain any business logic'],
+        owns: ['single element wrappers — primitive behavior only'],
+        must_not: ['business logic', 'data fetching'],
         depends_on_abstractions: false
       }
     },
@@ -63,22 +113,20 @@ export const atomicTemplate: Policy = {
       id: 'shared',
       allowed_imports: [],
       responsibilities: {
-        owns: ['Utils', 'Theme constants', 'Global types'],
-        must_not: ['Import from UI layers'],
+        owns: ['utils', 'types', 'theme'],
+        must_not: ['business logic', 'data fetching'],
         depends_on_abstractions: false
       }
     },
   ],
   import_matrix: {
-    pages: ['templates', 'organisms', 'molecules', 'atoms', 'shared'],
-    templates: ['organisms', 'molecules', 'atoms', 'shared'],
     organisms: ['molecules', 'atoms', 'shared'],
     molecules: ['atoms', 'shared'],
     atoms: ['shared'],
     shared: [],
   },
   structural_constraints: {
-    max_component_depth: 5,
+    max_component_depth: 3,
     barrel_exports_required: true,
     circular_imports: 'FORBIDDEN',
     cross_feature_imports: 'via-public-api-only',
@@ -91,7 +139,7 @@ export const atomicTemplate: Policy = {
     },
   },
   ui_constraints: {
-    component_max_props: 7,
+    component_max_props: 10,
     prop_drilling_max_depth: 3,
     logic_in_components: true,
     style_co_location: true,
@@ -101,28 +149,28 @@ export const atomicTemplate: Policy = {
   state_constraints: {
     global_state_scope: 'minimal',
     local_state_allowed: true,
-    derived_state_strategy: 'selectors',
-    forbidden_patterns: ['prop-drilling-beyond-3-levels', 'global-state-for-ui-toggle'],
+    derived_state_strategy: 'runes',
+    forbidden_patterns: ['prop-drilling-beyond-3-levels', 'business-logic-in-components', 'any-type', 'type-assertion-as'],
   },
   side_effect_boundaries: {
-    allowed_in_layers: ['pages', 'templates', 'organisms'],
-    forbidden_in_layers: ['molecules', 'atoms'],
+    allowed_in_layers: [],
+    forbidden_in_layers: ['organisms', 'molecules', 'atoms', 'shared'],
     async_pattern: 'hooks',
-    data_fetching_scope: 'pages',
+    data_fetching_scope: 'none',
   },
   naming_conventions: {
     global_strategy: 'kebab-case',
     component: 'PascalCase',
     hook: 'camelCase',
+    constant: 'SCREAMING_SNAKE',
   },
   file_conventions: {
     types: {
       component: {
         pattern: '*.svelte',
-        companions: {
-          test: { required: true, extensions: ['.test.ts'] },
-          style: { required: false, extensions: ['.module.css'] },
-        },
+      },
+      hook: {
+        pattern: '*.svelte.ts',
       },
       types: { pattern: '*.types.ts' },
       constants: { pattern: '*.constants.ts' },
@@ -133,7 +181,7 @@ export const atomicTemplate: Policy = {
       expose_internals: false,
     },
     test_placement: 'colocated',
-    forbidden_patterns: [],
+    forbidden_patterns: ['default-export-on-utility'],
   },
   token_metadata: {
     estimated_prompt_tokens: 0,

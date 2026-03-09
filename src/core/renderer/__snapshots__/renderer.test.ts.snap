@@ -224,152 +224,70 @@ route (load fn) → services (server-only) → UI
 
 exports[`Markdown Renderer Atomic + utility-first — no css files in structure or companions 1`] = `
 "# Architecture Policy
-> Pattern: **atomic** | State: **minimal** | Styling: **utility-first**
+Pattern: atomic | Framework: Svelte 5 | Styling: utility-first
+Focus: design system
 
----
+## Layers & Import Direction
+organisms → molecules → atoms → shared (unidirectional, strict)
 
-## Stack
-- **Framework:** svelte
+| Layer     | May Import              |
+|-----------|-------------------------|
+| organisms | molecules, atoms, shared |
+| molecules | atoms, shared           |
+| atoms     | shared                  |
+| shared    | —                       |
 
----
+- Circular imports: FORBIDDEN
 
-## Layer Rules
-Imports are unidirectional. Each layer may only import from layers listed below it.
-Violations of import rules are **not permitted**.
-
-| Layer | May Import | Responsibilities | Side Effects |
-|-------|------------|------------------|--------------|
-| pages | templates, organisms, molecules, atoms, shared | **Owns:** Route components, Data fetching, Connecting templates to real data<br>**Not:** Contain complex UI logic, Directly define complex layouts | ✓ allowed |
-| templates | organisms, molecules, atoms, shared | **Owns:** Page-level layout structures, Slot-based composition<br>**Not:** Know about real data, Manage business logic | ✓ allowed |
-| organisms | molecules, atoms, shared | **Owns:** Complex, standalone UI sections, Local state for interaction logic<br>**Not:** Know about routing, Directly access global state if possible | ✓ allowed |
-| molecules | atoms, shared | **Owns:** Simple combinations of atoms, Purely presentational logic<br>**Not:** Fetch data, Contain business rules | ✗ forbidden |
-| atoms | shared | **Owns:** Single HTML element wrappers, Basic styling and primitive behavior<br>**Not:** Import from any other layer, Contain any business logic | ✗ forbidden |
-| shared | — | **Owns:** Utils, Theme constants, Global types<br>**Not:** Import from UI layers | ✗ forbidden |
-
-
-
-
-**Cross-feature imports:** via public api only
-**Circular imports:** FORBIDDEN
-
----
-
-## Expected Directory Structure
-
-\`\`\`
+## Directory Structure
 src/
-├── pages/
-│   ├── <route>/
-│   │   └── PageName.svelte
-├── templates/
-│   ├── <component>/
-│   │   ├── ComponentName.svelte
-├── organisms/
-│   ├── <component>/
-│   │   ├── ComponentName.svelte
-│   │   ├── hooks/
-│   │   └── types/
-├── molecules/
-│   ├── <component>/
-│   │   ├── ComponentName.svelte
-│   │   └── types/
-├── atoms/
-│   ├── <component>/
-│   │   ├── ComponentName.svelte
-│   │   └── types/
+├── organisms/<component>/
+│   ├── ComponentName.svelte  # complex UI sections — UI state allowed, no business logic
+│   ├── hooks/                # reusable reactive logic (.svelte.ts)
+│   └── types/
+├── molecules/<component>/
+│   ├── ComponentName.svelte  # atom combinations — UI state allowed, no business logic
+│   └── types/
+├── atoms/<component>/
+│   ├── ComponentName.svelte  # single element wrappers — primitive behavior only
+│   └── types/
 └── shared/
-    ├── utils/
-    ├── types/
-    └── theme/
-\`\`\`
-
----
+    ├── utils/                # pure functions
+    ├── types/                # global types
+    └── theme/                # design tokens, constants
 
 ## File Conventions
+| Type      | File           | Export          |
+|-----------|----------------|-----------------|
+| component | *.svelte       | PascalCase      |
+| hook      | *.svelte.ts    | camelCase       |
+| types     | *.types.ts     | PascalCase      |
+| constants | *.constants.ts | SCREAMING_SNAKE |
 
-### Naming
-> Files: \`kebab-case\` globally · Symbols: per-type rules below
+- Naming: kebab-case for files
+- Barrel exports: required at component roots only
+- No default exports on utilities
 
-| Type | File Pattern | Export Name Convention |
-|------|--------------|------------------------|
-| component | \`*.svelte\` | \`PascalCase\` |
-| types | \`*.types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
-| constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
-| store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
-| hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
-| service | \`*.ts\` | \`—\` |
+## Component Rules
+- No business logic at any layer — UI state is allowed
+- No data fetching at any layer
+- Extract to *.svelte.ts when script > 25 lines or logic repeats across 2+ components
+- Extract to new component when template has > 2 logical sections
+- Max props: 10 | No prop drilling beyond depth 3
+- Prefer composition over configuration (slots over boolean props)
 
+## Svelte 5 Runes
+- $state → local reactive state
+- $derived → computed values (never $effect for derived state)
+- $effect → side effects only (DOM, subscriptions)
+- $props → component interface
+- $bindable → explicit two-way binding (use sparingly)
+- No legacy stores for local state
 
-### Required Companions
-
-| File Type | Required | Optional |
-|-----------|----------|----------|
-| component | \`*.test.ts\` | — |
-| types | — | — |
-| constants | — | — |
-| store | — | — |
-| hook | — | — |
-| service | — | — |
-
-
-### Structure Rules
-- **Co-location:** strict — companions must live beside source file
-- **Test placement:** colocated
-- **Public API:** every feature root requires \`index.ts\` — internal files must not be imported directly
-- **Max directory depth:** N/A
-- **Barrel exports:** required at feature roots only
-
-### Forbidden Patterns
-- \`legacy-stores-for-local-state\`
-- \`effect-for-derived-state\`
-- \`direct-mutation-outside-runes\`
-
----
-
-## Component Composition Rules
-- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to \`*.svelte.ts\` (Svelte logic module) when script block exceeds ~20-25 lines
-- **Max props:** 7 — split into compound component if exceeded
-- **No prop drilling beyond depth 3** — lift to store or context
-- **Logic in components:** allowed
-- **Presentational components** must not import from \`state\` or \`services\` layers
-- **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
-
----
-
-## Abstraction Rules
-- Extract to **\`*.svelte.ts\` (Svelte logic module)** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
-- Extract to **service** when: logic touches external I/O (API, storage, cookies)
-- Extract to **utility** when: logic is pure, stateless, domain-agnostic
-- **Do not abstract preemptively** — wrong abstraction costs more than duplication
-
----
-
-## Svelte 5 Runes Contract
-- **\`$state\`** → local reactive state (avoid legacy \`let\` variables for state)
-- **\`$derived\`** → computed values; replaces selectors and reactive declarations
-- **\`$effect\`** → side effects only (DOM, subscriptions); **forbidden for syncing state**
-- **\`$props\`** → official component interface; no more \`export let\`
-- **\`$bindable\`** → explicit two-way binding; use sparingly to maintain data flow clarity
-
----
-
-## State & Async Rules
-- **Scope:** minimal
-- **Derived state:** $derived rune (computed values)
-- **Data fetching:** pages — pattern: hooks
-- **All promises must be handled** — no floating async calls
-- **API errors must not reach UI raw** — map to domain error types in service layer
-- **Every async UI operation requires** loading state + error state
-
----
-
-## Type Rules
-- **No \`any\`** — use \`unknown\` + type narrowing
-- **Props interface required** per component — no inline type literals
-- **No type assertions (\`as\`)** except at data boundaries (API responses, DOM events)
-
----
-
-*Generated by agent-arch · [edit templates to change rules]*"
+## Forbidden
+- Circular imports
+- Business logic at any layer
+- Data fetching at any layer
+- any type (use unknown + narrowing)
+- Type assertions (as) except at data boundaries"
 `;

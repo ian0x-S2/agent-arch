@@ -44,17 +44,6 @@ describe('Markdown Renderer', () => {
     expect(output).not.toContain('.module.css');
   });
 
-  test('Atomic + scoped — css files appear in structure and companions', () => {
-    const policy = composePolicy({
-      pattern: 'atomic',
-
-      naming_strategy: 'kebab-case',
-      styling_strategy: 'scoped',
-    });
-    const output = renderMarkdown(policy);
-    expect(output).toContain('.module.css');
-  });
-
   test('ui-lib + utility-first hides tokens folder in structure', () => {
     const policy = composePolicy({
       pattern: 'ui-lib',

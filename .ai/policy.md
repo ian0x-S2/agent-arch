@@ -1,28 +1,38 @@
 # Architecture Policy
 
-Pattern: flat | Framework: Svelte 5 | Styling: utility-first
+Pattern: atomic | Framework: Svelte 5 | Styling: utility-first
+Focus: design system
 
-## Structure
+## Layers & Import Direction
 
-No enforced layers — intentional simplicity at this scale.
+organisms → molecules → atoms → shared (unidirectional, strict)
+
+| Layer     | May Import               |
+| --------- | ------------------------ |
+| organisms | molecules, atoms, shared |
+| molecules | atoms, shared            |
+| atoms     | shared                   |
+| shared    | —                        |
 
 - Circular imports: FORBIDDEN
-- Cross imports: allowed
 
 ## Directory Structure
 
 src/
-├── components/ # all components — logic colocated ok at this scale
-├── hooks/ # reusable reactive logic (.svelte.ts)
-├── services/ # server-only external I/O — consumed via load functions only
-├── types/ # shared types
-└── utils/ # pure functions
-
-> Graduation signals — migrate to modular when:
->
-> - > 20 components in /components
-> - same data fetched in 3+ places
-> - repeated business logic across 3+ components
+├── organisms/<component>/
+│ ├── ComponentName.svelte # complex UI sections — UI state allowed, no business logic
+│ ├── hooks/ # reusable reactive logic (.svelte.ts)
+│ └── types/
+├── molecules/<component>/
+│ ├── ComponentName.svelte # atom combinations — UI state allowed, no business logic
+│ └── types/
+├── atoms/<component>/
+│ ├── ComponentName.svelte # single element wrappers — primitive behavior only
+│ └── types/
+└── shared/
+├── utils/ # pure functions
+├── types/ # global types
+└── theme/ # Tailwind config extensions — scoped tokens via CSS vars if needed
 
 ## File Conventions
 
@@ -30,21 +40,21 @@ src/
 | --------- | --------------- | --------------- |
 | component | \*.svelte       | PascalCase      |
 | hook      | \*.svelte.ts    | camelCase       |
-| service   | \*.ts           | camelCase       |
 | types     | \*.types.ts     | PascalCase      |
 | constants | \*.constants.ts | SCREAMING_SNAKE |
-| utils     | \*.ts           | camelCase       |
 
-- Naming: kebab-case for files
-- Barrel exports: optional
+- Naming: snake_case for files
+- Barrel exports: required at component roots only
 - No default exports on utilities
 
 ## Component Rules
 
-- No direct service imports in components — data via load functions only
+- No business logic at any layer — UI state is allowed
+- No data fetching at any layer
 - Extract to \*.svelte.ts when script > 25 lines or logic repeats across 2+ components
 - Extract to new component when template has > 2 logical sections
 - Max props: 10 | No prop drilling beyond depth 3
+- Prefer composition over configuration (slots over boolean props)
 
 ## Svelte 5 Runes
 
@@ -55,18 +65,10 @@ src/
 - $bindable → explicit two-way binding (use sparingly)
 - No legacy stores for local state
 
-## Data Flow
-
-route (load fn) → services (server-only) → UI
-
-- Services consumed through +page.server.ts only
-- API errors must be mapped to domain types before reaching UI
-- Every async operation requires loading + error state
-
 ## Forbidden
 
 - Circular imports
-- Direct service imports in components
-- Service imports in +page.ts (server-only)
-- `any` type (use unknown + narrowing)
-- Type assertions (`as`) except at data boundaries
+- Business logic at any layer
+- Data fetching at any layer
+- any type (use unknown + narrowing)
+- Type assertions (as) except at data boundaries
