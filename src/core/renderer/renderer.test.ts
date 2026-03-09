@@ -128,8 +128,7 @@ describe('Markdown Renderer', () => {
       naming_strategy: 'kebab-case'
     });
     const output = renderMarkdown(policy);
-    expect(output).toContain('## Stack');
-    expect(output).toContain('svelte');
+    expect(output).toContain('Pattern: flat | Framework: Svelte 5');
   });
 
   test('ui-lib naming header communicates PascalCase for components camelCase for utils', () => {

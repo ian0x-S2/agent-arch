@@ -20,7 +20,7 @@ src/
 ├── modules/<slice>/
 │   ├── components/  # components — no logic, extract when template > 2 logical sections
 │   ├── hooks/       # module-scoped reactive state and logic (.svelte.ts)
-│   ├── services/    # external I/O only — $env/static/private allowed here only
+│   ├── services/    # external I/O and API clients — never imported in components
 │   ├── types/       # module-scoped types
 │   └── index.ts     # public API (required)
 └── shared/

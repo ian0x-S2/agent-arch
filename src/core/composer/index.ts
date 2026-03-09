@@ -5,6 +5,7 @@ import { resolveNamingPatterns } from './naming';
 import { STATE_BY_PATTERN } from '../shared/pattern-state';
 import { FSD_LOAD_MODE, FSD_REMOTE_MODE } from '../registry/templates/feature-sliced';
 import { MODULAR_LOAD_MODE, MODULAR_REMOTE_MODE } from '../registry/templates/modular';
+import { FLAT_LOAD_MODE, FLAT_REMOTE_MODE } from '../registry/templates/flat';
 import { SVELTE_OVERRIDES } from '../shared/framework-rules';
 import {
   VALID_STYLING,
@@ -169,6 +170,15 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
       let raw = selections.data_fetching === 'remote-functions' 
         ? MODULAR_REMOTE_MODE 
         : MODULAR_LOAD_MODE;
+      
+      raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
+      raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
+      
+      merged._raw_template = raw;
+    } else if (selections.pattern === 'flat') {
+      let raw = selections.data_fetching === 'remote-functions' 
+        ? FLAT_REMOTE_MODE 
+        : FLAT_LOAD_MODE;
       
       raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
       raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);

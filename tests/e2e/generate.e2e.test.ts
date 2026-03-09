@@ -39,10 +39,10 @@ describe('E2E: generate command', () => {
                     naming_strategy: 'camelCase',
                 },
                 assertions: [
-                    (c) => expect(c).toContain('Pattern: **flat**'),
-                    (c) => expect(c).toContain('flexible'),
+                    (c) => expect(c).toContain('Pattern: flat'),
+                    (c) => expect(c).toContain('No enforced layers'),
                     (c) => expect(c).toContain('*.svelte'),
-                    (c) => expect(c).toContain('Barrel exports:** optional'),
+                    (c) => expect(c).toContain('Barrel exports: optional'),
                 ],
             },
             {
@@ -94,8 +94,8 @@ describe('E2E: generate command', () => {
                     data_fetching: 'remote-functions',
                 },
                 assertions: [
-                    (c) => expect(c).toContain('via remote functions; services consumed directly in components'),
-                    (c) => expect(c).toContain('# external I/O — RPC endpoints, components may import'),
+                    (c) => expect(c).toContain('component | hook → server (*.remote.ts) → UI'),
+                    (c) => expect(c).toContain('Remote functions are the only place allowed to access server-only modules'),
                 ],
             },
             {

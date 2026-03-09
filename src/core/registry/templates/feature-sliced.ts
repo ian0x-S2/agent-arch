@@ -23,8 +23,7 @@ src/
 ├── app/             # providers, router, global styles
 ├── features/<slice>/
 │   ├── ui/          # components
-│   ├── model/       # feature-scoped reactive state (.svelte.ts)
-│   ├── api/         # use cases / application services
+│   ├── api/         # external I/O and API clients — called by load functions
 │   └── index.ts     # public API (required)
 ├── entities/<slice>/
 │   ├── model/       # domain logic, validators, value objects (no reactive state)
