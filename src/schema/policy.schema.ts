@@ -1,7 +1,5 @@
 import * as v from 'valibot';
 
-export const OutputModeSchema = v.literal('compact');
-
 export const LayerResponsibilitiesSchema = v.object({
   owns: v.array(v.string()),
   must_not: v.array(v.string()),
@@ -141,7 +139,6 @@ export const PolicySchema = v.object({
   meta: v.object({
     version: v.string(),
     generated_at: v.string(),
-    output_mode: OutputModeSchema,
     token_budget: v.optional(v.number()),
   }),
   stack: v.object({
@@ -214,10 +211,11 @@ export const PolicySchema = v.object({
     compression_applied: v.boolean(),
     omitted_sections: v.array(v.string()),
   }),
+  _raw_template: v.optional(v.string()),
 });
 export type Policy = v.InferOutput<typeof PolicySchema>;
 export type Layer = v.InferOutput<typeof LayerSchema>;
 export type FileConventions = v.InferOutput<typeof FileConventionsSchema>;
 export type FileTypeConvention = v.InferOutput<typeof FileTypeConventionSchema>;
 export type CompanionRule = v.InferOutput<typeof CompanionRuleSchema>;
-export type OutputMode = v.InferOutput<typeof OutputModeSchema>;
+

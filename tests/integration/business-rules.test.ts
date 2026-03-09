@@ -6,7 +6,7 @@ describe('Regras de negócio: styling_strategy', () => {
     test('utility-first: sem .module.css ou .css no output', () => {
         const output = renderMarkdown(composePolicy({
             pattern: 'feature-sliced',
-            output_mode: 'compact',
+
             naming_strategy: 'kebab-case',
             styling_strategy: 'utility-first',
         }));
@@ -17,7 +17,7 @@ describe('Regras de negócio: styling_strategy', () => {
     test('scoped: .module.css aparece nos companions e na estrutura', () => {
         const output = renderMarkdown(composePolicy({
             pattern: 'atomic',
-            output_mode: 'compact',
+
             naming_strategy: 'kebab-case',
             styling_strategy: 'scoped',
         }));
@@ -29,7 +29,7 @@ describe('Regras de negócio: component_preference', () => {
     test('strict: max_props = 5 e aparece no markdown', () => {
         const policy = composePolicy({
             pattern: 'flat',
-            output_mode: 'compact',
+
             naming_strategy: 'kebab-case',
             component_preference: 'strict',
         });
@@ -40,7 +40,7 @@ describe('Regras de negócio: component_preference', () => {
     test('balanced: max_props = 10', () => {
         const policy = composePolicy({
             pattern: 'flat',
-            output_mode: 'compact',
+
             naming_strategy: 'kebab-case',
             component_preference: 'balanced',
         });
@@ -50,7 +50,7 @@ describe('Regras de negócio: component_preference', () => {
     test('relaxed: max_props = 15', () => {
         const policy = composePolicy({
             pattern: 'flat',
-            output_mode: 'compact',
+
             naming_strategy: 'kebab-case',
             component_preference: 'relaxed',
         });
@@ -70,7 +70,7 @@ describe('Regras de negócio: naming_strategy no markdown final', () => {
         test(`${strategy} → padrão "${expected}" presente no markdown`, () => {
             const output = renderMarkdown(composePolicy({
                 pattern: 'feature-sliced',
-                output_mode: 'compact',
+    
                 naming_strategy: strategy,
             }));
             expect(output).toContain(expected);
@@ -80,8 +80,8 @@ describe('Regras de negócio: naming_strategy no markdown final', () => {
 
 describe('Regras de negócio: state derivado por pattern', () => {
     const cases = [
-        { pattern: 'feature-sliced', expectedScope: 'feature-based' },
-        { pattern: 'modular', expectedScope: 'module-based' },
+        { pattern: 'feature-sliced', expectedScope: 'feature-scoped' },
+        { pattern: 'modular', expectedScope: 'module-scoped' },
         { pattern: 'flat', expectedScope: 'any' },
         { pattern: 'atomic', expectedScope: 'minimal' },
     ] as const;
@@ -90,7 +90,7 @@ describe('Regras de negócio: state derivado por pattern', () => {
         test(`${pattern} → state scope "${expectedScope}" no markdown`, () => {
             const output = renderMarkdown(composePolicy({
                 pattern,
-                output_mode: 'compact',
+    
                 naming_strategy: 'kebab-case',
             }));
             expect(output).toContain(expectedScope);
@@ -102,7 +102,7 @@ describe('Regras de negócio: flat pattern', () => {
     test('barrel_exports_required = false independente do template default', () => {
         const policy = composePolicy({
             pattern: 'flat',
-            output_mode: 'compact',
+
             naming_strategy: 'kebab-case',
         });
         expect(policy.structural_constraints.barrel_exports_required).toBe(false);

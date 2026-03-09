@@ -3,6 +3,8 @@ import { PolicySchema, type Policy } from '../../schema/policy.schema';
 import { TemplateRegistry } from '../registry';
 import { resolveNamingPatterns } from './naming';
 import { STATE_BY_PATTERN } from '../shared/pattern-state';
+import { FSD_LOAD_MODE, FSD_REMOTE_MODE } from '../registry/templates/feature-sliced';
+import { MODULAR_LOAD_MODE, MODULAR_REMOTE_MODE } from '../registry/templates/modular';
 import { SVELTE_OVERRIDES } from '../shared/framework-rules';
 import {
   VALID_STYLING,
@@ -15,7 +17,6 @@ import type { UserSelections } from '../../types';
 
 export const UserSelectionsSchema = v.object({
   pattern: v.string(),
-  output_mode: v.optional(v.literal('compact')),
   naming_strategy: v.optional(v.picklist(VALID_STRATEGIES)),
   styling_strategy: v.optional(v.picklist(VALID_STYLING)),
   component_lib: v.optional(v.string()),
@@ -126,7 +127,6 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
   // 3. Define overrides
   const overrides: any = {
     meta: {
-      output_mode: selections.output_mode || 'compact',
       generated_at: new Date().toISOString()
     },
     stack: {
@@ -154,6 +154,27 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
 
     // 4. Merge base with overrides
     let merged = deepMerge(template, overrides);
+
+    // 4b. Inject raw template for feature-sliced and modular patterns
+    if (selections.pattern === 'feature-sliced') {
+      let raw = selections.data_fetching === 'remote-functions' 
+        ? FSD_REMOTE_MODE 
+        : FSD_LOAD_MODE;
+      
+      raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
+      raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
+      
+      merged._raw_template = raw;
+    } else if (selections.pattern === 'modular') {
+      let raw = selections.data_fetching === 'remote-functions' 
+        ? MODULAR_REMOTE_MODE 
+        : MODULAR_LOAD_MODE;
+      
+      raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
+      raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
+      
+      merged._raw_template = raw;
+    }
 
   // 5. Update naming patterns based on strategy
   if (namingStrategy) {

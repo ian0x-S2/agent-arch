@@ -18,25 +18,24 @@ describe('E2E: generate command', () => {
                 label: 'FSD + utility-first + kebab-case',
                 input: {
                     pattern: 'feature-sliced',
-                    output_mode: 'compact',
+
                     naming_strategy: 'kebab-case',
                     styling_strategy: 'utility-first',
                 },
                 assertions: [
                     (c) => expect(c).toContain('# Architecture Policy'),
-                    (c) => expect(c).toContain('Pattern: **feature-sliced**'),
-                    (c) => expect(c).toContain('Styling: **utility-first**'),
-                    (c) => expect(c).not.toContain('.module.css'),
+                    (c) => expect(c).toContain('Pattern: feature-sliced'),
+                    (c) => expect(c).toContain('Styling: utility-first'),
                     (c) => expect(c).toContain('*.svelte'),
                     (c) => expect(c).toContain('*.svelte.ts'),
-                    (c) => expect(c).toContain('feature-based'),
+                    (c) => expect(c).toContain('feature-scoped'),
                 ],
             },
             {
                 label: 'Flat + camelCase',
                 input: {
                     pattern: 'flat',
-                    output_mode: 'compact',
+
                     naming_strategy: 'camelCase',
                 },
                 assertions: [
@@ -50,7 +49,7 @@ describe('E2E: generate command', () => {
                 label: 'Atomic + scoped + snake_case',
                 input: {
                     pattern: 'atomic',
-                    output_mode: 'compact',
+
                     naming_strategy: 'snake_case',
                     styling_strategy: 'scoped',
                 },
@@ -65,33 +64,33 @@ describe('E2E: generate command', () => {
                 label: 'FSD + load-functions',
                 input: {
                     pattern: 'feature-sliced',
-                    output_mode: 'compact',
+
                     data_fetching: 'load-functions',
                 },
                 assertions: [
-                    (c) => expect(c).toContain('SvelteKit `load` functions (`+page.server.ts`, `+page.ts`)'),
+                    (c) => expect(c).toContain('routes/          # load functions, actions — no domain logic'),
                     (c) => expect(c).not.toContain('remote functions'),
-                    (c) => expect(c).toContain('follow SvelteKit conventions (+page.server.ts)'),
+                    (c) => expect(c).toContain('route (load fn)'),
                 ],
             },
             {
                 label: 'Modular + remote-functions',
                 input: {
                     pattern: 'modular',
-                    output_mode: 'compact',
+
                     data_fetching: 'remote-functions',
                 },
                 assertions: [
-                    (c) => expect(c).toContain('via remote functions; services are consumed directly in components'),
-                    (c) => expect(c).toContain('# external I/O — RPC style endpoints'),
-                    (c) => expect(c).toContain('can be imported directly in components'),
+                    (c) => expect(c).toContain('component | hook → modules/server (*.remote.ts) → UI'),
+                    (c) => expect(c).toContain('Remote functions are the only entry point to server-side logic'),
+                    (c) => expect(c).toContain('module-scoped'),
                 ],
             },
             {
                 label: 'Flat + remote-functions',
                 input: {
                     pattern: 'flat',
-                    output_mode: 'compact',
+
                     data_fetching: 'remote-functions',
                 },
                 assertions: [
@@ -103,7 +102,7 @@ describe('E2E: generate command', () => {
                 label: 'UI-Lib + utility-first: naming override and tokens removal',
                 input: {
                     pattern: 'ui-lib',
-                    output_mode: 'compact',
+
                     naming_strategy: 'kebab-case', // Should be overridden to PascalCase
                     styling_strategy: 'utility-first',
                 },

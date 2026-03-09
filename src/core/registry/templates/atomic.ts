@@ -4,7 +4,6 @@ export const atomicTemplate: Policy = {
   meta: {
     version: '1.0.0',
     generated_at: new Date().toISOString(),
-    output_mode: 'compact',
   },
   stack: {
     domain: 'frontend',

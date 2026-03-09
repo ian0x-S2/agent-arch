@@ -2,365 +2,159 @@
 
 exports[`Markdown Renderer FSD + utility-first compact output matches snapshot 1`] = `
 "# Architecture Policy
-> Pattern: **feature-sliced** | State: **feature-based** | Styling: **utility-first**
+Pattern: feature-sliced | Framework: Svelte 5 | Styling: utility-first
 
----
+## Layers & Import Direction
+app → features → entities → shared (unidirectional, strict)
 
-## Stack
-- **Framework:** svelte
+| Layer    | May Import          |
+|----------|---------------------|
+| app      | features, entities, shared |
+| features | entities, shared    |
+| entities | shared              |
+| shared   | —                   |
 
----
+- Cross-feature imports: FORBIDDEN
+- Circular imports: FORBIDDEN
+- Cross-slice imports must go through index.ts
 
-## Layer Rules
-Imports are unidirectional. Each layer may only import from layers listed below it.
-Violations of import rules are **not permitted**.
-
-| Layer | May Import | Responsibilities | Side Effects |
-|-------|------------|------------------|--------------|
-| app | pages, widgets, features, entities, shared | **Owns:** providers, routing, global styles, app initialization<br>**Not:** contain business logic | ✗ forbidden |
-| pages | widgets, features, entities, shared | **Owns:** composition of widgets for a route<br>**Not:** contain business logic | ✗ forbidden |
-| widgets | features, entities, shared | **Owns:** composition of features, reusable page sections<br>**Not:** contain business logic directly | ✗ forbidden |
-| features | entities, shared | **Owns:** user interactions with business value (AddToCart, LoginForm)<br>**Not:** import from other features, know about pages | ✓ allowed |
-| entities | shared | **Owns:** business objects and their operations (User, Product, Order)<br>**Not:** import from features or above, contain UI components ideally | ✓ allowed |
-| shared | — | **Owns:** reusable infra with no business logic (ui-kit, api client, utils)<br>**Not:** import from any other layer, contain business logic | ✗ forbidden |
-
-
-
-### Abstraction Boundaries
-
-| Boundary | Inner | Outer | Interface Required | Forbidden Leakage |
-|----------|-------|-------|--------------------|-------------------|
-| features→entities | entities | features | ✓ (model) | API raw responses, implementation details of storage |
-
-
-**Cross-feature imports:** via public api only
-**Circular imports:** FORBIDDEN
-
----
-
-## Expected Directory Structure
-
-\`\`\`
+## Directory Structure
 src/
-├── app/
-│   # imports: [pages, widgets, features, entities, shared]
-│   # must not: contain business logic
-├── pages/
-│   # imports: [widgets, features, entities, shared]
-│   # must not: contain business logic
-│   ├── <slice>/          # business domain unit
-│   │   ├── ui/
-│   │   │   # route components only — compose widgets, no business logic
-│   │   ├── model/
-│   │   │   # reactive state (runes in .svelte.ts), types — no side effects
-│   │   ├── api/
-│   │   │   # follow SvelteKit conventions — +page.server.ts or actions
-│   │   ├── lib/
-│   │   │   # pure utils — stateless, no imports from ui or model
-│   │   ├── config/
-│   │   │   # constants, feature flags
-│   │   └── index.ts      # public api — only export what consumers need
-├── widgets/
-│   # imports: [features, entities, shared]
-│   # must not: contain business logic directly
-│   ├── <slice>/          # business domain unit
-│   │   ├── ui/
-│   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
-│   │   ├── model/
-│   │   │   # reactive state (runes in .svelte.ts), types — no side effects
-│   │   ├── api/
-│   │   │   # follow SvelteKit conventions — +page.server.ts or actions
-│   │   ├── lib/
-│   │   │   # pure utils — stateless, no imports from ui or model
-│   │   ├── config/
-│   │   │   # constants, feature flags
-│   │   └── index.ts      # public api — only export what consumers need
-├── features/
-│   # imports: [entities, shared]
-│   # must not: import from other features
-│   ├── <slice>/          # business domain unit
-│   │   ├── ui/
-│   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
-│   │   ├── model/
-│   │   │   # feature state (runes in .svelte.ts) — only for this feature
-│   │   ├── api/
-│   │   │   # server mutations — follow SvelteKit conventions (actions), never fetch() in component
-│   │   ├── lib/
-│   │   │   # pure utils — stateless, no imports from ui or model
-│   │   ├── config/
-│   │   │   # constants, feature flags
-│   │   └── index.ts      # public api — only export what consumers need
-├── entities/
-│   # imports: [shared]
-│   # must not: import from features or above
-│   ├── <slice>/          # business domain unit
-│   │   ├── ui/
-│   │   │   # components — extract if template > 2 logical sections, no logic — extract to model
-│   │   ├── model/
-│   │   │   # entity state (runes in .svelte.ts), types — pure business logic
-│   │   ├── api/
-│   │   │   # server data access — follow SvelteKit conventions (+page.server.ts), map to domain types
-│   │   ├── lib/
-│   │   │   # pure utils — stateless, no imports from ui or model
-│   │   ├── config/
-│   │   │   # constants, feature flags
-│   │   └── index.ts      # public api — only export what consumers need
-├── shared/
-│   # imports: [none]
-│   # must not: import from any other layer
-│   ├── ui-kit/           # design system primitives
-│   ├── api/              # base http client, interceptors
-│   ├── lib/              # pure utils — no business logic
-│   └── types/            # global types only
-\`\`\`
-
----
-
-## Domain Rules
-- **Entities location:** \`entities\`
-- **Value objects:** allowed
-- **Immutable entities:** YES
-- **Framework-agnostic domain:** YES
-- **Validation:** factory-function
-- **Anemic model:** FORBIDDEN — business logic belongs in entities
-- **Ubiquitous Language:** enforced
-
----
+├── routes/          # load functions, actions — no domain logic
+├── app/             # providers, router, global styles
+├── features/<slice>/
+│   ├── ui/          # components
+│   ├── model/       # feature-scoped reactive state (.svelte.ts)
+│   ├── api/         # use cases / application services
+│   └── index.ts     # public API (required)
+├── entities/<slice>/
+│   ├── model/       # domain logic, validators, value objects (no reactive state)
+│   ├── api/         # data access, response mapping
+│   └── index.ts     # public API (required)
+└── shared/
+    ├── ui-kit/      # primitives
+    ├── api/         # base fetch only — no domain requests
+    ├── lib/         # pure utils
+    └── types/       # global types
 
 ## File Conventions
+| Type      | File             | Export          |
+|-----------|------------------|-----------------|
+| component | *.svelte         | PascalCase      |
+| logic     | *.svelte.ts      | camelCase       |
+| service   | *.service.ts     | camelCase       |
+| types     | *.types.ts       | PascalCase      |
+| constants | *.constants.ts   | SCREAMING_SNAKE |
 
-### Naming
-> Files: \`kebab-case\` globally · Symbols: per-type rules below
+- Naming: kebab-case for files
+- Barrel exports: required only at feature/entity roots (index.ts)
+- No default exports on utilities
 
-| Type | File Pattern | Export Name Convention |
-|------|--------------|------------------------|
-| component | \`*.svelte\` | \`PascalCase\` |
-| hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
-| store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
-| service | \`*.ts\` | \`camelCase (*Service suffix)\` |
-| types | \`*.types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
-| constants | \`*.constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
+## Component Rules
+- No data fetching in components — receive via props/load
+- No business logic in components
+- Extract to *.svelte.ts when script > 25 lines or logic repeats across 2+ components
+- Extract to new component when template has > 2 logical sections
+- Max props: 10 | No prop drilling beyond depth 2
+- Prefer composition over configuration (slots over boolean props)
 
+## Svelte 5 Runes
+- $state → local reactive state
+- $derived → computed values (never $effect for derived state)
+- $effect → side effects only (DOM, subscriptions)
+- $props → component interface
+- $bindable → explicit two-way binding (use sparingly)
+- No legacy stores for local state
 
-### Required Companions
+## State & Data Flow
+route (load fn) → features/api (use case) → entities/api (data access) → entities/model (domain type)
 
-| File Type | Required | Optional |
-|-----------|----------|----------|
-| component | \`*.test.ts\` | — |
-| hook | \`*.test.ts\` | — |
-| store | \`*.test.ts\` | — |
-| service | — | \`*.test.ts\` |
-| types | — | — |
-| constants | — | — |
+- Side effects: allowed only in features/api and entities/api
+- API errors must be mapped to domain types before reaching UI
+- Every async operation requires loading + error state
 
-
-### Structure Rules
-- **Co-location:** strict — companions must live beside source file
-- **Test placement:** colocated
-- **Public API:** every feature root requires \`index.ts\` — internal files must not be imported directly
-- **Max directory depth:** 5
-- **Barrel exports:** required at feature roots only
-
-### Forbidden Patterns
-- \`default-export-on-utility\`
-- \`barrel-in-non-feature-root\`
-- \`named-export-mix-in-component-file\`
-- \`legacy-stores-for-local-state\`
-- \`effect-for-derived-state\`
-- \`direct-mutation-outside-runes\`
-
----
-
-## Component Composition Rules
-- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to \`*.svelte.ts\` (Svelte logic module) when script block exceeds ~20-25 lines
-- **Max props:** 7 — split into compound component if exceeded
-- **No prop drilling beyond depth 2** — lift to store or context
-- **Logic in components:** FORBIDDEN — extract to \`*.svelte.ts\` (Svelte logic module)
-- **Presentational components** must not import from \`state\` or \`services\` layers
-- **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
-
----
-
-## Abstraction Rules
-- Extract to **\`*.svelte.ts\` (Svelte logic module)** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
-- Extract to **service** when: logic touches external I/O (API, storage, cookies)
-- Extract to **utility** when: logic is pure, stateless, domain-agnostic
-- **Do not abstract preemptively** — wrong abstraction costs more than duplication
-
----
-
-## Svelte 5 Runes Contract
-- **\`$state\`** → local reactive state (avoid legacy \`let\` variables for state)
-- **\`$derived\`** → computed values; replaces selectors and reactive declarations
-- **\`$effect\`** → side effects only (DOM, subscriptions); **forbidden for syncing state**
-- **\`$props\`** → official component interface; no more \`export let\`
-- **\`$bindable\`** → explicit two-way binding; use sparingly to maintain data flow clarity
-
----
-
-## State & Async Rules
-- **Scope:** feature-based
-- **Derived state:** $derived rune (computed values)
-- **Data fetching:** entities — SvelteKit \`load\` functions (\`+page.server.ts\`, \`+page.ts\`); never \`fetch()\` directly in components
-- **All promises must be handled** — no floating async calls
-- **API errors must not reach UI raw** — map to domain error types in service layer
-- **Every async UI operation requires** loading state + error state
-
----
-
-## Type Rules
-- **No \`any\`** — use \`unknown\` + type narrowing
-- **Props interface required** per component — no inline type literals
-- **No type assertions (\`as\`)** except at data boundaries (API responses, DOM events)
-
----
-
-*Generated by agent-arch · [edit templates to change rules]*"
+## Forbidden
+- Component fetching data directly
+- Reactive state ($state) in entities
+- Domain logic in features/api
+- Raw API responses leaking to UI
+- any type (use unknown + narrowing)
+- Type assertions (as) except at data boundaries"
 `;
 
 exports[`Markdown Renderer Modular + utility-first compact output matches snapshot 1`] = `
 "# Architecture Policy
-> Pattern: **modular** | State: **module-based** | Styling: **utility-first**
+Pattern: modular | Framework: Svelte 5 | Styling: utility-first
 
----
+## Layers & Import Direction
+modules → shared (unidirectional, strict)
 
-## Stack
-- **Framework:** svelte
+| Layer   | May Import |
+|---------|------------|
+| modules | shared     |
+| shared  | —          |
 
----
+- Cross-module imports: FORBIDDEN — modules must remain isolated
+- Circular imports: FORBIDDEN
+- shared must contain only infrastructure (utils, design system, global types)
 
-## Layer Rules
-Imports are unidirectional. Each layer may only import from layers listed below it.
-Violations of import rules are **not permitted**.
-
-| Layer | May Import | Responsibilities | Side Effects |
-|-------|------------|------------------|--------------|
-| modules | shared | **Owns:** business logic, components, hooks, services<br>**Not:** import directly from other modules | ✓ allowed |
-| shared | — | **Owns:** design system, utils, global types, api client<br>**Not:** contain business logic, import from modules | ✓ allowed |
-
-
-
-
-**Cross-feature imports:** via public api only
-**Circular imports:** FORBIDDEN
-**Cross-module communication:** via shared only
-
----
-
-## Expected Directory Structure
-
-\`\`\`
+## Directory Structure
 src/
-├── modules/
-│   ├── <module-name>/        # one per business capability
-│   │   ├── components/       # extract if template > 2 logical sections
-│   │   │   └── ComponentName.svelte
-│   │   │       # no logic — use hooks/
-│   │   ├── hooks/            # reactive logic and state modules (*.svelte.ts)
-│   │   ├── services/         # external I/O only — never import in components directly
-│   │   │   #                   use SvelteKit load functions (+page.server.ts) as the entry point
-│   │   │   #                   $env/static/private allowed here, forbidden in components
-│   │   ├── types/            # module-scoped types
-│   │   └── index.ts          # public api — never import internals directly
-│   │   # cross-module imports: FORBIDDEN — use shared/
-├── shared/
-│   ├── ui/                   # design system, generic components
-│   ├── utils/                # pure functions — min 2 consumers to justify
-│   └── types/                # global contracts only
-\`\`\`
-
----
+├── modules/<slice>/
+│   ├── components/  # components — no logic, extract when template > 2 logical sections
+│   ├── hooks/       # module-scoped reactive state and logic (.svelte.ts)
+│   ├── services/    # external I/O only — $env/static/private allowed here only
+│   ├── types/       # module-scoped types
+│   └── index.ts     # public API (required)
+└── shared/
+    ├── ui/          # design system primitives
+    ├── utils/       # pure functions — min 2 consumers to justify
+    └── types/       # global types only
 
 ## File Conventions
+| Type      | File           | Export          |
+|-----------|----------------|-----------------|
+| component | *.svelte       | PascalCase      |
+| hook      | *.svelte.ts    | camelCase       |
+| service   | *.ts           | camelCase       |
+| types     | *.types.ts     | PascalCase      |
+| constants | *.constants.ts | SCREAMING_SNAKE |
 
-### Naming
-> Files: \`PascalCase\` globally · Symbols: per-type rules below
+- Naming: PascalCase for files
+- Barrel exports: required only at module roots (index.ts)
+- No default exports on utilities
 
-| Type | File Pattern | Export Name Convention |
-|------|--------------|------------------------|
-| component | \`*.svelte\` | \`PascalCase\` |
-| hook | \`*.svelte.ts\` | \`camelCase (runes/logic functions)\` |
-| store | \`*.svelte.ts\` | \`camelCase (reactive runes)\` |
-| service | \`*.ts\` | \`camelCase\` |
-| types | \`*Types.ts\` | \`PascalCase (*Type | *Props suffix)\` |
-| constants | \`*Constants.ts\` | \`SCREAMING_SNAKE_CASE\` |
+## Component Rules
+- No business logic in components
+- No direct service imports in components — data via load functions only
+- Extract to *.svelte.ts when script > 25 lines or logic repeats across 2+ components
+- Extract to new component when template has > 2 logical sections
+- Max props: 10 | No prop drilling beyond depth 2
+- Prefer composition over configuration (slots over boolean props)
 
+## Svelte 5 Runes
+- $state → local reactive state
+- $derived → computed values (never $effect for derived state)
+- $effect → side effects only (DOM, subscriptions)
+- $props → component interface
+- $bindable → explicit two-way binding (use sparingly)
+- No legacy stores for local state
 
-### Required Companions
+## Data Flow
+route (load fn) → modules/services → UI
 
-| File Type | Required | Optional |
-|-----------|----------|----------|
-| component | \`*.test.ts\` | — |
-| hook | \`*.test.ts\` | — |
-| store | \`*.test.ts\` | — |
-| service | — | \`*.test.ts\` |
-| types | — | — |
-| constants | — | — |
+- Services are server-only — consumed through +page.server.ts, never imported in components
+- API errors must be mapped to domain types before reaching UI
+- Every async operation requires loading + error state
 
-
-### Structure Rules
-- **Co-location:** strict — companions must live beside source file
-- **Test placement:** colocated
-- **Public API:** every feature root requires \`index.ts\` — internal files must not be imported directly
-- **Max directory depth:** N/A
-- **Barrel exports:** required at feature roots only
-
-### Forbidden Patterns
-- \`default-export-on-utility\`
-- \`barrel-in-non-feature-root\`
-- \`legacy-stores-for-local-state\`
-- \`effect-for-derived-state\`
-- \`direct-mutation-outside-runes\`
-
----
-
-## Component Composition Rules
-- **Complexity signal:** extract to a separate component when the template has more than 2 logical sections, not by line count
-- **Logic signal:** extract to \`*.svelte.ts\` (Svelte logic module) when script block exceeds ~20-25 lines
-- **Max props:** 7 — split into compound component if exceeded
-- **No prop drilling beyond depth 2** — lift to store or context
-- **Logic in components:** FORBIDDEN — extract to \`*.svelte.ts\` (Svelte logic module)
-- **Presentational components** must not import from \`state\` or \`services\` layers
-- **Prefer composition over configuration:** YES — pass children/slots, avoid boolean prop explosion
-
----
-
-## Abstraction Rules
-- Extract to **\`*.svelte.ts\` (Svelte logic module)** when: logic repeats across 2+ components OR exceeds 20-25 lines inside component
-- Extract to **service** when: logic touches external I/O (API, storage, cookies)
-- Extract to **utility** when: logic is pure, stateless, domain-agnostic
-- **Do not abstract preemptively** — wrong abstraction costs more than duplication
-
----
-
-## Svelte 5 Runes Contract
-- **\`$state\`** → local reactive state (avoid legacy \`let\` variables for state)
-- **\`$derived\`** → computed values; replaces selectors and reactive declarations
-- **\`$effect\`** → side effects only (DOM, subscriptions); **forbidden for syncing state**
-- **\`$props\`** → official component interface; no more \`export let\`
-- **\`$bindable\`** → explicit two-way binding; use sparingly to maintain data flow clarity
-
----
-
-## State & Async Rules
-- **Scope:** module-based
-- **Derived state:** $derived rune (computed values)
-- **Data fetching:** modules — via SvelteKit \`load\` functions; services are server-only, consumed through \`+page.server.ts\` not imported in components
-- **All promises must be handled** — no floating async calls
-- **API errors must not reach UI raw** — map to domain error types in service layer
-- **Every async UI operation requires** loading state + error state
-
----
-
-## Type Rules
-- **No \`any\`** — use \`unknown\` + type narrowing
-- **Props interface required** per component — no inline type literals
-- **No type assertions (\`as\`)** except at data boundaries (API responses, DOM events)
-
----
-
-*Generated by agent-arch · [edit templates to change rules]*"
+## Forbidden
+- Cross-module imports
+- Direct service imports in components
+- Business logic in shared
+- Domain logic or module coordination in shared
+- Global reactive state outside module hooks
+- \`any\` type (use unknown + narrowing)
+- Type assertions (\`as\`) except at data boundaries"
 `;
 
 exports[`Markdown Renderer Flat compact output matches snapshot 1`] = `

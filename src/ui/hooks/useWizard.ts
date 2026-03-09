@@ -33,7 +33,7 @@ export const useWizard = () => {
   }, [selections.pattern]);
 
   const updateSelections = useCallback((mapping: Partial<UserSelections>) => {
-    setSelections((prev) => ({ ...prev, ...mapping, output_mode: prev.output_mode || 'compact' }));
+    setSelections((prev) => ({ ...prev, ...mapping }));
   }, []);
 
   return {

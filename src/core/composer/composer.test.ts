@@ -6,7 +6,7 @@ describe("Composer", () => {
   test("FSD derives state as feature-based automatically", () => {
     const policy = composePolicy({
       pattern: "feature-sliced",
-      output_mode: "compact",
+
       naming_strategy: "PascalCase",
     });
 
@@ -17,7 +17,7 @@ describe("Composer", () => {
   test("flat derives state as flexible automatically", () => {
     const policy = composePolicy({
       pattern: "flat",
-      output_mode: "compact",
+
       naming_strategy: "kebab-case",
     });
 
@@ -28,7 +28,7 @@ describe("Composer", () => {
   test("modular derives state as module-based automatically", () => {
     const policy = composePolicy({
       pattern: "modular",
-      output_mode: "compact",
+
       naming_strategy: "PascalCase",
     });
 
@@ -39,7 +39,7 @@ describe("Composer", () => {
   test("atomic derives state as minimal automatically", () => {
     const policy = composePolicy({
       pattern: "atomic",
-      output_mode: "compact",
+
       naming_strategy: "kebab-case",
     });
 
@@ -50,7 +50,7 @@ describe("Composer", () => {
   test("ui-lib derives state as minimal automatically", () => {
     const policy = composePolicy({
       pattern: "ui-lib",
-      output_mode: "compact",
+
       naming_strategy: "PascalCase",
     });
     expect(policy.stack.state_philosophy).toBe("minimal");
@@ -61,7 +61,7 @@ describe("Composer", () => {
   test("ui-lib + utility-first changes forbidden pattern to arbitrary-values", () => {
     const policy = composePolicy({
       pattern: "ui-lib",
-      output_mode: "compact",
+
       naming_strategy: "PascalCase",
       styling_strategy: "utility-first",
     });
@@ -72,7 +72,7 @@ describe("Composer", () => {
   test("ui-lib + utility-first removes tokens layer and related config", () => {
     const policy = composePolicy({
       pattern: "ui-lib",
-      output_mode: "compact",
+
       naming_strategy: "PascalCase",
       styling_strategy: "utility-first",
     });
@@ -107,7 +107,7 @@ describe("Composer", () => {
   test("ui-lib always uses PascalCase naming regardless of user selection", () => {
     const policy = composePolicy({
       pattern: "ui-lib",
-      output_mode: "compact",
+
       naming_strategy: "kebab-case", // user picked this, should be overridden
     });
     expect(policy.naming_conventions.global_strategy).toBe("PascalCase");
@@ -116,7 +116,7 @@ describe("Composer", () => {
   test("ui-lib utility files always use dot-separated pattern regardless of naming strategy", () => {
     const policy = composePolicy({
       pattern: "ui-lib",
-      output_mode: "compact",
+
       naming_strategy: "PascalCase",
     });
     expect(policy.file_conventions.types.types?.pattern).toBe("*.types.ts");
@@ -126,7 +126,7 @@ describe("Composer", () => {
   test("framework is always svelte regardless of input", () => {
     const policy = composePolicy({
       pattern: 'flat',
-      output_mode: 'compact',
+
       naming_strategy: 'kebab-case'
     });
     expect(policy.stack.framework).toBe('svelte');
@@ -135,7 +135,7 @@ describe("Composer", () => {
   test("ui-lib sets correct svelte peer dependencies", () => {
     const policy = composePolicy({
       pattern: "ui-lib",
-      output_mode: "compact",
+
       naming_strategy: "PascalCase",
     });
     expect(policy.ui_lib_config?.publish.peer_dependencies).toEqual(['svelte']);
@@ -144,7 +144,7 @@ describe("Composer", () => {
   test("ui-lib + scoped keeps hardcoded-color-without-token rule", () => {
     const policy = composePolicy({
       pattern: "ui-lib",
-      output_mode: "compact",
+
       naming_strategy: "PascalCase",
       styling_strategy: "scoped",
     });
@@ -154,7 +154,7 @@ describe("Composer", () => {
   test("utility-first styling removes style companions", () => {
     const policy = composePolicy({
       pattern: "feature-sliced",
-      output_mode: "compact",
+
       naming_strategy: "kebab-case",
       styling_strategy: "utility-first",
     });
@@ -168,7 +168,7 @@ describe("Composer", () => {
   test("scoped styling adds companion .module.css required", () => {
     const policy = composePolicy({
       pattern: "feature-sliced",
-      output_mode: "compact",
+
       naming_strategy: "kebab-case",
       styling_strategy: "scoped",
     });
@@ -182,7 +182,7 @@ describe("Composer", () => {
   test("atomic + utility-first has no style companions", () => {
     const policy = composePolicy({
       pattern: "atomic",
-      output_mode: "compact",
+
       naming_strategy: "kebab-case",
       styling_strategy: "utility-first",
     });
@@ -195,7 +195,7 @@ describe("Composer", () => {
   test("FSD with PascalCase naming applies correct file patterns", () => {
     const policy = composePolicy({
       pattern: "feature-sliced",
-      output_mode: "compact",
+
       naming_strategy: "PascalCase",
     });
 
@@ -216,7 +216,7 @@ describe("Composer", () => {
   test("flat pattern disables barrel exports regardless of template default", () => {
     const policy = composePolicy({
       pattern: "flat",
-      output_mode: "compact",
+
       naming_strategy: "kebab-case",
     });
     expect(policy.structural_constraints.barrel_exports_required).toBe(false);
@@ -225,7 +225,7 @@ describe("Composer", () => {
   test("modular template has correct import_matrix (no self-import)", () => {
     const policy = composePolicy({
       pattern: "modular",
-      output_mode: "compact",
+
       naming_strategy: "PascalCase",
     });
 
@@ -237,7 +237,7 @@ describe("Composer", () => {
   test("composePolicy preserves responsibilities through validation", () => {
     const policy = composePolicy({
       pattern: "feature-sliced",
-      output_mode: "compact",
+
       naming_strategy: "kebab-case",
     });
 
@@ -249,7 +249,7 @@ describe("Composer", () => {
   test("flat template has meaningful forbidden_patterns", () => {
     const policy = composePolicy({
       pattern: "flat",
-      output_mode: "compact",
+
       naming_strategy: "kebab-case",
     });
 
@@ -265,7 +265,7 @@ describe("Composer", () => {
     expect(() =>
       composePolicy({
         pattern: "non-existent",
-        output_mode: "compact",
+  
         naming_strategy: "kebab-case",
       }),
     ).toThrow("Template not found: non-existent");
@@ -274,7 +274,7 @@ describe("Composer", () => {
   test("camelCase naming strategy produces valid patterns", () => {
     const policy = composePolicy({
       pattern: 'flat',
-      output_mode: 'compact',
+
       naming_strategy: 'camelCase',
     });
     expect(policy.naming_conventions.global_strategy).toBe('camelCase');
@@ -285,7 +285,7 @@ describe("Composer", () => {
   test('ui-lib + strict uses compound-first max_props of 5', () => {
     const policy = composePolicy({
       pattern: 'ui-lib',
-      output_mode: 'compact',
+
       naming_strategy: 'PascalCase',
       component_preference: 'strict',
     });
@@ -295,7 +295,7 @@ describe("Composer", () => {
   test('ui-lib + relaxed uses config-driven max_props of 15', () => {
     const policy = composePolicy({
       pattern: 'ui-lib',
-      output_mode: 'compact',
+
       naming_strategy: 'PascalCase',
       component_preference: 'relaxed',
     });
@@ -305,7 +305,7 @@ describe("Composer", () => {
   test('non ui-lib patterns preserve original PREFERENCE_MAP values', () => {
     const strict = composePolicy({
       pattern: 'feature-sliced',
-      output_mode: 'compact',
+
       naming_strategy: 'kebab-case',
       component_preference: 'strict',
     });
@@ -313,7 +313,7 @@ describe("Composer", () => {
 
     const relaxed = composePolicy({
       pattern: 'feature-sliced',
-      output_mode: 'compact',
+
       naming_strategy: 'kebab-case',
       component_preference: 'relaxed',
     });

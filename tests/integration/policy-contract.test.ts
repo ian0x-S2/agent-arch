@@ -8,12 +8,12 @@ const STYLINGS = ['utility-first', 'scoped', 'any'] as const;
 
 const INVARIANTS: Array<{ label: string; check: (output: string) => boolean }> = [
     { label: 'tem cabeçalho', check: (c) => c.startsWith('# Architecture Policy') },
-    { label: 'tem seção de layers', check: (c) => c.includes('## Layer Rules') },
+    { label: 'tem seção de layers', check: (c) => c.includes('## Layer Rules') || c.includes('## Layers & Import Direction') },
     { label: 'tem seção de file conventions', check: (c) => c.includes('## File Conventions') },
-    { label: 'tem seção de state', check: (c) => c.includes('## State & Async Rules') },
+    { label: 'tem seção de state', check: (c) => c.includes('## State & Async Rules') || c.includes('## State & Data Flow') || c.includes('## Data Flow') },
     { label: 'não tem undefined literal', check: (c) => !c.includes('undefined') },
     { label: 'não tem [object Object]', check: (c) => !c.includes('[object Object]') },
-    { label: 'sempre mostra svelte no stack', check: (c) => c.includes('svelte') },
+    { label: 'sempre mostra svelte no stack', check: (c) => c.includes('svelte') || c.includes('Svelte') },
 ];
 
 describe('Policy contract: todas as combinações válidas', () => {
@@ -25,7 +25,7 @@ describe('Policy contract: todas as combinações válidas', () => {
                 test(label, () => {
                     const policy = composePolicy({
                         pattern,
-                        output_mode: 'compact',
+
                         naming_strategy: naming,
                         styling_strategy: styling,
                     });

@@ -550,6 +550,10 @@ ${asPropRule}`;
  * Renders the policy to official Markdown format.
  */
 export const renderMarkdown = (policy: Policy): string => {
+  if (policy._raw_template) {
+    return policy._raw_template.trim();
+  }
+
   const { stack, meta, structural_constraints, ui_constraints, state_constraints, file_conventions, side_effect_boundaries, domain_rules, naming_conventions } = policy;
 
   const stackSection = renderStackSection(policy);

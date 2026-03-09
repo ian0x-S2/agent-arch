@@ -1,9 +1,180 @@
 import type { Policy } from '../../../schema/policy.schema';
 
+export const FSD_LOAD_MODE = `# Architecture Policy
+Pattern: feature-sliced | Framework: Svelte 5 | Styling: utility-first
+
+## Layers & Import Direction
+app → features → entities → shared (unidirectional, strict)
+
+| Layer    | May Import          |
+|----------|---------------------|
+| app      | features, entities, shared |
+| features | entities, shared    |
+| entities | shared              |
+| shared   | —                   |
+
+- Cross-feature imports: FORBIDDEN
+- Circular imports: FORBIDDEN
+- Cross-slice imports must go through index.ts
+
+## Directory Structure
+src/
+├── routes/          # load functions, actions — no domain logic
+├── app/             # providers, router, global styles
+├── features/<slice>/
+│   ├── ui/          # components
+│   ├── model/       # feature-scoped reactive state (.svelte.ts)
+│   ├── api/         # use cases / application services
+│   └── index.ts     # public API (required)
+├── entities/<slice>/
+│   ├── model/       # domain logic, validators, value objects (no reactive state)
+│   ├── api/         # data access, response mapping
+│   └── index.ts     # public API (required)
+└── shared/
+    ├── ui-kit/      # primitives
+    ├── api/         # base fetch only — no domain requests
+    ├── lib/         # pure utils
+    └── types/       # global types
+
+## File Conventions
+| Type      | File             | Export          |
+|-----------|------------------|-----------------|
+| component | *.svelte         | PascalCase      |
+| logic     | *.svelte.ts      | camelCase       |
+| service   | *.service.ts     | camelCase       |
+| types     | *.types.ts       | PascalCase      |
+| constants | *.constants.ts   | SCREAMING_SNAKE |
+
+- Naming: kebab-case for files
+- Barrel exports: required only at feature/entity roots (index.ts)
+- No default exports on utilities
+
+## Component Rules
+- No data fetching in components — receive via props/load
+- No business logic in components
+- Extract to *.svelte.ts when script > 25 lines or logic repeats across 2+ components
+- Extract to new component when template has > 2 logical sections
+- Max props: 10 | No prop drilling beyond depth 2
+- Prefer composition over configuration (slots over boolean props)
+
+## Svelte 5 Runes
+- $state → local reactive state
+- $derived → computed values (never $effect for derived state)
+- $effect → side effects only (DOM, subscriptions)
+- $props → component interface
+- $bindable → explicit two-way binding (use sparingly)
+- No legacy stores for local state
+
+## State & Data Flow
+route (load fn) → features/api (use case) → entities/api (data access) → entities/model (domain type)
+
+- Side effects: allowed only in features/api and entities/api
+- API errors must be mapped to domain types before reaching UI
+- Every async operation requires loading + error state
+
+## Forbidden
+- Component fetching data directly
+- Reactive state ($state) in entities
+- Domain logic in features/api
+- Raw API responses leaking to UI
+- any type (use unknown + narrowing)
+- Type assertions (as) except at data boundaries`;
+
+export const FSD_REMOTE_MODE = `# Architecture Policy
+Pattern: feature-sliced | Framework: Svelte 5 | Styling: utility-first
+
+## Layers & Import Direction
+app → features → entities → shared (unidirectional, strict)
+
+| Layer    | May Import                 |
+|----------|----------------------------|
+| app      | features, entities, shared |
+| features | entities, shared           |
+| entities | shared                     |
+| shared   | —                          |
+
+- Cross-feature imports: FORBIDDEN
+- Circular imports: FORBIDDEN
+- Cross-slice imports must go through index.ts
+
+## Directory Structure
+src/
+├── routes/          # composition only — no domain logic
+├── app/             # providers, router, global styles
+├── features/<slice>/
+│   ├── ui/          # components
+│   ├── model/       # feature-scoped reactive state (.svelte.ts)
+│   ├── server/      # *.remote.ts — server-side use cases
+│   └── index.ts     # public API (required)
+├── entities/<slice>/
+│   ├── model/       # domain logic, validators, value objects (no reactive state)
+│   ├── api/         # data access, response mapping
+│   └── index.ts     # public API (required)
+└── shared/
+    ├── ui-kit/      # primitives
+    ├── api/         # base fetch only — no domain requests
+    ├── lib/         # pure utils
+    └── types/       # global types
+
+## File Conventions
+| Type            | File           | Export          |
+|-----------------|----------------|-----------------|
+| component       | *.svelte       | PascalCase      |
+| logic           | *.svelte.ts    | camelCase       |
+| remote function | *.remote.ts    | camelCase       |
+| service         | *.service.ts   | camelCase       |
+| types           | *.types.ts     | PascalCase      |
+| constants       | *.constants.ts | SCREAMING_SNAKE |
+
+- Naming: kebab-case for files
+- Barrel exports: required only at feature/entity roots (index.ts)
+- No default exports on utilities
+
+## Component Rules
+- No business logic in components
+- Extract to *.svelte.ts when script > 25 lines or logic repeats across 2+ components
+- Extract to new component when template has > 2 logical sections
+- Max props: 10 | No prop drilling beyond depth 2
+- Prefer composition over configuration (slots over boolean props)
+
+## Svelte 5 Runes
+- $state → local reactive state
+- $derived → computed values (never $effect for derived state)
+- $effect → side effects only (DOM, subscriptions)
+- $props → component interface
+- $bindable → explicit two-way binding (use sparingly)
+- No legacy stores for local state
+
+## Feature Model Rules
+- feature-scoped reactive state only
+- must not store domain entities directly (no $state<User[]> as client cache)
+- derive display state from remote function responses, do not mirror server state
+
+## Data Flow
+\`\`\`
+component | feature model → features/server (*.remote.ts) → entities/api → entities/model
+\`\`\`
+
+- Remote functions may only be called from components or feature model modules
+- Remote functions are the only entry point to server-side logic
+- Remote functions are the only place allowed to access server-only modules (env vars, db clients)
+- Remote functions must call entities/api — never access the data layer directly
+- Prefer aggregating multiple data needs into a single remote function over cascading calls
+- API errors must be mapped to domain types before returning to the component
+- Every async call in a component requires loading + error state
+
+## Forbidden
+- Calling remote functions from entities or shared
+- Domain logic in features/server
+- Reactive state ($state) in entities
+- Raw API responses leaking to UI
+- Cascading remote calls from a single component (aggregate instead)
+- \`any\` type (use unknown + narrowing)
+- Type assertions (\`as\`) except at data boundaries`;
+
 export const featureSlicedTemplate: Policy = {
   "meta": {
     "version": "1.0.0",
-    "output_mode": "compact",
     "generated_at": ""
   },
   "stack": {

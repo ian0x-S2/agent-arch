@@ -31,7 +31,7 @@ src/
 ├── components/               # all components live here
 │   └── ComponentName.svelte     # logic colocated — ok at this scale
 ├── hooks/                    # reactive logic modules (*.svelte.ts)
-├── services/                 # extract when touching external I/O
+├── services/                 # external I/O only — consume via SvelteKit load functions
 ├── types/                    # shared types
 └── utils/                    # pure functions
 
@@ -123,7 +123,7 @@ src/
 
 - **Scope:** any
 - **Derived state:** $derived rune (computed values)
-- **Data fetching:** any — pattern: any
+- **Data fetching:** any — SvelteKit `load` functions (`+page.server.ts`, `+page.ts`); never `fetch()` directly in components
 - **All promises must be handled** — no floating async calls
 - **API errors must not reach UI raw** — map to domain error types in service layer
 - **Every async UI operation requires** loading state + error state

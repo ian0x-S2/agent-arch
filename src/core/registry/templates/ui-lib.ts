@@ -3,7 +3,6 @@ import type { Policy } from '../../../schema/policy.schema';
 export const uiLibTemplate: Policy = {
     meta: {
         version: '1.0.0',
-        output_mode: 'compact',
         generated_at: '',
     },
     stack: {
