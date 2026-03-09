@@ -7,6 +7,7 @@ import { FSD_LOAD_MODE, FSD_REMOTE_MODE } from '../registry/templates/feature-sl
 import { MODULAR_LOAD_MODE, MODULAR_REMOTE_MODE } from '../registry/templates/modular';
 import { FLAT_LOAD_MODE, FLAT_REMOTE_MODE } from '../registry/templates/flat';
 import { ATOMIC_DESIGN_SYSTEM } from '../registry/templates/atomic';
+import { UI_LIB_DESIGN_SYSTEM } from '../registry/templates/ui-lib';
 import { SVELTE_OVERRIDES } from '../shared/framework-rules';
 import {
   VALID_STYLING,
@@ -145,60 +146,17 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
     naming_conventions: {
       global_strategy: namingStrategy
     }
+  };
+
+  if (selections.data_fetching && ['feature-sliced', 'modular', 'flat'].includes(selections.pattern)) {
+    overrides.side_effect_boundaries = {
+      async_pattern: selections.data_fetching,
+      data_fetching_scope: selections.pattern === 'feature-sliced' ? 'entities' : (selections.pattern === 'modular' ? 'modules' : 'any')
     };
+  }
 
-    if (selections.data_fetching && ['feature-sliced', 'modular', 'flat'].includes(selections.pattern)) {
-      overrides.side_effect_boundaries = {
-        async_pattern: selections.data_fetching,
-        data_fetching_scope: selections.pattern === 'feature-sliced' ? 'entities' : (selections.pattern === 'modular' ? 'modules' : 'any')
-      };
-    }
-
-    // 4. Merge base with overrides
-    let merged = deepMerge(template, overrides);
-
-    // 4b. Inject raw template for feature-sliced and modular patterns
-    if (selections.pattern === 'feature-sliced') {
-      let raw = selections.data_fetching === 'remote-functions' 
-        ? FSD_REMOTE_MODE 
-        : FSD_LOAD_MODE;
-      
-      raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
-      raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
-      
-      merged._raw_template = raw;
-    } else if (selections.pattern === 'modular') {
-      let raw = selections.data_fetching === 'remote-functions' 
-        ? MODULAR_REMOTE_MODE 
-        : MODULAR_LOAD_MODE;
-      
-      raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
-      raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
-      
-      merged._raw_template = raw;
-    } else if (selections.pattern === 'flat') {
-      let raw = selections.data_fetching === 'remote-functions' 
-        ? FLAT_REMOTE_MODE 
-        : FLAT_LOAD_MODE;
-      
-      raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
-      raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
-      
-      merged._raw_template = raw;
-    } else if (selections.pattern === 'atomic') {
-      let raw = ATOMIC_DESIGN_SYSTEM;
-      
-      raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
-      raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
-
-      const themeComment = stylingStrategy === 'utility-first'
-        ? '# Tailwind config extensions — scoped tokens via CSS vars if needed'
-        : '# design tokens as CSS custom properties or JS constants — consumed in scoped styles';
-
-      raw = raw.replace('└── theme/                # design tokens, constants', `└── theme/                ${themeComment}`);
-      
-      merged._raw_template = raw;
-    }
+  // 4. Merge base with overrides
+  let merged = deepMerge(template, overrides);
 
   // 5. Update naming patterns based on strategy
   if (namingStrategy) {
@@ -289,7 +247,7 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
     // For scoped: keep default token rules (hardcoded-color-without-token)
   }
 
-  if (selections.component_preference) {
+  if (selections.component_preference && selections.pattern !== 'atomic') {
     merged.ui_constraints.component_max_props = selections.pattern === 'ui-lib'
       ? UI_LIB_PREFERENCE_MAP[selections.component_preference].max_props
       : PREFERENCE_MAP[selections.component_preference];
@@ -300,7 +258,63 @@ export const composePolicy = (rawSelections: Partial<UserSelections>): Policy =>
     merged = removeTokensLayer(merged);
   }
 
-  // 9. Validate the final object
+  // 10. Inject raw template for all patterns that support it
+  if (selections.pattern === 'feature-sliced') {
+    let raw = selections.data_fetching === 'remote-functions' 
+      ? FSD_REMOTE_MODE 
+      : FSD_LOAD_MODE;
+    
+    raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
+    raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
+    raw = raw.replace('Max props: 10', `Max props: ${merged.ui_constraints.component_max_props}`);
+    
+    merged._raw_template = raw;
+  } else if (selections.pattern === 'modular') {
+    let raw = selections.data_fetching === 'remote-functions' 
+      ? MODULAR_REMOTE_MODE 
+      : MODULAR_LOAD_MODE;
+    
+    raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
+    raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
+    raw = raw.replace('Max props: 10', `Max props: ${merged.ui_constraints.component_max_props}`);
+    
+    merged._raw_template = raw;
+  } else if (selections.pattern === 'flat') {
+    let raw = selections.data_fetching === 'remote-functions' 
+      ? FLAT_REMOTE_MODE 
+      : FLAT_LOAD_MODE;
+    
+    raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
+    raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
+    raw = raw.replace('Max props: 10', `Max props: ${merged.ui_constraints.component_max_props}`);
+    
+    merged._raw_template = raw;
+  } else if (selections.pattern === 'atomic') {
+    let raw = ATOMIC_DESIGN_SYSTEM;
+    
+    raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
+    raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
+    raw = raw.replace('Max props: 10', `Max props: ${merged.ui_constraints.component_max_props}`);
+    raw = raw.replace('beyond depth 3', `beyond depth ${merged.ui_constraints.prop_drilling_max_depth}`);
+
+    const themeComment = stylingStrategy === 'utility-first'
+      ? '# Tailwind config extensions — scoped tokens via CSS vars if needed'
+      : '# design tokens as CSS custom properties or JS constants — consumed in scoped styles';
+
+    raw = raw.replace('└── theme/                # design tokens, constants', `└── theme/                ${themeComment}`);
+    
+    merged._raw_template = raw;
+  } else if (selections.pattern === 'ui-lib') {
+    let raw = UI_LIB_DESIGN_SYSTEM;
+    
+    raw = raw.replace('Naming: kebab-case', `Naming: ${namingStrategy}`);
+    raw = raw.replace('Styling: utility-first', `Styling: ${stylingStrategy}`);
+    raw = raw.replace('Max props: 10', `Max props: ${merged.ui_constraints.component_max_props}`);
+    raw = raw.replace('beyond depth 2', `beyond depth ${merged.ui_constraints.prop_drilling_max_depth}`);
+    
+    merged._raw_template = raw;
+  }
+
+  // 11. Validate the final object
   return v.parse(PolicySchema, merged);
 };
-

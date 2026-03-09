@@ -1,9 +1,95 @@
 import type { Policy } from '../../../schema/policy.schema';
 
+export const UI_LIB_DESIGN_SYSTEM = `# Architecture Policy
+Pattern: ui-lib | Framework: Svelte 5 | Styling: utility-first
+
+## Layers & Import Direction
+patterns → components → primitives (unidirectional, strict)
+
+| Layer      | May Import              |
+|------------|-------------------------|
+| patterns   | components, primitives  |
+| components | primitives              |
+| primitives | —                       |
+
+- Circular imports: FORBIDDEN
+- Cross-layer imports must go through index.ts
+
+## Directory Structure
+src/
+├── primitives/<Component>/
+│   ├── Component.svelte        # unstyled, polymorphic — aria/role only
+│   ├── Component.types.ts
+│   └── index.ts
+├── components/<Component>/
+│   ├── Component.svelte        # compound: Component.Root, Component.Icon
+│   ├── Component.context.svelte.ts  # scoped $state for compound parts — not exported
+│   ├── Component.types.ts
+│   ├── Component.test.ts
+│   └── index.ts                # exports Component namespace
+├── patterns/<Pattern>/
+│   ├── Pattern.svelte          # composes multiple components
+│   └── index.ts
+└── index.ts                    # package root — public API only
+
+## File Conventions
+| Type      | File                | Export          |
+|-----------|---------------------|-----------------|
+| component | *.svelte            | PascalCase      |
+| context   | *.context.svelte.ts | camelCase       |
+| hook      | *.svelte.ts         | camelCase       |
+| types     | *.types.ts          | PascalCase      |
+| constants | *.constants.ts      | SCREAMING_SNAKE |
+
+- Component files: PascalCase | Utility files: kebab-case
+- Barrel exports: required at every component root
+- Context files: private — never exported via index.ts
+
+## Component Rules
+- No business logic at any layer
+- No data fetching at any layer
+- Support controlled and uncontrolled variants — controlled via props, uncontrolled via default* props
+- Extract to *.svelte.ts when script > 25 lines or logic repeats across 2+ components
+- Max props: 10 — split into compound parts if exceeded
+- Separate style props from behavior props (variant/size vs onClick/disabled)
+- No prop drilling beyond depth 2 — use scoped Context for compound internals
+- Primitives accept children: Snippet and spread rest props via $props() — no as prop
+- Prefer composition over configuration (slots over boolean props)
+
+## Compound Component Pattern
+- Export style: namespace (Button.Root, Button.Icon, Button.Trigger)
+- Never export compound parts standalone
+- Compound state shared via *.context.svelte.ts — never exposed outside component boundary
+
+## Svelte 5 Runes
+- $state → UI-only component state (isOpen, isFocused, isDisabled)
+- $derived → computed values (never $effect for derived state)
+- $effect → side effects only (DOM, subscriptions)
+- $props → component interface
+- $bindable → explicit two-way binding (use sparingly)
+- No legacy stores for local state
+
+## Publish Contract
+- package.json exports map required — every component gets its own export path
+- Types exported — ship .d.ts alongside every component
+- Peer dependency: svelte — never bundle peer deps
+
+## Forbidden
+- Circular imports
+- Arbitrary Tailwind values (text-[14px] → use text-sm)
+- Business logic at any layer
+- Data fetching at any layer
+- Global state managers
+- Module-level shared state between unrelated components
+- Exporting context files via index.ts
+- Standalone export of compound parts
+- any type (use unknown + narrowing)
+- Type assertions (as) except at data boundaries`;
+
 export const uiLibTemplate: Policy = {
     meta: {
-        version: '1.0.0',
-        generated_at: '',
+        version: '1.1.0',
+        generated_at: new Date().toISOString(),
     },
     stack: {
         domain: 'frontend',
@@ -14,7 +100,7 @@ export const uiLibTemplate: Policy = {
         component_lib: undefined,
     },
     ui_lib_config: {
-        token_categories: ['color', 'spacing', 'typography', 'radius', 'shadow'],
+        token_categories: [],
         compound_pattern: {
             enforced: true,
             root_suffix: 'Root',
@@ -29,78 +115,37 @@ export const uiLibTemplate: Policy = {
     },
     layers: [
         {
-            id: 'tokens',
-            allowed_imports: [],
+            id: 'patterns',
+            allowed_imports: ['components', 'primitives'],
             responsibilities: {
-                owns: [
-                    'design tokens (color, spacing, typography, radius, shadow)',
-                    'CSS custom properties',
-                    'theme contract',
-                ],
-                must_not: [
-                    'import from any other layer',
-                    'contain component logic',
-                    'reference framework APIs',
-                ],
-                depends_on_abstractions: false,
-            },
-        },
-        {
-            id: 'primitives',
-            allowed_imports: ['tokens'],
-            responsibilities: {
-                owns: [
-                    'unstyled base elements (Box, Text, Icon)',
-                    'accessibility attributes (aria-*, role)',
-                    'rest props spread via `$props()` for full HTML attribute passthrough',
-                ],
-                must_not: [
-                    'apply visual styles directly',
-                    'import from components or patterns',
-                    'contain business logic',
-                ],
-                depends_on_abstractions: false,
+                owns: ['compositions of multiple components'],
+                must_not: ['business logic', 'data fetching'],
+                depends_on_abstractions: true,
             },
         },
         {
             id: 'components',
-            allowed_imports: ['primitives', 'tokens'],
+            allowed_imports: ['primitives'],
             responsibilities: {
-                owns: [
-                    'compound components (Button.Root + Button.Icon)',
-                    'controlled and uncontrolled variants',
-                    'component-scoped types and props interfaces',
-                ],
-                must_not: [
-                    'import from patterns layer',
-                    'fetch data or call APIs',
-                    'contain application business logic',
-                ],
+                owns: ['compound components', 'scoped context'],
+                must_not: ['business logic', 'data fetching'],
                 depends_on_abstractions: true,
             },
         },
         {
-            id: 'patterns',
-            allowed_imports: ['components', 'primitives', 'tokens'],
+            id: 'primitives',
+            allowed_imports: [],
             responsibilities: {
-                owns: [
-                    'compositions of multiple components (Form, DataTable, Modal)',
-                    'higher-order interaction patterns',
-                ],
-                must_not: [
-                    'be published as standalone primitives',
-                    'introduce new tokens',
-                    'import from consuming app layers',
-                ],
-                depends_on_abstractions: true,
+                owns: ['unstyled base elements', 'polymorphic behavior'],
+                must_not: ['business logic', 'data fetching'],
+                depends_on_abstractions: false,
             },
         },
     ],
     import_matrix: {
-        tokens: [],
-        primitives: ['tokens'],
-        components: ['primitives', 'tokens'],
-        patterns: ['components', 'primitives', 'tokens'],
+        patterns: ['components', 'primitives'],
+        components: ['primitives'],
+        primitives: [],
     },
     structural_constraints: {
         max_component_depth: 3,
@@ -119,46 +164,40 @@ export const uiLibTemplate: Policy = {
     state_constraints: {
         global_state_scope: 'minimal',
         local_state_allowed: true,
-        derived_state_strategy: 'selectors',
+        derived_state_strategy: 'runes',
         forbidden_patterns: [
-            'global-state-in-primitive',
-            'side-effects-in-tokens',
-            'styles-hardcoded-without-token',
+            'global-state-managers',
+            'business-logic-at-any-layer',
+            'data-fetching-at-any-layer',
+            'exporting-context-files',
+            'standalone-compound-part-export',
         ],
     },
     side_effect_boundaries: {
-        allowed_in_layers: ['components', 'patterns'],
-        forbidden_in_layers: ['tokens', 'primitives'],
+        allowed_in_layers: [],
+        forbidden_in_layers: ['patterns', 'components', 'primitives'],
         async_pattern: 'hooks',
-        data_fetching_scope: 'patterns',
+        data_fetching_scope: 'none',
     },
     naming_conventions: {
         global_strategy: 'PascalCase',
-        component: 'PascalCase (ComponentName.Root, ComponentName.Trigger)',
-        hook: 'camelCase (runes/logic functions)',
-        store: 'camelCase',
-        service: 'camelCase',
-        type: 'PascalCase (*Props | *Ref suffix)',
-        constant: 'SCREAMING_SNAKE_CASE',
+        component: 'PascalCase',
+        hook: 'camelCase',
+        constant: 'SCREAMING_SNAKE',
     },
     file_conventions: {
         types: {
             component: {
-                pattern: '*.ts',
-                companions: {
-                    types: { required: true, extensions: ['.types.ts'] },
-                    test: { required: true, extensions: ['.test.ts'] },
-                },
+                pattern: '*.svelte',
+            },
+            context: {
+                pattern: '*.context.svelte.ts',
             },
             hook: {
-                pattern: '*.ts',
-                companions: {
-                    test: { required: true, extensions: ['.test.ts'] },
-                },
+                pattern: '*.svelte.ts',
             },
             types: { pattern: '*.types.ts' },
             constants: { pattern: '*.constants.ts' },
-            tokens: { pattern: '*.tokens.ts' },
         },
         colocation: 'strict',
         public_api: {
@@ -173,10 +212,9 @@ export const uiLibTemplate: Policy = {
             feature_root_marker: 'index.ts',
         },
         forbidden_patterns: [
-            'default-export-on-component',
-            'hardcoded-color-without-token',
-            'style-without-token-reference',
-            'compound-part-exported-without-namespace',
+            'arbitrary-tailwind-values',
+            'any-type',
+            'type-assertion-as',
         ],
     },
     token_metadata: {

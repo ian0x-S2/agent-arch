@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test';
 import { composePolicy } from '../../src/core/composer';
 import { renderMarkdown } from '../../src/core/renderer/markdown-renderer';
 
-const PATTERNS = ['feature-sliced', 'modular', 'flat', 'atomic'] as const;
+const PATTERNS = ['feature-sliced', 'modular', 'flat', 'atomic', 'ui-lib'] as const;
 const NAMINGS = ['kebab-case', 'PascalCase', 'camelCase', 'snake_case'] as const;
 const STYLINGS = ['utility-first', 'scoped', 'any'] as const;
 

@@ -54,7 +54,7 @@ src/
 - No business logic in components
 - Extract to *.svelte.ts when script > 25 lines or logic repeats across 2+ components
 - Extract to new component when template has > 2 logical sections
-- Max props: 10 | No prop drilling beyond depth 2
+- Max props: 7 | No prop drilling beyond depth 2
 - Prefer composition over configuration (slots over boolean props)
 
 ## Svelte 5 Runes
@@ -128,7 +128,7 @@ src/
 - No direct service imports in components — data via load functions only
 - Extract to *.svelte.ts when script > 25 lines or logic repeats across 2+ components
 - Extract to new component when template has > 2 logical sections
-- Max props: 10 | No prop drilling beyond depth 2
+- Max props: 7 | No prop drilling beyond depth 2
 - Prefer composition over configuration (slots over boolean props)
 
 ## Svelte 5 Runes
@@ -254,7 +254,7 @@ src/
 └── shared/
     ├── utils/                # pure functions
     ├── types/                # global types
-    └── theme/                # design tokens, constants
+    └── theme/                # Tailwind config extensions — scoped tokens via CSS vars if needed
 
 ## File Conventions
 | Type      | File           | Export          |

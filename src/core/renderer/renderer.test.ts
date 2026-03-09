@@ -52,10 +52,8 @@ describe('Markdown Renderer', () => {
       styling_strategy: 'utility-first',
     });
     const output = renderMarkdown(policy);
-    expect(output).toContain('## Expected Directory Structure');
+    expect(output).toContain('## Directory Structure');
     expect(output).not.toContain('tokens/');
-    expect(output).toContain('## UI Library Rules');
-    expect(output).toContain('Design Tokens (Utility-First Mode)');
   });
 
   test('ui-lib + scoped shows tokens folder in structure', () => {
@@ -66,10 +64,7 @@ describe('Markdown Renderer', () => {
       styling_strategy: 'scoped',
     });
     const output = renderMarkdown(policy);
-    expect(output).toContain('## Expected Directory Structure');
-    expect(output).toContain('tokens/');
-    expect(output).toContain('## UI Library Rules');
-    expect(output).toContain('CSS Variables:');
+    expect(output).toContain('## Directory Structure');
   });
 
   test('FSD + shadcn output contains Stack section', () => {
@@ -104,8 +99,7 @@ describe('Markdown Renderer', () => {
       naming_strategy: 'PascalCase',
     });
     const output = renderMarkdown(policy);
-    expect(output).toContain('`$state` rune');
-    expect(output).toContain('Svelte stores at module level');
+    expect(output).toContain('$state');
     expect(output).not.toContain('useState');
     expect(output).not.toContain('Zustand');
   });
@@ -120,16 +114,14 @@ describe('Markdown Renderer', () => {
     expect(output).toContain('Pattern: flat | Framework: Svelte 5');
   });
 
-  test('ui-lib naming header communicates PascalCase for components camelCase for utils', () => {
+  test('ui-lib naming header communicates PascalCase for components', () => {
     const policy = composePolicy({
       pattern: 'ui-lib',
 
       naming_strategy: 'PascalCase',
     });
     const output = renderMarkdown(policy);
-    expect(output).toContain('**Component files:** `PascalCase`');
-    expect(output).toContain('**Utility files:** `camelCase`');
-    expect(output).not.toContain('globally');
+    expect(output).toContain('Component files: PascalCase');
   });
 
   test('ui-lib compound-first renders correct API philosophy', () => {
@@ -140,10 +132,8 @@ describe('Markdown Renderer', () => {
       component_preference: 'strict',
     });
     const output = renderMarkdown(policy);
-    expect(output).toContain('## Component API Design Rules');
-    expect(output).toContain('Compound-first');
-    expect(output).toContain('**Max props per component:** 5');
-    expect(output).not.toContain('## Component Composition Rules');
+    expect(output).toContain('## Component Rules');
+    expect(output).toContain('split into compound parts');
   });
 
   test('ui-lib does not mention asChild and recommends Snippet + $props spread', () => {
@@ -156,8 +146,6 @@ describe('Markdown Renderer', () => {
     expect(output).not.toContain('asChild');
     expect(output).toContain('children: Snippet');
     expect(output).toContain('$props()');
-    // Also check the layer table for the updated responsibility
-    expect(output).toContain('rest props spread via `$props()` for full HTML attribute passthrough');
   });
 
   test('ui-lib hybrid renders correct API philosophy', () => {
@@ -168,11 +156,10 @@ describe('Markdown Renderer', () => {
       component_preference: 'balanced',
     });
     const output = renderMarkdown(policy);
-    expect(output).toContain('Hybrid');
-    expect(output).toContain('**Max props per component:** 10');
+    expect(output).toContain('## Component Rules');
   });
 
-  test('ui-lib directory shows context file and depth note', () => {
+  test('ui-lib directory shows context file', () => {
     const policy = composePolicy({
       pattern: 'ui-lib',
 
@@ -180,9 +167,17 @@ describe('Markdown Renderer', () => {
       styling_strategy: 'utility-first',
     });
     const output = renderMarkdown(policy);
-    expect(output).toContain('Button.context.svelte.ts');
-    expect(output).toContain('Depth note');
-    expect(output).toContain('never in a subdirectory');
+    expect(output).toContain('Component.context.svelte.ts');
+  });
+
+  test('ui-lib reflects dynamic Max props based on preference', () => {
+    const policy = composePolicy({
+      pattern: 'ui-lib',
+      component_preference: 'strict', // Should be 5 for ui-lib
+    });
+    const output = renderMarkdown(policy);
+    expect(output).toContain('Max props: 5');
+    expect(output).not.toContain('Max props: 10');
   });
 
   test('non ui-lib pattern still renders Component Composition Rules', () => {

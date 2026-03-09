@@ -43,7 +43,7 @@ src/
 | types     | \*.types.ts     | PascalCase      |
 | constants | \*.constants.ts | SCREAMING_SNAKE |
 
-- Naming: snake_case for files
+- Naming: PascalCase for files
 - Barrel exports: required at component roots only
 - No default exports on utilities
 
