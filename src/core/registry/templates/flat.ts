@@ -33,6 +33,9 @@ src/
 | utils     | *.ts             | camelCase       |
 
 - Naming: kebab-case for files
+- inline magic numbers — extract to named constants (*.constants.ts)
+- errors must be typed — no throwing raw strings
+- boolean variables must use is/has/can prefix
 - Barrel exports: optional
 - No default exports on utilities
 
@@ -97,6 +100,9 @@ src/
 | utils           | *.ts           | camelCase       |
 
 - Naming: kebab-case for files
+- inline magic numbers — extract to named constants (*.constants.ts)
+- errors must be typed — no throwing raw strings
+- boolean variables must use is/has/can prefix
 - Barrel exports: optional
 - No default exports on utilities
 

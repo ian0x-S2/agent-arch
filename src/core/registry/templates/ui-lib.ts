@@ -42,6 +42,9 @@ src/
 | constants | *.constants.ts      | SCREAMING_SNAKE |
 
 - Component files: PascalCase | Utility files: kebab-case
+- inline magic numbers — extract to named constants (*.constants.ts)
+- errors must be typed — no throwing raw strings
+- boolean variables must use is/has/can prefix
 - Barrel exports: required at every component root
 - Context files: private — never exported via index.ts
 

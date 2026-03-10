@@ -45,6 +45,9 @@ src/
 | constants | *.constants.ts   | SCREAMING_SNAKE |
 
 - Naming: kebab-case for files
+- inline magic numbers — extract to named constants (*.constants.ts)
+- errors must be typed — no throwing raw strings
+- boolean variables must use is/has/can prefix
 - Barrel exports: required only at feature/entity roots (index.ts)
 - No default exports on utilities
 
@@ -126,6 +129,9 @@ src/
 | constants       | *.constants.ts | SCREAMING_SNAKE |
 
 - Naming: kebab-case for files
+- inline magic numbers — extract to named constants (*.constants.ts)
+- errors must be typed — no throwing raw strings
+- boolean variables must use is/has/can prefix
 - Barrel exports: required only at feature/entity roots (index.ts)
 - No default exports on utilities
 
