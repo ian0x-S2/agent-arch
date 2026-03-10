@@ -1,36 +1,51 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import { STEP_LABELS, MAIN_STEPS } from '../steps';
+import { Separator } from './Separator';
 
-export const Header = ({ step, stepIndex, totalSteps }: { step: string; stepIndex: number; totalSteps: number }) => (
-  <Box flexDirection="column" marginBottom={1}>
-    <Box paddingX={1} marginBottom={1}>
-      <Text color="cyan" bold>AGENT-ARCH </Text>
-      <Text dimColor>│ </Text>
-      <Text italic dimColor>AI Architecture Policy Designer</Text>
-    </Box>
-    {totalSteps > 1 && (
-      <Box paddingX={1}>
-        {MAIN_STEPS.map((s, i) => {
+export const Header = ({ stepIndex }: { stepIndex: number }) => {
+  const steps = [
+    { label: 'Pattern' },
+    { label: 'Library' },
+    { label: 'Styling' },
+    { label: 'Fetching' },
+    { label: 'Preference' },
+    { label: 'Done' },
+  ];
+
+  return (
+    <Box flexDirection="column" marginBottom={1}>
+      <Box paddingX={1} justifyContent="space-between">
+        <Box>
+          <Text color="white" bold>AGENT-ARCH</Text>
+          <Text dimColor>  ·  </Text>
+          <Text dimColor>AI Architecture Policy Designer</Text>
+        </Box>
+        {stepIndex !== -1 && (
+          <Text dimColor>{stepIndex + 1}/{steps.length}</Text>
+        )}
+      </Box>
+      <Separator />
+      <Box paddingX={1} flexWrap="wrap">
+        {steps.map((s, i) => {
           const isActive = i === stepIndex;
           const isDone = stepIndex !== -1 && i < stepIndex;
-          const label = STEP_LABELS[s] || s;
           return (
-            <React.Fragment key={s}>
+            <React.Fragment key={i}>
               <Box>
-                <Text color={isDone ? 'green' : isActive ? 'cyan' : 'gray'} bold={isActive}>
-                  {isDone ? '●' : isActive ? '▶' : '○'} {label}
+                <Text color={isActive ? 'cyan' : isDone ? 'white' : 'gray'}>
+                  {s.label} {isDone ? '─●' : '─○'}
                 </Text>
               </Box>
-              {i < MAIN_STEPS.length - 1 && (
+              {i < steps.length - 1 && (
                 <Box paddingX={1}>
-                  <Text dimColor>─</Text>
+                  <Text dimColor>──</Text>
                 </Box>
               )}
             </React.Fragment>
           );
         })}
       </Box>
-    )}
-  </Box>
-);
+      <Separator />
+    </Box>
+  );
+};

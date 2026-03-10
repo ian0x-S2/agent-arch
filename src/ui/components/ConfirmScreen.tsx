@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Text, useInput } from 'ink';
 import { STATE_BY_PATTERN } from '../../core/shared/pattern-state';
 import type { UserSelections } from '../../types';
+import { Separator } from './Separator';
 
 export const ConfirmScreen = ({
   selections,
@@ -20,43 +21,40 @@ export const ConfirmScreen = ({
   const derivedState = STATE_BY_PATTERN[selections.pattern ?? '']?.philosophy ?? 'flexible';
 
   const summaryItems = [
-    { label: 'Architecture', value: selections.pattern },
-    { label: 'UI Library', value: selections.component_lib || 'None' },
-    { label: 'Styling', value: selections.styling_strategy },
-    { label: 'Data Fetching', value: selections.data_fetching },
-    { label: 'Component API', value: selections.component_preference },
-    { label: 'Naming', value: selections.naming_strategy },
-    { label: 'State (derived)', value: derivedState, isDerived: true },
+    { label: 'pattern', value: selections.pattern },
+    { label: 'ui library', value: selections.component_lib || 'none' },
+    { label: 'styling', value: selections.styling_strategy },
+    { label: 'fetching', value: selections.data_fetching },
+    { label: 'component api', value: selections.component_preference },
+    { label: 'naming', value: selections.naming_strategy },
+    { label: 'state', value: derivedState },
   ];
 
   return (
-    <Box flexDirection="column" paddingLeft={1}>
-      <Box marginBottom={1}>
-        <Text bold color="yellow">Finalize your architecture</Text>
+    <Box flexDirection="column">
+      <Box paddingX={1} marginBottom={1}>
+        <Text color="white">Review your architecture</Text>
       </Box>
 
-      <Box flexDirection="column" marginBottom={1}>
+      <Box flexDirection="column" paddingX={1} marginBottom={1}>
         {summaryItems.map((item, idx) => {
           if (!item.value) return null;
           return (
             <Box key={idx} marginBottom={0}>
               <Box width={20}>
-                <Text dimColor>{item.label}</Text>
+                <Text dimColor>{item.label.toLowerCase()}</Text>
               </Box>
-              <Text color={item.isDerived ? 'cyan' : 'green'} bold={!item.isDerived}>
-                {item.value}
-                {item.isDerived && <Text italic> (auto)</Text>}
+              <Text color="white">
+                {String(item.value).toLowerCase().replace(/-/g, ' ')}
               </Text>
             </Box>
           );
         })}
       </Box>
 
-      <Box marginTop={1} paddingY={1} borderStyle="single" borderColor="gray" paddingX={2} width={50} justifyContent="center">
-        <Box marginRight={2}>
-          <Text color="green" bold>↵ Confirm</Text>
-        </Box>
-        <Text color="yellow" bold>Esc Back</Text>
+      <Separator />
+      <Box paddingX={1}>
+        <Text dimColor>enter confirm · esc back</Text>
       </Box>
     </Box>
   );

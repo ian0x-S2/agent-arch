@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Text } from 'ink';
 import TextInput from 'ink-text-input';
+import { OptionDescription } from './OptionDescription';
 
 export const ComponentLibStep = ({
   onSubmit,
@@ -10,31 +11,29 @@ export const ComponentLibStep = ({
   const [value, setValue] = useState('');
 
   return (
-    <Box flexDirection="column" paddingLeft={1}>
-      <Box marginBottom={1}>
-        <Text color="yellow" bold>:: Component Library</Text>
+    <Box flexDirection="column">
+      <Box paddingX={1} marginBottom={1}>
+        <Text color="white">Library</Text>
       </Box>
-      
-      <Box paddingLeft={1} flexDirection="column">
-        <Text dimColor>If you use a specific library (shadcn, melt, etc), mention it here.</Text>
-        <Text dimColor>The agent will prioritize its primitives and components.</Text>
-        
-        <Box marginTop={1} paddingLeft={1}>
+
+      <Box paddingX={1} marginBottom={1} minHeight={4} flexDirection="column">
+        <Box flexDirection="column">
+          <Text dimColor>if you use a specific library (shadcn, melt, etc), mention it here.</Text>
+          <Text dimColor>the agent will prioritize its primitives and components.</Text>
+        </Box>
+
+        <Box marginTop={1}>
           <Text color="cyan">❯ </Text>
           <TextInput
             value={value}
             onChange={setValue}
             onSubmit={(val) => onSubmit(val.trim() || undefined)}
-            placeholder="Library name or Enter to skip..."
+            placeholder="library name or enter to skip..."
           />
         </Box>
       </Box>
 
-      <Box marginTop={1} paddingLeft={1}>
-        <Text dimColor italic>Press </Text>
-        <Text color="cyan" dimColor bold>Enter</Text>
-        <Text dimColor italic> to continue</Text>
-      </Box>
+      <OptionDescription option={undefined} />
     </Box>
   );
 };

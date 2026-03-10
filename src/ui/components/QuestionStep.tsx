@@ -20,26 +20,25 @@ export const QuestionStep = ({
   const label = STEP_LABELS[stepKey as keyof typeof STEP_LABELS] || stepKey;
 
   return (
-    <Box flexDirection="column" paddingLeft={1}>
-      <Box marginBottom={1}>
-        <Text color="yellow" bold>
-          {stepKey === 'welcome' ? ':: How do you want to start?' : `:: Select ${label}`}
-        </Text>
+    <Box flexDirection="column">
+      <Box paddingX={1} marginBottom={1}>
+        <Text color="white">{label}</Text>
       </Box>
-      <Box paddingLeft={1}>
+
+      <Box paddingX={1} marginBottom={1}>
         <SelectInput
           items={inkItems}
           onSelect={(item) => onSelect(item.value)}
           onHighlight={(item) => setFocused(item.value)}
+          indicatorComponent={({ isSelected }) => (
+            <Box marginRight={1}>
+              <Text color={isSelected ? 'cyan' : 'gray'}>{isSelected ? '❯' : ' '}</Text>
+            </Box>
+          )}
         />
       </Box>
+
       <OptionDescription option={focusedOption} />
-      <Box marginTop={1} paddingLeft={1}>
-        <Text dimColor>Navigate </Text>
-        <Text color="cyan" dimColor>↑↓</Text>
-        <Text dimColor> │ Select </Text>
-        <Text color="cyan" dimColor>Enter</Text>
-      </Box>
     </Box>
   );
 };

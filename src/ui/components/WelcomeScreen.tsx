@@ -1,5 +1,7 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
+import { Header } from './Header';
+import { Separator } from './Separator';
 
 export const WelcomeScreen = ({ onStart }: { onStart: () => void }) => {
   useInput((input, key) => {
@@ -7,38 +9,39 @@ export const WelcomeScreen = ({ onStart }: { onStart: () => void }) => {
   });
 
   return (
-    <Box flexDirection="column" paddingX={2} paddingY={1}>
-      <Box marginBottom={1}>
-        <Text color="cyan" bold>
-          {`
+    <Box flexDirection="column" width="100%">
+      <Header stepIndex={-1} />
+      
+      <Box paddingX={4} paddingY={1} flexDirection="column" alignItems="flex-start">
+        <Box marginBottom={1}>
+          <Text color="cyan" bold>
+            {`
     ╔═╗  ╔═╗  ╔═╗  ╔╗╔  ╔╦╗  ───  ╔═╗  ╦═╗  ╔═╗  ╦ ╦
     ╠═╣  ║ ╦  ║╣   ║║║   ║   ───  ╠═╣  ╠╦╝  ║    ╠═╣
     ╩ ╩  ╚═╝  ╚═╝  ╝╚╝   ╩   ───  ╩ ╩  ╩╚═  ╚═╝  ╩ ╩
 
             architecture scaffolding for svelte
-          `}
-        </Text>
-      </Box>
+            `}
+          </Text>
+        </Box>
 
-      <Box flexDirection="column" paddingLeft={2}>
-        <Text italic dimColor>
-          Elevate your AI agent efficiency with 
-          <Text color="cyan"> strict architectural enforcement.</Text>
-        </Text>
-        
-        <Box marginTop={1} flexDirection="column">
-          <Text>Design your <Text color="yellow" bold>policy.md</Text> for:</Text>
-          <Box marginLeft={2} marginTop={1} flexDirection="column">
-            <Text dimColor>● Clean technical boundaries</Text>
-            <Text dimColor>● Unidirectional data flow</Text>
-            <Text dimColor>● Consistent naming conventions</Text>
+        <Box flexDirection="column" paddingLeft={2} marginTop={1}>
+          <Text italic dimColor>
+            elevate your ai agent efficiency with 
+            <Text color="cyan"> strict architectural enforcement.</Text>
+          </Text>
+          
+          <Box marginTop={1} flexDirection="column">
+            <Text dimColor>● clean technical boundaries</Text>
+            <Text dimColor>● unidirectional data flow</Text>
+            <Text dimColor>● consistent naming conventions</Text>
           </Box>
         </Box>
+      </Box>
 
-        <Box marginTop={2} paddingY={1} width={40} borderStyle="single" borderColor="gray" justifyContent="center">
-          <Text color="green" bold>↵ Press Enter </Text>
-          <Text dimColor>to begin configuration</Text>
-        </Box>
+      <Separator />
+      <Box paddingX={1}>
+        <Text dimColor>press enter to begin configuration · esc back</Text>
       </Box>
     </Box>
   );
