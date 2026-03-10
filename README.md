@@ -10,11 +10,11 @@ CLI that generates structured architectural policy files (`policy.md`) for AI co
             architecture scaffolding for svelte
 ```
 
-## 🎯 Purpose
+## Purpose
 
 AI Agents (like Cursor, Windsurf, or Gemini) perform better when constrained by a strict, declarative architecture policy. This tool automates the creation of those constraints, ensuring your AI assistant follows professional engineering standards.
 
-## 🏗 Supported Patterns
+## Supported Patterns
 
 - **Feature-Sliced (FSD):** Scalable enterprise pattern organized by business domains.
 - **Modular Layered:** Classic technical layering (components, hooks, services).
@@ -22,14 +22,14 @@ AI Agents (like Cursor, Windsurf, or Gemini) perform better when constrained by 
 - **Atomic Design:** Organizes UI components by complexity (atoms → molecules).
 - **UI Library:** Strict patterns for high-quality, publishable UI packages.
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Runtime:** [Bun](https://bun.sh)
 - **UI:** [React Ink](https://github.com/vadimdemedes/ink) (Interactive CLI)
 - **Validation:** [Valibot](https://valibot.io/)
 - **Routing:** [Commander](https://github.com/tj/commander.js)
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Installation
 
@@ -51,7 +51,7 @@ bun run src/bin.ts init
 - `validate [path]`: check if an existing `policy.md` complies with the schema.
 - `registry list`: list all available architectural templates.
 
-## 📜 Policy Contract
+## Policy Contract
 
 The generated `.ai/policy.md` acts as the **Single Source of Truth** for:
 
@@ -62,7 +62,7 @@ The generated `.ai/policy.md` acts as the **Single Source of Truth** for:
   - typed errors (no raw strings).
   - extracted magic numbers (\*.constants.ts).
 
-## 🧪 Development
+## Development
 
 ```bash
 # Run tests
