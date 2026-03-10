@@ -12,11 +12,15 @@ export interface OptionWithMeta {
 export const OptionDescription = ({ option }: { option: OptionWithMeta | undefined }) => {
   if (!option) return null;
   return (
-    <Box flexDirection="column" marginTop={1} borderStyle="round" borderColor="blue" paddingX={2} paddingY={1}>
-      <Text bold color="white">Description</Text>
-      <Text color="white">{option.description}</Text>
-      <Box marginTop={1}>
-        <Text dimColor italic>💡 {option.hint}</Text>
+    <Box flexDirection="column" marginTop={1} paddingLeft={2}>
+      <Box marginBottom={1}>
+        <Text color="gray" dimColor>─────────────────────────────────────────────</Text>
+      </Box>
+      <Box marginBottom={0}>
+        <Text color="white">{option.description}</Text>
+      </Box>
+      <Box marginTop={0}>
+        <Text color="white" dimColor>{option.hint}</Text>
       </Box>
       {option.impact && (
         <Box marginTop={1}>

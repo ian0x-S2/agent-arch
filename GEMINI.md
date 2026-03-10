@@ -1,76 +1,45 @@
 # agent-arch
 
-CLI that generates structured instruction bundles for AI coding agents.
-Scope: frontend only. No scaffolding.
+CLI to generate structured architecture policies for AI coding agents.
+**Scope:** Svelte 5 (frontend only). **No scaffolding.**
 
 ## Stack
 
-TypeScript + Bun | React Ink (UI) | Commander (routing) | Valibot (validation)
+- **Runtime:** Bun + TypeScript
+- **UI:** React Ink (CLI)
+- **Routing:** Commander
+- **Validation:** Valibot
 
-## Core Law
+## Core Principles
 
-The official interface is `policy.md`.
+1. **Policy First:** `policy.md` is the official interface for AI agents.
+2. **Pure Core:** Logic (Composer, Renderer) must remain pure; no I/O outside `Writer`.
+3. **Declarative:** Constraints are defined in patterns and merged by the composer.
 
 ## Architecture
 
-UI Layer (Ink) → Core (pure) → FileWriter
-├── TemplateRegistry
-├── PolicyComposer
-├── MarkdownRenderer
-└── TokenEstimator
+**UI (Ink)** → **State (Wizard)** → **Core (Composer)** → **Markdown (Renderer)** → **File (Writer)**
 
-## Data Flow
+### Core Modules
 
-UserChoices → PolicyComposer(base + fragments) → PolicyObject → MarkdownRenderer → policy.md
+- `TemplateRegistry`: Managed repository for base patterns (FSD, Flat, Atomic, etc.)
+- `PolicyComposer`: Core logic merging base + fragments → `PolicyObject`.
+- `MarkdownRenderer`: Transforms `PolicyObject` into structured, agent-readable MD.
+- `TokenEstimator`: Simple heuristic to calculate token cost.
 
-## Folder Structure
+## Structure
 
+```bash
 src/
-ui/
-app.tsx # root, manages screen flow
-screens/ # WizardScreen | GeneratingScreen | SummaryScreen
-components/ # Question | ProgressBar | Badge | FileTree
-hooks/ # useWizard (state machine) | useGenerate (calls core)
-core/
-registry/ # loads JSON templates, pure
-composer/ # merges base + fragments → policy object, pure
-renderer/ # policy → markdown, pure
-token/ # estimates token count from MD, pure
-writer/ # writes .ai/policy.md, only I/O in core
-commands/ # init | generate | validate | render | estimate
-bin.ts # commander entry, only routes to commands
-schema/
-policy.schema.ts # Internal schema source
+├── bin.ts        # CLI Entry point
+├── commands/     # Command actions (init, generate, validate, etc.)
+├── core/         # Pure logic: registry, composer, renderer, token
+├── schema/       # Valibot schemas (source of truth for policy structure)
+└── ui/           # Wizard screens and Ink components
+```
 
-## Wizard Flow
+## Matrix (FSD Default)
 
-pattern → state → styling → routing → enforcement → mode → confirm → generate
-
-## CLI Commands
-
-agent-arch init # interactive wizard
-agent-arch generate --pattern --naming --styling --framework --component-lib --preference
-agent-arch validate [path] # defaults to .ai/policy.md
-agent-arch render <patternId> # renders pattern from registry to console
-agent-arch estimate [path] # defaults to .ai/policy.md
-agent-arch registry list # list registered templates
-
-## Layers & Import Matrix (feature-sliced default)
-
-ui → hooks, state, types
-hooks → state, services, types
-state → services, types
-services → types
-types → (none)
-circular_imports=FORBIDDEN | cross_feature=via-public-api-only
-
-## Output Modes
-
-Markdown is always verbose/complete by default.
-
-## policy.md Contract
-
-- Generated Markdown is the official system instruction for AI Agents.
-- Declarative constraints only.
-- Human-readable but machine-optimizable.
-- Usable directly as LLM system instruction.
+`ui → hooks → state → services → types`
+- Circular imports: **FORBIDDEN**
+- Cross-feature: **via public-api (index.ts) only**

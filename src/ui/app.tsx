@@ -7,6 +7,7 @@ import { Header } from './components/Header';
 import { QuestionStep } from './components/QuestionStep';
 import { ConfirmScreen } from './components/ConfirmScreen';
 import { ComponentLibStep } from './components/ComponentLibStep';
+import { WelcomeScreen } from './components/WelcomeScreen';
 import { OPTIONS, MAIN_STEPS } from './steps';
 import { useWizard } from './hooks/useWizard';
 
@@ -53,16 +54,14 @@ export const App = () => {
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Header step={step} stepIndex={stepIndex} totalSteps={step === 'welcome' ? 1 : totalSteps} />
+      {step !== 'welcome' && (
+        <Header step={step} stepIndex={stepIndex} totalSteps={step === 'welcome' ? 1 : totalSteps} />
+      )}
 
       <Box marginTop={1}>
         {/* Welcome */}
         {step === 'welcome' && (
-          <QuestionStep 
-            stepKey="welcome" 
-            options={OPTIONS.welcome ?? []} 
-            onSelect={() => nextStep('welcome')} 
-          />
+          <WelcomeScreen onStart={() => nextStep('welcome')} />
         )}
 
         {/* Wizard steps */}
@@ -116,38 +115,55 @@ export const App = () => {
         {/* Done */}
         {step === 'done' && (
           <Box flexDirection="column" paddingLeft={1}>
-            <Box borderStyle="round" borderColor="green" paddingX={2} paddingY={1} flexDirection="column">
-              <Text color="green" bold>✓ SUCCESS</Text>
-              <Text color="white">Architecture policy generated successfully!</Text>
+            <Box borderStyle="round" borderColor="green" paddingX={2} paddingY={1} flexDirection="column" width={55}>
+              <Text color="green" bold>✨ SUCCESS</Text>
               <Box marginTop={1}>
-                <Text dimColor>Artifact created in </Text>
-                <Text color="yellow" bold>.ai/policy.md</Text>
+                <Text color="white">Your </Text>
+                <Text color="yellow" bold>architecture policy</Text>
+                <Text color="white"> is ready.</Text>
+              </Box>
+              <Box marginTop={1}>
+                <Text dimColor>Saved to: </Text>
+                <Text color="cyan">.ai/policy.md</Text>
               </Box>
             </Box>
 
-            <Box marginTop={1} flexDirection="column" paddingLeft={1}>
-              <Text bold color="cyan">🚀 Next Step:</Text>
-              <Text> 1. Attach <Text color="yellow">.ai/policy.md</Text> to your AI Agent.</Text>
+            <Box marginTop={2} flexDirection="column" paddingLeft={1}>
+              <Text bold color="cyan">Next Step</Text>
+              <Box marginTop={1}>
+                <Text color="white">1. </Text>
+                <Text dimColor>Add </Text>
+                <Text color="yellow">.ai/policy.md</Text>
+                <Text dimColor> to your AI coding agent.</Text>
+              </Box>
+              <Box>
+                <Text color="white">2. </Text>
+                <Text dimColor>Run </Text>
+                <Text color="cyan">agent-arch validate</Text>
+                <Text dimColor> to check compliance anytime.</Text>
+              </Box>
             </Box>
 
-            <Box marginTop={1} flexDirection="column">
-              <Text bold color="cyan" underline>Preview: .ai/policy.md</Text>
-              <Box borderStyle="single" borderColor="gray" paddingX={1} marginTop={1}>
-                <Text>
+            <Box marginTop={2} flexDirection="column">
+              <Text bold color="gray" italic> Preview </Text>
+              <Box borderStyle="single" borderColor="gray" paddingX={1} marginTop={1} width={60} opacity={0.8}>
+                <Text dimColor>
                   {generatedPrompt
                     .split('\n')
-                    .slice(0, 15)
+                    .slice(0, 10)
                     .map(line => line.replace(/^#+\s/, '➤ ').replace(/\*\*/g, ''))
                     .join('\n')}
                 </Text>
-                <Text dimColor>... (truncated)</Text>
+                <Text dimColor>  ... (truncated)</Text>
               </Box>
             </Box>
 
-            <Box marginTop={1}>
-              <Text>Press </Text>
-              <Text color="yellow" bold>Enter / q</Text>
-              <Text> to exit</Text>
+            <Box marginTop={1} paddingLeft={1}>
+              <Text dimColor>Press </Text>
+              <Text color="yellow" bold>Enter</Text>
+              <Text dimColor> or </Text>
+              <Text color="yellow" bold>Q</Text>
+              <Text dimColor> to close</Text>
             </Box>
           </Box>
         )}

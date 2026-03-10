@@ -19,51 +19,44 @@ export const ConfirmScreen = ({
 
   const derivedState = STATE_BY_PATTERN[selections.pattern ?? '']?.philosophy ?? 'flexible';
 
+  const summaryItems = [
+    { label: 'Architecture', value: selections.pattern },
+    { label: 'UI Library', value: selections.component_lib || 'None' },
+    { label: 'Styling', value: selections.styling_strategy },
+    { label: 'Data Fetching', value: selections.data_fetching },
+    { label: 'Component API', value: selections.component_preference },
+    { label: 'Naming', value: selections.naming_strategy },
+    { label: 'State (derived)', value: derivedState, isDerived: true },
+  ];
+
   return (
     <Box flexDirection="column" paddingLeft={1}>
-      <Text bold color="yellow" underline>Review & Confirm</Text>
-      <Text dimColor>Verify your choices before generating the policy.</Text>
-
-      <Box flexDirection="column" marginTop={1} borderStyle="round" borderColor="cyan" paddingX={2} paddingY={1}>
-        <Box marginBottom={1}>
-          <Text bold color="cyan" underline>Selected Configuration</Text>
-        </Box>
-        <Box flexDirection="column">
-          {(['pattern', 'component_lib', 'styling_strategy', 'data_fetching', 'component_preference', 'naming_strategy'] as const).map((key) => {
-             const labelMap: Record<string, string> = {
-               pattern: 'Architecture Pattern',
-               component_lib: 'Component Library',
-               styling_strategy: 'Styling Strategy',
-               data_fetching: 'Data Fetching',
-               component_preference: 'Component Preference',
-               naming_strategy: 'Naming Convention',
-             };
-             const val = (selections as any)[key];
-             if (!val) return null;
-             return (
-              <Box key={key} marginBottom={0}>
-                <Box width={25}>
-                  <Text dimColor>{labelMap[key]}:</Text>
-                </Box>
-                <Text color="green" bold>{val}</Text>
-              </Box>
-             );
-          })}
-          <Box marginTop={1}>
-            <Box width={25}>
-              <Text dimColor>State Philosophy:</Text>
-            </Box>
-            <Text color="cyan" bold>{derivedState}</Text>
-            <Text dimColor italic> (auto-derived)</Text>
-          </Box>
-        </Box>
+      <Box marginBottom={1}>
+        <Text bold color="yellow">Finalize your architecture</Text>
       </Box>
 
-      <Box marginTop={1}>
-        <Text color="green" bold>↵ Enter </Text>
-        <Text>to generate  </Text>
-        <Text color="yellow" bold>Esc / b </Text>
-        <Text>to go back</Text>
+      <Box flexDirection="column" marginBottom={1}>
+        {summaryItems.map((item, idx) => {
+          if (!item.value) return null;
+          return (
+            <Box key={idx} marginBottom={0}>
+              <Box width={20}>
+                <Text dimColor>{item.label}</Text>
+              </Box>
+              <Text color={item.isDerived ? 'cyan' : 'green'} bold={!item.isDerived}>
+                {item.value}
+                {item.isDerived && <Text italic> (auto)</Text>}
+              </Text>
+            </Box>
+          );
+        })}
+      </Box>
+
+      <Box marginTop={1} paddingY={1} borderStyle="single" borderColor="gray" paddingX={2} width={50} justifyContent="center">
+        <Box marginRight={2}>
+          <Text color="green" bold>↵ Confirm</Text>
+        </Box>
+        <Text color="yellow" bold>Esc Back</Text>
       </Box>
     </Box>
   );

@@ -22,11 +22,11 @@ export const QuestionStep = ({
   return (
     <Box flexDirection="column" paddingLeft={1}>
       <Box marginBottom={1}>
-        <Text bold color="yellow" underline>
-          {stepKey === 'welcome' ? 'How do you want to start?' : `Select ${label}`}
+        <Text color="yellow" bold>
+          {stepKey === 'welcome' ? ':: How do you want to start?' : `:: Select ${label}`}
         </Text>
       </Box>
-      <Box>
+      <Box paddingLeft={1}>
         <SelectInput
           items={inkItems}
           onSelect={(item) => onSelect(item.value)}
@@ -34,8 +34,11 @@ export const QuestionStep = ({
         />
       </Box>
       <OptionDescription option={focusedOption} />
-      <Box marginTop={1}>
-        <Text dimColor>Use ↑↓ to navigate, Enter to select</Text>
+      <Box marginTop={1} paddingLeft={1}>
+        <Text dimColor>Navigate </Text>
+        <Text color="cyan" dimColor>↑↓</Text>
+        <Text dimColor> │ Select </Text>
+        <Text color="cyan" dimColor>Enter</Text>
       </Box>
     </Box>
   );

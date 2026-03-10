@@ -12,21 +12,28 @@ export const ComponentLibStep = ({
   return (
     <Box flexDirection="column" paddingLeft={1}>
       <Box marginBottom={1}>
-        <Text bold color="yellow" underline>
-          Component Library
-        </Text>
+        <Text color="yellow" bold>:: Component Library</Text>
       </Box>
-      <Box>
-        <Text dimColor>Library name: </Text>
-        <TextInput
-          value={value}
-          onChange={setValue}
-          onSubmit={(val) => onSubmit(val.trim() || undefined)}
-          placeholder="e.g. shadcn-svelte, bits-ui, melt-ui... (Enter to skip)"
-        />
+      
+      <Box paddingLeft={1} flexDirection="column">
+        <Text dimColor>If you use a specific library (shadcn, melt, etc), mention it here.</Text>
+        <Text dimColor>The agent will prioritize its primitives and components.</Text>
+        
+        <Box marginTop={1} paddingLeft={1}>
+          <Text color="cyan">❯ </Text>
+          <TextInput
+            value={value}
+            onChange={setValue}
+            onSubmit={(val) => onSubmit(val.trim() || undefined)}
+            placeholder="Library name or Enter to skip..."
+          />
+        </Box>
       </Box>
-      <Box marginTop={1}>
-        <Text dimColor>Press Enter to skip</Text>
+
+      <Box marginTop={1} paddingLeft={1}>
+        <Text dimColor italic>Press </Text>
+        <Text color="cyan" dimColor bold>Enter</Text>
+        <Text dimColor italic> to continue</Text>
       </Box>
     </Box>
   );
