@@ -1,89 +1,88 @@
 # Architecture Policy
-
-Pattern: feature-sliced | Framework: Svelte 5 | Styling: utility-first
+Pattern: ui-lib | Framework: Svelte 5 | Styling: utility-first
 
 ## Layers & Import Direction
+patterns → components → primitives (unidirectional, strict)
 
-app → features → entities → shared (unidirectional, strict)
+| Layer      | May Import              |
+|------------|-------------------------|
+| patterns   | components, primitives  |
+| components | primitives              |
+| primitives | —                       |
 
-| Layer    | May Import                 |
-| -------- | -------------------------- |
-| app      | features, entities, shared |
-| features | entities, shared           |
-| entities | shared                     |
-| shared   | —                          |
-
-- Cross-feature imports: FORBIDDEN
 - Circular imports: FORBIDDEN
-- Cross-slice imports must go through index.ts
+- Cross-layer imports must go through index.ts
 
 ## Directory Structure
-
 src/
-├── routes/ # load functions, actions — no domain logic
-├── app/ # providers, router, global styles
-├── features/<slice>/
-│ ├── ui/ # components
-│ ├── api/ # external I/O and API clients — called by load functions
-│ └── index.ts # public API (required)
-├── entities/<slice>/
-│ ├── model/ # domain logic, validators, value objects (no reactive state)
-│ ├── api/ # data access, response mapping
-│ └── index.ts # public API (required)
-└── shared/
-├── ui-kit/ # primitives
-├── api/ # base fetch only — no domain requests
-├── lib/ # pure utils
-└── types/ # global types
+├── primitives/<Component>/
+│   ├── Component.svelte        # unstyled, polymorphic — aria/role only
+│   ├── Component.types.ts
+│   └── index.ts
+├── components/<Component>/
+│   ├── Component.svelte        # compound: Component.Root, Component.Icon
+│   ├── Component.context.svelte.ts  # scoped $state for compound parts — not exported
+│   ├── Component.types.ts
+│   ├── Component.test.ts
+│   └── index.ts                # exports Component namespace
+├── patterns/<Pattern>/
+│   ├── Pattern.svelte          # composes multiple components
+│   └── index.ts
+└── index.ts                    # package root — public API only
 
 ## File Conventions
+| Type      | File                | Export          |
+|-----------|---------------------|-----------------|
+| component | *.svelte            | PascalCase      |
+| context   | *.context.svelte.ts | camelCase       |
+| hook      | *.svelte.ts         | camelCase       |
+| types     | *.types.ts          | PascalCase      |
+| constants | *.constants.ts      | SCREAMING_SNAKE |
 
-| Type      | File            | Export          |
-| --------- | --------------- | --------------- |
-| component | \*.svelte       | PascalCase      |
-| logic     | \*.svelte.ts    | camelCase       |
-| service   | \*.service.ts   | camelCase       |
-| types     | \*.types.ts     | PascalCase      |
-| constants | \*.constants.ts | SCREAMING_SNAKE |
-
-- Naming: kebab-case for files
-- inline magic numbers — extract to named constants (\*.constants.ts)
+- Component files: PascalCase | Utility files: kebab-case
+- inline magic numbers — extract to named constants (*.constants.ts)
 - errors must be typed — no throwing raw strings
 - boolean variables must use is/has/can prefix
-- Barrel exports: required only at feature/entity roots (index.ts)
-- No default exports on utilities
+- Barrel exports: required at every component root
+- Context files: private — never exported via index.ts
 
 ## Component Rules
-
-- No data fetching in components — receive via props/load
-- No business logic in components
-- Extract to \*.svelte.ts when script > 25 lines or logic repeats across 2+ components
-- Extract to new component when template has > 2 logical sections
-- Max props: 10 | No prop drilling beyond depth 2
+- No business logic at any layer
+- No data fetching at any layer
+- Support controlled and uncontrolled variants — controlled via props, uncontrolled via default* props
+- Extract to *.svelte.ts when script > 25 lines or logic repeats across 2+ components
+- Max props: 5 — split into compound parts if exceeded
+- Separate style props from behavior props (variant/size vs onClick/disabled)
+- No prop drilling beyond depth 2 — use scoped Context for compound internals
+- Primitives accept children: Snippet and spread rest props via $props() — no as prop
 - Prefer composition over configuration (slots over boolean props)
 
-## Svelte 5 Runes
+## Compound Component Pattern
+- Export style: namespace (Button.Root, Button.Icon, Button.Trigger)
+- Never export compound parts standalone
+- Compound state shared via *.context.svelte.ts — never exposed outside component boundary
 
-- $state → local reactive state
+## Svelte 5 Runes
+- $state → UI-only component state (isOpen, isFocused, isDisabled)
 - $derived → computed values (never $effect for derived state)
 - $effect → side effects only (DOM, subscriptions)
 - $props → component interface
 - $bindable → explicit two-way binding (use sparingly)
 - No legacy stores for local state
 
-## State & Data Flow
-
-route (load fn) → features/api (use case) → entities/api (data access) → entities/model (domain type)
-
-- Side effects: allowed only in features/api and entities/api
-- API errors must be mapped to domain types before reaching UI
-- Every async operation requires loading + error state
+## Publish Contract
+- package.json exports map required — every component gets its own export path
+- Types exported — ship .d.ts alongside every component
+- Peer dependency: svelte — never bundle peer deps
 
 ## Forbidden
-
-- Component fetching data directly
-- Reactive state ($state) in entities
-- Domain logic in features/api
-- Raw API responses leaking to UI
+- Circular imports
+- Arbitrary Tailwind values (text-[14px] → use text-sm)
+- Business logic at any layer
+- Data fetching at any layer
+- Global state managers
+- Module-level shared state between unrelated components
+- Exporting context files via index.ts
+- Standalone export of compound parts
 - any type (use unknown + narrowing)
 - Type assertions (as) except at data boundaries
